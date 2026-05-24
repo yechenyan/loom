@@ -100,6 +100,12 @@ Run the server:
 uv run python scripts/loom-server.py run --storage-root .loom-server-storage
 ```
 
+The server also accepts:
+
+- `--workspace-root` or `LOOM_SERVER_WORKSPACE_ROOT` to point at the repo root that contains `test-project/loom/loom_explore`
+- `--host` / `--port`, with `PORT` respected automatically on Render
+- `LOOM_SERVER_CORS_ORIGINS` as a comma-separated allowlist for browser clients; leave it unset to allow all origins
+
 Push and pull workspaces:
 
 ```bash
@@ -107,6 +113,17 @@ uv run python scripts/loom.py push energy --server-url http://127.0.0.1:8765
 uv run python scripts/loom.py pull energy --server-url http://127.0.0.1:8765
 uv run python scripts/loom.py pull-raw energy --server-url http://127.0.0.1:8765
 ```
+
+For Python callers, Loom now supports a process-wide API base URL:
+
+```python
+import loom
+
+loom.set_base_url("https://loom-api.onrender.com")
+path = loom.get("energy/technology-data/costs.csv")
+```
+
+CLI users can keep using `--server-url ...` per command, or set `LOOM_SERVER_URL` once for the shell session.
 
 Push and pull now use rebase-style workspace sync:
 
@@ -136,6 +153,23 @@ http://127.0.0.1:4173
 ```
 
 The Vite dev server proxies `/api` requests to the Loom FastAPI server on `http://127.0.0.1:8765`.
+
+For deployed builds, set `VITE_API_BASE_URL` to your public API origin, for example `https://loom-api.onrender.com`.
+
+## Render Deploy
+
+This repo now includes [render.yaml](/Users/maxiao/Documents/code2/loom/render.yaml) for the cheapest Render setup that fits this project:
+
+- `loom-web` as a Render static site that publishes `web/dist`
+- `loom-api` as a free Python web service
+- `loom-postgres` as a free Render Postgres database
+
+Deploy notes:
+
+- Render web services must bind `0.0.0.0:$PORT`, and the server now supports that automatically.
+- The API service uses a persistent disk mounted at `/var/data` for snapshot and raw object storage.
+- The static site build injects `VITE_API_BASE_URL`; verify the generated `onrender.com` API URL after the first deploy and update it if Render assigns a different hostname than `https://loom-api.onrender.com`.
+- Free Render Postgres is the cheapest option today, but Render's docs say it expires 30 days after creation and allows only one active free Postgres DB per workspace.
 
 ## Workspace layout
 

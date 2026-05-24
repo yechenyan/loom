@@ -14,6 +14,13 @@ DEFAULT_DATABASE_URL = os.environ.get(
     "LOOM_SERVER_DATABASE_URL",
     "postgresql+psycopg2://loom@127.0.0.1:5432/loom",
 )
+DEFAULT_STORAGE_ROOT = Path(os.environ.get("LOOM_SERVER_STORAGE_ROOT", Path.cwd() / ".loom-server-storage"))
+DEFAULT_WORKSPACE_ROOT = Path(os.environ.get("LOOM_SERVER_WORKSPACE_ROOT", Path.cwd()))
+DEFAULT_HOST = os.environ.get(
+    "LOOM_SERVER_HOST",
+    "0.0.0.0" if os.environ.get("RENDER") or os.environ.get("PORT") else "127.0.0.1",
+)
+DEFAULT_PORT = int(os.environ.get("PORT", os.environ.get("LOOM_SERVER_PORT", "8765")))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -21,33 +28,35 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "init-db":
-        return run_init_db(args.database_url, args.storage_root)
+        return run_init_db(args.database_url, args.storage_root, args.workspace_root)
     if args.command == "run":
-        return run_server(args.database_url, args.storage_root, args.host, args.port)
+        return run_server(args.database_url, args.storage_root, args.workspace_root, args.host, args.port)
 
     parser.print_help()
     return 1
 
 
-def run_init_db(database_url: str, storage_root: Path | str) -> int:
+def run_init_db(database_url: str, storage_root: Path | str, workspace_root: Path | str) -> int:
     _ensure_database_exists(database_url)
-    app = create_app(database_url, storage_root)
+    app = create_app(database_url, storage_root, workspace_root=workspace_root)
     app.state.sync_service.init_db()
     print(f"Initialized Loom sync database: {database_url}")
     print(f"Storage root: {storage_root}")
+    print(f"Workspace root: {workspace_root}")
     return 0
 
 
 def run_server(
     database_url: str,
     storage_root: Path | str,
-    host: str = "127.0.0.1",
-    port: int = 8765,
+    workspace_root: Path | str,
+    host: str = DEFAULT_HOST,
+    port: int = DEFAULT_PORT,
 ) -> int:
     import uvicorn
 
     _ensure_database_exists(database_url)
-    app = create_app(database_url, storage_root)
+    app = create_app(database_url, storage_root, workspace_root=workspace_root)
     uvicorn.run(app, host=host, port=port)
     return 0
 
@@ -65,8 +74,14 @@ def _build_parser() -> argparse.ArgumentParser:
     init_db_parser.add_argument(
         "--storage-root",
         type=Path,
-        default=Path(os.environ.get("LOOM_SERVER_STORAGE_ROOT", Path.cwd() / ".loom-server-storage")),
+        default=DEFAULT_STORAGE_ROOT,
         help="Filesystem root where server snapshots are stored.",
+    )
+    init_db_parser.add_argument(
+        "--workspace-root",
+        type=Path,
+        default=DEFAULT_WORKSPACE_ROOT,
+        help="Workspace root that contains test-project/loom/loom_explore.",
     )
 
     run_parser = subparsers.add_parser("run", help="Run the Loom sync FastAPI server.")
@@ -78,11 +93,17 @@ def _build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--storage-root",
         type=Path,
-        default=Path(os.environ.get("LOOM_SERVER_STORAGE_ROOT", Path.cwd() / ".loom-server-storage")),
+        default=DEFAULT_STORAGE_ROOT,
         help="Filesystem root where server snapshots are stored.",
     )
-    run_parser.add_argument("--host", default="127.0.0.1", help="Host to bind the FastAPI server to.")
-    run_parser.add_argument("--port", type=int, default=8765, help="Port to bind the FastAPI server to.")
+    run_parser.add_argument(
+        "--workspace-root",
+        type=Path,
+        default=DEFAULT_WORKSPACE_ROOT,
+        help="Workspace root that contains test-project/loom/loom_explore.",
+    )
+    run_parser.add_argument("--host", default=DEFAULT_HOST, help="Host to bind the FastAPI server to.")
+    run_parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to bind the FastAPI server to.")
 
     return parser
 

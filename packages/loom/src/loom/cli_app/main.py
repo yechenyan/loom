@@ -24,9 +24,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in handlers:
         return handlers[args.command](args)
     if args.command == "server-init-db":
-        return _run_server_command("run_init_db", args.database_url, args.storage_root)
+        return _run_server_command("run_init_db", args.database_url, args.storage_root, args.workspace_root)
     if args.command == "server-run":
-        return _run_server_command("run_server", args.database_url, args.storage_root, args.host, args.port)
+        return _run_server_command("run_server", args.database_url, args.storage_root, args.workspace_root, args.host, args.port)
     build_parser().print_help()
     return 1
 

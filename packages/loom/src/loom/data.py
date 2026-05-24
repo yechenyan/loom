@@ -8,6 +8,7 @@ from .raw_cache import (
     populate_raw_cache_from_local_source,
     resolve_workspace_root,
 )
+from .server_config import resolve_base_url
 from .sync_client import pull_raw_workspaces
 
 
@@ -22,7 +23,7 @@ def get(resource: str, *, workspace_root: Path | str | None = None, server_url: 
     if local_path is not None and is_cached_raw_path_healthy(local_path):
         return local_path
 
-    result = pull_raw_workspaces(root, server_url, workspace=workspace, relative_paths=(relative_path,))
+    result = pull_raw_workspaces(root, resolve_base_url(server_url), workspace=workspace, relative_paths=(relative_path,))
     if not result or result[0].downloaded_file_count < 0:
         raise FileNotFoundError(f"Resource `{resource}` was not found in local cache or remote workspace.")
 
@@ -33,7 +34,7 @@ def get(resource: str, *, workspace_root: Path | str | None = None, server_url: 
 
 
 def pull(workspace: str | None = None, *, workspace_root: Path | str | None = None, server_url: str | None = None):
-    return pull_raw_workspaces(resolve_workspace_root(workspace_root), server_url, workspace=workspace)
+    return pull_raw_workspaces(resolve_workspace_root(workspace_root), resolve_base_url(server_url), workspace=workspace)
 
 
 def _parse_resource(resource: str) -> tuple[str, str]:

@@ -4,7 +4,13 @@ import argparse
 import os
 from pathlib import Path
 
-from .config import DEFAULT_DATABASE_URL, DEFAULT_SERVER_URL
+from .config import (
+    DEFAULT_DATABASE_URL,
+    DEFAULT_SERVER_HOST,
+    DEFAULT_SERVER_PORT,
+    DEFAULT_SERVER_URL,
+    DEFAULT_SERVER_WORKSPACE_ROOT,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -54,12 +60,22 @@ def _add_sync_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     init_parser = subparsers.add_parser("server-init-db", help="Initialize the Loom sync server database schema.")
     init_parser.add_argument("--database-url", default=DEFAULT_DATABASE_URL)
     init_parser.add_argument("--storage-root", type=Path, default=Path(os.environ.get("LOOM_SERVER_STORAGE_ROOT", Path.cwd() / ".loom-server-storage")))
+    init_parser.add_argument(
+        "--workspace-root",
+        type=Path,
+        default=Path(DEFAULT_SERVER_WORKSPACE_ROOT) if DEFAULT_SERVER_WORKSPACE_ROOT else Path.cwd(),
+    )
 
     run_parser = subparsers.add_parser("server-run", help="Run the Loom sync FastAPI server.")
     run_parser.add_argument("--database-url", default=DEFAULT_DATABASE_URL)
     run_parser.add_argument("--storage-root", type=Path, default=Path(os.environ.get("LOOM_SERVER_STORAGE_ROOT", Path.cwd() / ".loom-server-storage")))
-    run_parser.add_argument("--host", default="127.0.0.1")
-    run_parser.add_argument("--port", type=int, default=8765)
+    run_parser.add_argument(
+        "--workspace-root",
+        type=Path,
+        default=Path(DEFAULT_SERVER_WORKSPACE_ROOT) if DEFAULT_SERVER_WORKSPACE_ROOT else Path.cwd(),
+    )
+    run_parser.add_argument("--host", default=DEFAULT_SERVER_HOST)
+    run_parser.add_argument("--port", type=int, default=DEFAULT_SERVER_PORT)
 
 
 def _add_workspace_parser(

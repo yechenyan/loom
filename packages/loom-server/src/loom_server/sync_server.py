@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -42,21 +43,29 @@ class PushWorkspaceRequest(BaseModel):
     raw_deleted_paths: list[str] = Field(default_factory=list)
 
 
-def create_app(database_url: str, storage_root: Path | str) -> FastAPI:
+def create_app(
+    database_url: str,
+    storage_root: Path | str,
+    *,
+    workspace_root: Path | str | None = None,
+    cors_origins: list[str] | None = None,
+) -> FastAPI:
     service = LoomSyncService(database_url=database_url, storage_root=storage_root)
     service.init_db()
 
     app = FastAPI(title="Loom Sync Server", version="0.1.0")
+    allowed_origins = cors_origins or _parse_cors_origins(os.environ.get("LOOM_SERVER_CORS_ORIGINS"))
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
+        allow_origins=allowed_origins,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
     app.state.sync_service = service
-    workspace_root = Path(storage_root).resolve().parent
-    app.state.explore_catalog = build_explore_catalog(workspace_root)
+    default_workspace_root = Path(storage_root).resolve().parent
+    resolved_workspace_root = Path(workspace_root if workspace_root is not None else default_workspace_root).resolve()
+    app.state.explore_catalog = build_explore_catalog(resolved_workspace_root)
 
     @app.get("/health")
     def health() -> dict[str, bool]:
@@ -134,3 +143,10 @@ def create_app(database_url: str, storage_root: Path | str) -> FastAPI:
             raise HTTPException(status_code=409, detail=str(error)) from error
 
     return app
+
+
+def _parse_cors_origins(value: str | None) -> list[str]:
+    if value is None:
+        return ["*"]
+    origins = [item.strip() for item in value.split(",") if item.strip()]
+    return origins or ["*"]

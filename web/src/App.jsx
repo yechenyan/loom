@@ -1,5 +1,7 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/$/, "");
+
 const defaultState = {
   workspaces: [],
   selectedWorkspace: null,
@@ -18,7 +20,7 @@ export default function App() {
 
     async function load() {
       try {
-        const response = await fetch("/api/explore/workspaces");
+        const response = await fetch(buildApiUrl("/api/explore/workspaces"));
         if (!response.ok) {
           throw new Error(`Failed to load workspaces: ${response.status}`);
         }
@@ -201,6 +203,10 @@ export default function App() {
       ) : null}
     </div>
   );
+}
+
+function buildApiUrl(path) {
+  return `${apiBaseUrl}${path}`;
 }
 
 function WorkspaceSummary({ workspace }) {
