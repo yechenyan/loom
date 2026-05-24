@@ -1,6 +1,7 @@
-你是一个全栈工程师，帮我实现：
-在开发过程中你可以拆分 3-5 个子agent 做这个事情
-先写测试，再写代码，需确保通过测试
+这是废弃方案：不要参考：
+
+
+
 # Loom
 
 > Loom helps AI agents understand datasets before using them.
