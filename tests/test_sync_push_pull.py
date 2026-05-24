@@ -7,7 +7,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from loom.workspace_snapshot import build_workspace_snapshot
 from loom_server.sync_server import create_app
+from loom_server.service_parts.helpers import blob_storage_path
 
 from .support import LoomTestCase
 
@@ -48,3 +50,25 @@ class SyncPushPullTest(LoomTestCase):
                     time.sleep(0.02)
                     self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.assertTrue(True)
+
+    def test_push_recovers_when_remote_revision_blob_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace_a = root / "workspace-a"
+            workspace_b = root / "workspace-b"
+            storage_root = root / "server-storage"
+            app = create_app(f"sqlite:///{root / 'loom.db'}", storage_root)
+            self.write_energy_dataset(workspace_a, cost_value="10")
+            self.call_main(["scan", "energy", "--workspace-root", str(workspace_a)])
+            self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
+            with TestClient(app) as client, self.patch_server(client):
+                self.assertEqual(self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])[0], 0)
+                snapshot = build_workspace_snapshot(workspace_a, "energy")
+                missing_blob = blob_storage_path(storage_root, snapshot.files[0].sha256)
+                missing_blob.unlink()
+                self.write_energy_dataset(workspace_b, cost_value="55")
+                self.call_main(["scan", "energy", "--workspace-root", str(workspace_b)])
+                self.call_main(["confirm", "energy", "--workspace-root", str(workspace_b)])
+                exit_code, output = self.call_main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
+                self.assertEqual(exit_code, 0)
+                self.assertIn("Pushed workspace: energy", output)

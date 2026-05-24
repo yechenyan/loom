@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+from hashlib import sha256
 import tempfile
 from pathlib import Path
 
@@ -7,6 +9,7 @@ from fastapi.testclient import TestClient
 
 import loom
 from loom_server.sync_server import create_app
+from loom_server.service_parts.helpers import raw_blob_storage_path
 
 from .support import LoomTestCase
 
@@ -49,3 +52,25 @@ class RawAccessCacheTest(LoomTestCase):
                 exit_code, output = self.call_main(["pull-raw", "energy", "--workspace-root", str(target_workspace), "--server-url", "http://loom.test"])
                 self.assertEqual(exit_code, 0)
                 self.assertIn("Pulled raw workspace: energy", output)
+
+    def test_missing_raw_blob_is_reported_missing_and_can_be_restored(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_workspace = root / "source"
+            storage_root = root / "server-storage"
+            app = create_app(f"sqlite:///{root / 'loom.db'}", storage_root)
+            raw_file = self.write_energy_dataset(source_workspace)
+            self.call_main(["scan", "energy", "--workspace-root", str(source_workspace)])
+            self.call_main(["confirm", "energy", "--workspace-root", str(source_workspace)])
+            with TestClient(app) as client, self.patch_server(client):
+                self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])
+                raw_sha = sha256(raw_file.read_bytes()).hexdigest()
+                missing_blob = raw_blob_storage_path(storage_root, raw_sha)
+                self.assertTrue(missing_blob.exists())
+                missing_blob.unlink()
+                exists_payload = self.call_app(client, "POST", "http://loom.test/api/raw/exists", {"hashes": [raw_sha]})
+                self.assertEqual(exists_payload["missing_hashes"], [raw_sha])
+                content_base64 = base64.b64encode(raw_file.read_bytes()).decode("ascii")
+                restore_payload = self.call_app(client, "POST", "http://loom.test/api/raw/objects", {"objects": [{"sha256": raw_sha, "size_bytes": raw_file.stat().st_size, "content_base64": content_base64}]})
+                self.assertEqual(restore_payload["stored_count"], 1)
+                self.assertTrue(missing_blob.exists())

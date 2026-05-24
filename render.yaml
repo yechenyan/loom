@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: loom-api
+    name: loom-api-free
     runtime: python
-    plan: free
+    plan: starter
     region: oregon
     buildCommand: pip install ./packages/loom-server
     startCommand: loom-server run --storage-root /var/data/loom-server-storage --workspace-root /opt/render/project/src
@@ -28,7 +28,7 @@ services:
     staticPublishPath: ./web/dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://loom-api.onrender.com
+        value: https://loom-api-free.onrender.com
     routes:
       - type: rewrite
         source: /*

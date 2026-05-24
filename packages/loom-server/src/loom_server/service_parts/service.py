@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 from .errors import WorkspaceConflictError, WorkspaceNotFoundError
 from .helpers import blob_storage_path, compute_tree_hash, raw_blob_storage_path
-from .queries import get_raw_current_manifest, get_revision_manifest, get_revision_tree_hash, get_workspace_row, raw_object_exists
+from .queries import get_raw_current_manifest, get_raw_object_row, get_revision_manifest, get_revision_tree_hash, get_workspace_row, raw_object_exists
 from .raw_maps import apply_raw_mapping_updates
 from .schema import metadata, raw_objects_table, workspace_revision_files_table, workspace_revisions_table, workspaces_table
 
@@ -40,8 +40,12 @@ class LoomSyncService:
     def get_missing_raw_hashes(self, hashes: list[str]) -> list[str]:
         normalized_hashes = sorted({item for item in hashes if item})
         with self.engine.begin() as connection:
-            rows = connection.execute(sa.select(raw_objects_table.c.sha256).where(raw_objects_table.c.sha256.in_(normalized_hashes))).scalars()
-            existing = {str(value) for value in rows}
+            rows = connection.execute(sa.select(raw_objects_table).where(raw_objects_table.c.sha256.in_(normalized_hashes))).mappings()
+            existing = {
+                str(row["sha256"])
+                for row in rows
+                if _raw_object_storage_exists(self.storage_root, {"storage_path": row["storage_path"]})
+            }
         return [value for value in normalized_hashes if value not in existing]
 
     def get_workspace_raw_manifest(self, workspace: str) -> dict[str, dict[str, str | int]]:
@@ -50,23 +54,28 @@ class LoomSyncService:
             if workspace_row is None:
                 raise WorkspaceNotFoundError(f"Remote workspace `{workspace}` was not found.")
             raw_manifest = get_raw_current_manifest(connection, int(workspace_row["id"]))
-        return {path: {"sha256": str(item["sha256"]), "size_bytes": int(item["size_bytes"])} for path, item in sorted(raw_manifest.items())}
+            available_raw_manifest = _filter_raw_manifest_with_existing_objects(connection, self.storage_root, raw_manifest)
+        return {path: {"sha256": str(item["sha256"]), "size_bytes": int(item["size_bytes"])} for path, item in sorted(available_raw_manifest.items())}
 
     def get_raw_object(self, file_sha256: str) -> dict[str, str | int]:
         with self.engine.begin() as connection:
             row = connection.execute(sa.select(raw_objects_table).where(raw_objects_table.c.sha256 == file_sha256)).mappings().first()
             if row is None:
                 raise WorkspaceNotFoundError(f"Raw object `{file_sha256}` was not found.")
-            content = (self.storage_root / str(row["storage_path"])).read_bytes()
+            storage_path = self.storage_root / str(row["storage_path"])
+            if not storage_path.exists():
+                raise WorkspaceNotFoundError(f"Raw object `{file_sha256}` was not found.")
+            content = storage_path.read_bytes()
         return {"sha256": file_sha256, "size_bytes": int(row["size_bytes"]), "content_base64": base64.b64encode(content).decode("ascii")}
 
     def store_raw_objects(self, objects: list[dict[str, str | int]]) -> int:
         stored_count = 0
         with self.engine.begin() as connection:
             for item in objects:
-                if raw_object_exists(connection, str(item["sha256"])) is not None:
+                existing_row = get_raw_object_row(connection, str(item["sha256"]))
+                if existing_row is not None and _raw_object_storage_exists(self.storage_root, existing_row):
                     continue
-                stored_count += _store_raw_object(connection, self.storage_root, item)
+                stored_count += _store_raw_object(connection, self.storage_root, item, existing_row=existing_row)
         return stored_count
 
     def push_workspace(self, workspace: str, *, base_revision: str | None, local_commit: str | None, tree_hash: str, message: str, files, deleted_paths, raw_files, raw_deleted_paths):
@@ -76,7 +85,7 @@ class LoomSyncService:
         return _pull_workspace(self.engine, self.storage_root, workspace, base_revision)
 
 
-def _store_raw_object(connection: sa.Connection, storage_root: Path, item) -> int:
+def _store_raw_object(connection: sa.Connection, storage_root: Path, item, *, existing_row: dict[str, object] | None = None) -> int:
     file_sha256 = str(item["sha256"])
     content = base64.b64decode(str(item["content_base64"]).encode("ascii"))
     if sha256(content).hexdigest() != file_sha256:
@@ -85,7 +94,11 @@ def _store_raw_object(connection: sa.Connection, storage_root: Path, item) -> in
     if not storage_path.exists():
         storage_path.parent.mkdir(parents=True, exist_ok=True)
         storage_path.write_bytes(content)
-    connection.execute(raw_objects_table.insert().values(sha256=file_sha256, size_bytes=int(item["size_bytes"]), storage_path=str(storage_path.relative_to(storage_root)), created_at=datetime.now(timezone.utc)))
+    relative_storage_path = str(storage_path.relative_to(storage_root))
+    if existing_row is None:
+        connection.execute(raw_objects_table.insert().values(sha256=file_sha256, size_bytes=int(item["size_bytes"]), storage_path=relative_storage_path, created_at=datetime.now(timezone.utc)))
+    else:
+        connection.execute(raw_objects_table.update().where(raw_objects_table.c.sha256 == file_sha256).values(size_bytes=int(item["size_bytes"]), storage_path=relative_storage_path))
     return 1
 
 
@@ -114,11 +127,11 @@ def _pull_workspace(engine, storage_root, workspace, base_revision):
         if workspace_row is None or workspace_row["head_revision_id"] is None:
             raise WorkspaceNotFoundError(f"Remote workspace `{workspace}` was not found.")
         revision_row = connection.execute(sa.select(workspace_revisions_table).where(workspace_revisions_table.c.revision_id == workspace_row["head_revision_id"])).mappings().one()
-        head_manifest = get_revision_manifest(connection, workspace_row["head_revision_id"])
-        base_manifest = get_revision_manifest(connection, base_revision) if base_revision else {}
+        head_manifest = _filter_manifest_with_existing_blobs(storage_root, get_revision_manifest(connection, workspace_row["head_revision_id"]))
+        base_manifest = _filter_manifest_with_existing_blobs(storage_root, get_revision_manifest(connection, base_revision) if base_revision else {})
         files_payload = [_encode_file_payload(storage_root, path, file_entry) for path, file_entry in sorted(head_manifest.items()) if base_manifest.get(path, {}).get("sha256") != file_entry["sha256"]]
         deleted_paths = sorted(path for path in base_manifest if path not in head_manifest)
-        raw_manifest = get_raw_current_manifest(connection, int(workspace_row["id"]))
+        raw_manifest = _filter_raw_manifest_with_existing_objects(connection, storage_root, get_raw_current_manifest(connection, int(workspace_row["id"])))
     return {"workspace": workspace, "revision_id": str(revision_row["revision_id"]), "parent_revision_id": revision_row["parent_revision_id"], "tree_hash": str(revision_row["tree_hash"]), "message": str(revision_row["message"]), "local_commit": revision_row["local_commit"], "file_count": int(revision_row["file_count"]), "changed_file_count": len(files_payload), "deleted_file_count": len(deleted_paths), "deleted_paths": deleted_paths, "raw_manifest": {path: {"sha256": str(entry["sha256"]), "size_bytes": int(entry["size_bytes"])} for path, entry in sorted(raw_manifest.items())}, "files": files_payload}
 
 
@@ -157,3 +170,25 @@ def _insert_revision(connection, workspace_id, current_head, tree_hash, message,
 def _encode_file_payload(storage_root: Path, path: str, file_entry):
     content = (storage_root / str(file_entry["storage_path"])).read_bytes()
     return {"path": path, "sha256": str(file_entry["sha256"]), "size_bytes": int(file_entry["size_bytes"]), "content_base64": base64.b64encode(content).decode("ascii")}
+
+
+def _filter_manifest_with_existing_blobs(storage_root: Path, manifest: dict[str, dict[str, object]]) -> dict[str, dict[str, object]]:
+    return {
+        path: file_entry
+        for path, file_entry in manifest.items()
+        if (storage_root / str(file_entry["storage_path"])).exists()
+    }
+
+
+def _filter_raw_manifest_with_existing_objects(connection: sa.Connection, storage_root: Path, raw_manifest: dict[str, dict[str, object]]) -> dict[str, dict[str, object]]:
+    available: dict[str, dict[str, object]] = {}
+    for path, entry in raw_manifest.items():
+        row = get_raw_object_row(connection, str(entry["sha256"]))
+        if row is None or not _raw_object_storage_exists(storage_root, row):
+            continue
+        available[path] = entry
+    return available
+
+
+def _raw_object_storage_exists(storage_root: Path, raw_object_row: dict[str, object]) -> bool:
+    return (storage_root / str(raw_object_row["storage_path"])).exists()

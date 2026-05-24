@@ -29,3 +29,8 @@ def get_raw_current_manifest(connection: sa.Connection, workspace_id: int) -> di
 
 def raw_object_exists(connection: sa.Connection, file_sha256: str):
     return connection.execute(sa.select(raw_objects_table.c.sha256).where(raw_objects_table.c.sha256 == file_sha256)).scalar_one_or_none()
+
+
+def get_raw_object_row(connection: sa.Connection, file_sha256: str) -> dict[str, object] | None:
+    row = connection.execute(sa.select(raw_objects_table).where(raw_objects_table.c.sha256 == file_sha256)).mappings().first()
+    return None if row is None else dict(row)
