@@ -58,7 +58,15 @@ uv pip install -e packages/loom-server
 uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py install
 ```
 
-这个命令会安装本地 `loom-scan` skill，并自动把 `test-project/loom/loom_explore` 初始化成独立 git 仓库。这样扫描后就能直接看到变更，并支持 `loom confirm`。
+这个命令会安装本地 `loom-data` skill，并自动把 `test-project/loom/loom_explore` 初始化成独立 git 仓库。这样扫描后就能直接看到变更，并支持 `loom confirm`。
+
+当前 skill 安装位置包括：
+
+- Codex 全局：`$CODEX_HOME/skills/loom-data`
+- Codex 工作区：`.agents/skills/loom-data`
+- Claude：`.claude/skills/loom-data`
+- Cursor：`.cursor/skills/loom-data`
+- Copilot：`.copilot/skills/loom-data`
 
 ## 用法
 
@@ -103,6 +111,13 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py scan energy
 ### 3. 读取原始数据
 
 项目提供了 Python API 和 CLI 来读取原始数据，并缓存到 `test-project/loom/.loom/raw`。
+
+推荐 agent 工作流：
+
+1. 先读 `loom/loom_explore`
+2. 搜索生成出来的 cards 和 summaries
+3. 判断具体需要哪个 raw 文件
+4. 再按需拉取，比如 `loom get energy/technology-data/costs.csv`
 
 Python:
 

@@ -20,23 +20,26 @@ def install_skills(codex_home: Path, workspace_root: Path, agents: tuple[str, ..
     skill_markdown = render_skill_markdown(workspace_root, launcher)
 
     for agent in selected_agents:
-        skill_dir = get_skill_dir(agent, codex_home, workspace_root)
-        skill_dir.mkdir(parents=True, exist_ok=True)
-        (skill_dir / "SKILL.md").write_text(skill_markdown, encoding="utf-8")
-        installed.append(InstalledSkill(agent=agent, path=skill_dir))
+        for skill_dir in get_skill_dirs(agent, codex_home, workspace_root):
+            skill_dir.mkdir(parents=True, exist_ok=True)
+            (skill_dir / "SKILL.md").write_text(skill_markdown, encoding="utf-8")
+            installed.append(InstalledSkill(agent=agent, path=skill_dir))
 
     return tuple(installed)
 
 
-def get_skill_dir(agent: str, codex_home: Path, workspace_root: Path) -> Path:
+def get_skill_dirs(agent: str, codex_home: Path, workspace_root: Path) -> tuple[Path, ...]:
     if agent == "codex":
-        return codex_home / "skills" / "loom-data"
+        return (
+            codex_home / "skills" / "loom-data",
+            workspace_root / ".agents" / "skills" / "loom-data",
+        )
     if agent == "claude":
-        return workspace_root / ".claude" / "skills" / "loom-data"
+        return (workspace_root / ".claude" / "skills" / "loom-data",)
     if agent == "cursor":
-        return workspace_root / ".cursor" / "skills" / "loom-data"
+        return (workspace_root / ".cursor" / "skills" / "loom-data",)
     if agent == "copilot":
-        return workspace_root / ".copilot" / "skills" / "loom-data"
+        return (workspace_root / ".copilot" / "skills" / "loom-data",)
     raise ValueError(f"Unsupported agent: {agent}")
 
 
@@ -64,15 +67,31 @@ Use this skill when the user needs to work with data stored in the local Loom wo
 
 ## Fast path
 
-1. Prefer reading `loom/loom_explore` before opening raw CSV files.
-2. To scan one workspace, run `uv run python {launcher} scan <workspace> --workspace-root {workspace_root}`.
-3. To scan every workspace, run `uv run python {launcher} scan --workspace-root {workspace_root}`.
-4. After reviewing changes, confirm them with `uv run python {launcher} confirm <workspace> --workspace-root {workspace_root}`.
-5. For raw file access, use `import loom` and call `loom.get("workspace/path/to/file")`.
+1. Read `loom/loom_explore` first.
+2. Search the generated cards and summaries before touching raw files.
+3. Decide which exact raw file is needed.
+4. Fetch that file on demand with `loom get workspace/path/to/file` or `loom.get("workspace/path/to/file")`.
+
+Example:
+
+- `loom get energy/technology-data/costs.csv`
+
+```python
+import loom
+
+local_path = loom.get("energy/technology-data/costs.csv")
+```
+
+## Scan and confirm
+
+1. To scan one workspace, run `uv run python {launcher} scan <workspace> --workspace-root {workspace_root}`.
+2. To scan every workspace, run `uv run python {launcher} scan --workspace-root {workspace_root}`.
+3. After reviewing changes, confirm them with `uv run python {launcher} confirm <workspace> --workspace-root {workspace_root}`.
 
 ## Useful commands
 
 - `uv run python {launcher} status [workspace] --workspace-root {workspace_root}`
+- `uv run python {launcher} get workspace/path/to/file --workspace-root {workspace_root}`
 - `uv run python {launcher} push [workspace] --workspace-root {workspace_root}`
 - `uv run python {launcher} pull [workspace] --workspace-root {workspace_root}`
 - `uv run python {launcher} pull-raw [workspace] --workspace-root {workspace_root}`

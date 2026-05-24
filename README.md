@@ -46,7 +46,7 @@ This now initializes Loom in `./loom/`.
 
 It also installs helper skill files for supported agents:
 
-- Codex
+- Codex (`$CODEX_HOME/skills/loom-data` and workspace `.agents/skills/loom-data`)
 - Claude
 - Cursor
 - Copilot
@@ -71,52 +71,56 @@ loom/loom_raw/<workspace>/
 Example:
 
 ```text
-loom/loom_raw/energy/
+loom/loom_raw/energy/loom.md
+loom/loom_raw/energy/costs.csv
+
 ```
 
 You can copy files there manually.
 
 ## 5. Generate data cards
 
-Scan one workspace:
 
-```bash
-uv run loom scan energy
-```
-
-Scan every workspace under `loom/loom_raw`:
-
-```bash
-uv run loom scan
-```
-
-You can also trigger this from chat with commands like:
+You can  scan from chat with commands like:
 
 ```text
+loom scan 
+loom scan <workspace>
 loom scan energy
 ```
 
-or:
 
-```text
-loom scan
+Or bash:
+
+```bash
+uv run loom scan
+uv run loom scan <workspace>
+uv run loom scan energy
 ```
+
+
+
 
 ## 6. Confirm scan results
 
 Optional, but recommended after you review the generated summaries.
 
-Confirm one workspace:
-
-```bash
-uv run loom confirm energy
+run in chat:
 ```
-
-Confirm all pending explore changes:
+loom confirm
+loom confirm <workspace>
+```
 
 ```bash
 uv run loom confirm
 ```
+
+or run in bash:
+```bash
+uv run loom confirm
+uv run loom confirm <workspace>
+```
+
 
 ## 7. Find data
 
@@ -125,15 +129,15 @@ Recommended workflow for agents:
 1. Read `loom/loom_explore` first.
 2. Search the generated cards and summaries.
 3. Decide which exact raw file is needed.
-4. Fetch that file on demand.
+4. Fetch that file on demand, for example `loom get energy/technology-data/costs.csv`.
 
 ## 8. Use raw data in Python
 
 ```python
 import loom
 
-path = loom.get("energy/technology-data/costs.csv")
-print(path)
+local_path = loom.get("energy/technology-data/costs.csv")
+print(local_path)
 ```
 
 `loom.get(...)` reuses local cache when possible and only downloads the latest raw file when needed.

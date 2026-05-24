@@ -41,6 +41,7 @@ loom/
 ```
 
 It also installs helper skill files for Codex, Claude, Cursor, and Copilot.
+For Codex, Loom writes both `$CODEX_HOME/skills/loom-data` and the workspace-local `.agents/skills/loom-data`.
 
 ## Common commands
 
@@ -97,8 +98,8 @@ uv run loom set-api https://loom-api-free.onrender.com
 ```python
 import loom
 
-path = loom.get("energy/technology-data/costs.csv")
-print(path)
+local_path = loom.get("energy/technology-data/costs.csv")
+print(local_path)
 ```
 
 `loom.get(...)` prefers local cache and fetches only the file you ask for.
@@ -108,7 +109,10 @@ print(path)
 - Put source data into `loom/loom_raw/<workspace>/`.
 - Run `loom scan` to generate cards.
 - Read `loom/loom_explore` first.
+- Search the generated cards and summaries.
+- Decide which exact raw file is needed.
 - Use `loom.get(...)` only for the raw files you really need.
+- Or fetch a single file on demand with `loom get energy/technology-data/costs.csv`.
 
 ## Web app
 

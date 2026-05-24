@@ -31,16 +31,21 @@ class InstallCommandTest(unittest.TestCase):
             skill_path = codex_home / "skills" / "loom-data" / "SKILL.md"
             self.assertTrue(skill_path.exists())
             content = skill_path.read_text(encoding="utf-8")
+            self.assertIn("Read `loom/loom_explore` first.", content)
+            self.assertIn("Search the generated cards and summaries", content)
+            self.assertIn("loom get energy/technology-data/costs.csv", content)
+            self.assertIn('local_path = loom.get("energy/technology-data/costs.csv")', content)
             self.assertIn("scan <workspace>", content)
-            self.assertIn("scan every workspace", content)
             self.assertIn(str(workspace_root / "scripts" / "loom.py"), content)
 
             explore_git_dir = workspace_root / "loom" / "loom_explore" / ".git"
             self.assertTrue(explore_git_dir.exists())
 
+            agents_skill_path = workspace_root / ".agents" / "skills" / "loom-data" / "SKILL.md"
             claude_skill_path = workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md"
             cursor_skill_path = workspace_root / ".cursor" / "skills" / "loom-data" / "SKILL.md"
             copilot_skill_path = workspace_root / ".copilot" / "skills" / "loom-data" / "SKILL.md"
+            self.assertTrue(agents_skill_path.exists())
             self.assertTrue(claude_skill_path.exists())
             self.assertTrue(cursor_skill_path.exists())
             self.assertTrue(copilot_skill_path.exists())
