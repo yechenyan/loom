@@ -18,7 +18,7 @@ class ScannerTest(unittest.TestCase):
     def test_scans_topic_from_chat_message(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            dataset_dir = workspace / "test-project" / "loom" / "loom_raw" / "energy" / "technology-data"
+            dataset_dir = workspace / "loom" / "loom_raw" / "energy" / "technology-data"
             dataset_dir.mkdir(parents=True)
             (dataset_dir / "loom.md").write_text(
                 "source: https://example.com/energy\n\nEnergy dataset\n\nLicense: CC-BY",
@@ -41,10 +41,10 @@ class ScannerTest(unittest.TestCase):
             assert result is not None
             self.assertEqual(result.dataset_count, 1)
 
-            overview_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "technology-data" / "overview.md"
-            csv_card_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "technology-data" / "costs.card.md"
-            csv_profile_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "technology-data" / "costs.profile.json"
-            profile_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "technology-data" / "profile.json"
+            overview_path = workspace / "loom" / "loom_explore" / "energy" / "technology-data" / "overview.md"
+            csv_card_path = workspace / "loom" / "loom_explore" / "energy" / "technology-data" / "costs.card.md"
+            csv_profile_path = workspace / "loom" / "loom_explore" / "energy" / "technology-data" / "costs.profile.json"
+            profile_path = workspace / "loom" / "loom_explore" / "energy" / "technology-data" / "profile.json"
 
             self.assertTrue(overview_path.exists())
             self.assertTrue(csv_card_path.exists())
@@ -77,7 +77,7 @@ class ScannerTest(unittest.TestCase):
     def test_uses_top_level_loom_md_as_dataset_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            raw_energy = workspace / "test-project" / "loom" / "loom_raw" / "energy"
+            raw_energy = workspace / "loom" / "loom_raw" / "energy"
             parent = raw_energy / "parent"
             child = parent / "child"
             child.mkdir(parents=True)
@@ -90,18 +90,18 @@ class ScannerTest(unittest.TestCase):
             result = scan_topic_to_explore("energy", workspace)
 
             self.assertEqual(result.dataset_count, 1)
-            profile_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "parent" / "profile.json"
+            profile_path = workspace / "loom" / "loom_explore" / "energy" / "parent" / "profile.json"
             profile = json.loads(profile_path.read_text(encoding="utf-8"))
             self.assertEqual(len(profile["csv_profiles"]), 1)
             self.assertEqual(profile["csv_profiles"][0]["file_name"], "parent.csv")
 
-            overview_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "parent" / "overview.md"
+            overview_path = workspace / "loom" / "loom_explore" / "energy" / "parent" / "overview.md"
             self.assertTrue(overview_path.exists())
 
     def test_skips_unchanged_dataset_and_keeps_missing_dataset_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            raw_energy = workspace / "test-project" / "loom" / "loom_raw" / "energy"
+            raw_energy = workspace / "loom" / "loom_raw" / "energy"
             alpha = raw_energy / "alpha"
             beta = raw_energy / "beta"
             alpha.mkdir(parents=True)
@@ -117,7 +117,7 @@ class ScannerTest(unittest.TestCase):
             self.assertEqual(len(first_result.skipped_dataset_dirs), 0)
 
             alpha_profile = (
-                workspace / "test-project" / "loom" / "loom_explore" / "energy" / "alpha" / "profile.json"
+                workspace / "loom" / "loom_explore" / "energy" / "alpha" / "profile.json"
             )
             alpha_profile_mtime = alpha_profile.stat().st_mtime_ns
 
@@ -134,20 +134,20 @@ class ScannerTest(unittest.TestCase):
             self.assertEqual(third_result.missing_dataset_dirs, ("beta",))
 
             topic_readme = (
-                workspace / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                workspace / "loom" / "loom_explore" / "energy" / "README.md"
             ).read_text(encoding="utf-8")
             self.assertIn("`beta` [missing]", topic_readme)
 
             manifest = json.loads(
                 (
-                    workspace / "test-project" / "loom" / "loom_explore" / "energy" / "scan-manifest.json"
+                    workspace / "loom" / "loom_explore" / "energy" / "scan-manifest.json"
                 ).read_text(encoding="utf-8")
             )
             beta_entry = next(entry for entry in manifest["datasets"] if entry["relative_dir"] == "beta")
             self.assertEqual(beta_entry["status"], "missing")
             self.assertTrue(
                 (
-                    workspace / "test-project" / "loom" / "loom_explore" / "energy" / "beta" / "beta.card.md"
+                    workspace / "loom" / "loom_explore" / "energy" / "beta" / "beta.card.md"
                 ).exists()
             )
 

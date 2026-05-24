@@ -24,7 +24,7 @@ class SyncRebaseTest(LoomTestCase):
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
-                note = workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
+                note = workspace_b / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
                 note.parent.mkdir(parents=True, exist_ok=True)
                 note.write_text("local note\n", encoding="utf-8")
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_b)])
@@ -34,7 +34,7 @@ class SyncRebaseTest(LoomTestCase):
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.assertEqual(self.call_main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])[0], 0)
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_c), "--server-url", "http://loom.test"])
-                self.assertEqual((workspace_c / "test-project" / "loom" / "loom_explore" / "energy" / "notes" / "local.md").read_text(encoding="utf-8"), "local note\n")
+                self.assertEqual((workspace_c / "loom" / "loom_explore" / "energy" / "notes" / "local.md").read_text(encoding="utf-8"), "local note\n")
 
     def test_pull_rebases_local_commits_when_workspace_has_confirmed_changes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -48,7 +48,7 @@ class SyncRebaseTest(LoomTestCase):
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
-                note = workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
+                note = workspace_b / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
                 note.parent.mkdir(parents=True, exist_ok=True)
                 note.write_text("local note from pull\n", encoding="utf-8")
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_b)])

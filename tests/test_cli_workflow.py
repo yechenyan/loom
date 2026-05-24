@@ -22,7 +22,7 @@ class CliWorkflowTest(unittest.TestCase):
     def test_scan_shows_pending_changes_and_confirm_commits_workspace(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            dataset_dir = workspace / "test-project" / "loom" / "loom_raw" / "energy" / "technology-data"
+            dataset_dir = workspace / "loom" / "loom_raw" / "energy" / "technology-data"
             dataset_dir.mkdir(parents=True)
             (dataset_dir / "loom.md").write_text(
                 "source: https://example.com/energy\n\nEnergy dataset",
@@ -75,14 +75,14 @@ class CliWorkflowTest(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertIn("No pending changes.", clean_status_stdout.getvalue())
 
-            profile_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "technology-data" / "profile.json"
+            profile_path = workspace / "loom" / "loom_explore" / "energy" / "technology-data" / "profile.json"
             profile = json.loads(profile_path.read_text(encoding="utf-8"))
             self.assertEqual(profile["csv_count"], 1)
 
     def test_second_scan_skips_unchanged_dataset(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            dataset_dir = workspace / "test-project" / "loom" / "loom_raw" / "energy" / "technology-data"
+            dataset_dir = workspace / "loom" / "loom_raw" / "energy" / "technology-data"
             dataset_dir.mkdir(parents=True)
             (dataset_dir / "loom.md").write_text("Energy dataset", encoding="utf-8")
             (dataset_dir / "costs.csv").write_text("tech,cost\nsolar,10\n", encoding="utf-8")
@@ -100,6 +100,30 @@ class CliWorkflowTest(unittest.TestCase):
             self.assertIn("Datasets rebuilt: 0", second_scan_output)
             self.assertIn("Datasets skipped: 1", second_scan_output)
             self.assertIn("No pending changes detected after scan.", second_scan_output)
+
+    def test_scan_without_workspace_scans_every_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            energy_dir = workspace / "loom" / "loom_raw" / "energy" / "technology-data"
+            climate_dir = workspace / "loom" / "loom_raw" / "climate" / "observations"
+            energy_dir.mkdir(parents=True)
+            climate_dir.mkdir(parents=True)
+
+            (energy_dir / "loom.md").write_text("energy", encoding="utf-8")
+            (energy_dir / "costs.csv").write_text("tech,cost\nsolar,10\n", encoding="utf-8")
+            (climate_dir / "loom.md").write_text("climate", encoding="utf-8")
+            (climate_dir / "temps.csv").write_text("city,temp\nManila,31\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = main(["scan", "--workspace-root", str(workspace)])
+
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("Scanned topic: energy", output)
+            self.assertIn("Scanned topic: climate", output)
+            self.assertTrue((workspace / "loom" / "loom_explore" / "energy" / "README.md").exists())
+            self.assertTrue((workspace / "loom" / "loom_explore" / "climate" / "README.md").exists())
 
 
 if __name__ == "__main__":

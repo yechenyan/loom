@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import shutil
 
-from .paths import resolve_raw_cache_dir, resolve_workspace_root
+from .paths import resolve_loom_root, resolve_raw_cache_dir, resolve_workspace_root
 
 
 def get_cached_raw_path(workspace_root, workspace: str, relative_path: str) -> Path:
@@ -56,7 +56,7 @@ def remove_deleted_raw_cache_paths(workspace_root, workspace: str, deleted_paths
 
 def _iter_local_raw_roots(workspace_root) -> tuple[Path, ...]:
     root = resolve_workspace_root(workspace_root)
-    candidates = [root / "test-project" / "loom" / "loom_raw", root / ".raw_data"]
+    candidates = [resolve_loom_root(root) / "loom_raw", root / ".raw_data"]
     if os.environ.get("LOOM_RAW_ROOT"):
         candidates.insert(0, Path(os.environ["LOOM_RAW_ROOT"]).resolve())
     seen: set[Path] = set()

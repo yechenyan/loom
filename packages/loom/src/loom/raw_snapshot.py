@@ -4,6 +4,7 @@ import base64
 from dataclasses import dataclass
 from pathlib import Path
 
+from .raw_cache_support import resolve_loom_root
 from .scan_state import hash_file
 
 
@@ -28,8 +29,7 @@ class RawWorkspaceDelta:
 
 
 def build_raw_workspace_snapshot(workspace_root: Path | str, workspace: str) -> RawWorkspaceSnapshot:
-    root = Path(workspace_root)
-    raw_dir = root / "test-project" / "loom" / "loom_raw" / workspace
+    raw_dir = resolve_loom_root(Path(workspace_root)) / "loom_raw" / workspace
     files: list[RawFileSnapshot] = []
 
     if raw_dir.exists():

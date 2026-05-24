@@ -44,7 +44,7 @@ class RawAccessRefreshTest(LoomTestCase):
                 self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(target_workspace), "--server-url", "http://loom.test"])
                 cached_costs = loom.get("energy/technology-data/costs.csv", workspace_root=target_workspace, server_url="http://loom.test")
-                local_raw_costs = target_workspace / "test-project" / "loom" / "loom_raw" / "energy" / "technology-data" / "costs.csv"
+                local_raw_costs = target_workspace / "loom" / "loom_raw" / "energy" / "technology-data" / "costs.csv"
                 local_raw_costs.parent.mkdir(parents=True, exist_ok=True)
                 (local_raw_costs.parent / "loom.md").write_text("Energy dataset", encoding="utf-8")
                 local_raw_costs.write_text("tech,cost\nsolar,999\n", encoding="utf-8")

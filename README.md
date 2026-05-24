@@ -1,207 +1,190 @@
-# loom workspace
+# loom-data
 
-This repository is configured as a `uv` workspace.
+`loom-data` turns large raw datasets into lightweight data cards so agents can search summaries first and download raw files only when needed.
 
-## Quick start
+The basic idea is simple:
 
-```bash
-uv sync
-```
+1. Raw source data is often too large for an AI agent to inspect directly without wasting time and tokens.
+2. Loom scans that raw data into compact cards and summaries under `loom/loom_explore`.
+3. Agents read those cards first, then fetch only the exact raw files they need.
 
-Install the client package in editable mode if you want both the Python API and the `loom` CLI on your shell path:
+## How to use
 
-```bash
-uv pip install -e .
-```
+Loom installs as the `loom-data` package, but the Python import is `loom` and the CLI command is `loom`.
 
-For PyPI installs, use the published project name `loom-data`:
+## 1. Install `uv`
 
-```bash
-pip install loom-data
-```
-
-Install the service package separately when you want the FastAPI sync service and the `loom-server` CLI:
+Recommended:
 
 ```bash
-uv pip install -e packages/loom-server
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Then you can use either form:
+Other install options are available in the [uv docs](https://docs.astral.sh/uv/).
+
+## 2. Install `loom-data`
+
+```bash
+uv add loom-data
+```
+
+If you want to use the CLI through the current project environment:
+
+```bash
+uv run loom --help
+```
+
+## 3. Initialize Loom in your project
+
+Run this in the project root:
+
+```bash
+uv run loom install
+```
+
+This now initializes Loom in `./loom/`.
+
+It also installs helper skill files for supported agents:
+
+- Codex
+- Claude
+- Cursor
+- Copilot
+
+Installed workspace layout:
+
+```text
+loom/
+  loom_raw/
+  loom_explore/
+  .loom/
+```
+
+## 4. Add raw data
+
+Put your source files into:
+
+```text
+loom/loom_raw/<workspace>/
+```
+
+Example:
+
+```text
+loom/loom_raw/energy/
+```
+
+You can copy files there manually.
+
+## 5. Generate data cards
+
+Scan one workspace:
+
+```bash
+uv run loom scan energy
+```
+
+Scan every workspace under `loom/loom_raw`:
+
+```bash
+uv run loom scan
+```
+
+You can also trigger this from chat with commands like:
+
+```text
+loom scan energy
+```
+
+or:
+
+```text
+loom scan
+```
+
+## 6. Confirm scan results
+
+Optional, but recommended after you review the generated summaries.
+
+Confirm one workspace:
+
+```bash
+uv run loom confirm energy
+```
+
+Confirm all pending explore changes:
+
+```bash
+uv run loom confirm
+```
+
+## 7. Find data
+
+Recommended workflow for agents:
+
+1. Read `loom/loom_explore` first.
+2. Search the generated cards and summaries.
+3. Decide which exact raw file is needed.
+4. Fetch that file on demand.
+
+## 8. Use raw data in Python
 
 ```python
 import loom
 
 path = loom.get("energy/technology-data/costs.csv")
+print(path)
 ```
+
+`loom.get(...)` reuses local cache when possible and only downloads the latest raw file when needed.
+
+## More commands
+
+Push one workspace:
 
 ```bash
-loom get energy/technology-data/costs.csv
-loom pull-raw energy
-loom set-api https://loom-api-free.onrender.com
+uv run loom push energy
 ```
 
-Raw cache and local Loom state now live under:
-
-```text
-test-project/loom/.loom/
-```
-
-Raw access behavior:
-
-- `loom.get("workspace/path/to/file")` first checks `test-project/loom/.loom/raw/...`
-- if the file is already available locally, Loom reuses it
-- if a matching local raw source exists under `test-project/loom/loom_raw` or `.raw_data`, Loom links that file into `.loom/raw`
-- otherwise Loom fetches only the missing latest file from the sync server
-- `loom.pull(...)` and `loom pull-raw ...` compare the remote raw manifest by path and hash, then refresh only changed or deleted cache entries
-
-## Install Loom Scan Fast Path
-
-Run this once to install the local Codex skill for `loom scan <topic>` and initialize the `loom_explore` git repo:
+Push all workspaces:
 
 ```bash
-uv run python scripts/loom.py install
+uv run loom push
 ```
 
-After that, Codex can recognize chat inputs like `loom scan energy` faster and route them to the scan flow directly.
-
-You can also run the scanner manually:
+Pull one workspace:
 
 ```bash
-uv run python scripts/loom.py scan energy
+uv run loom pull energy
 ```
 
-After scanning, review changes and confirm them into the local `loom_explore` history:
+Pull all workspaces:
 
 ```bash
-uv run python scripts/loom.py status energy
-uv run python scripts/loom.py confirm energy
+uv run loom pull
 ```
 
-## Sync Server
-
-The sync server now lives in the separate `packages/loom-server` package. It uses FastAPI for the API layer and PostgreSQL for revision metadata.
-
-By default, Loom expects a local PostgreSQL instance at:
-
-```text
-postgresql+psycopg2://loom@127.0.0.1:5432/loom
-```
-
-`loom-server init-db` and `loom-server run` will automatically create the `loom` database if the local PostgreSQL server is reachable and the database does not exist yet.
-
-Initialize the server schema:
+Pull raw files for one workspace:
 
 ```bash
-uv run python scripts/loom-server.py init-db
+uv run loom pull-raw energy
 ```
 
-Run the server:
+Set the default API endpoint for future CLI usage:
 
 ```bash
-uv run python scripts/loom-server.py run --storage-root .loom-server-storage
+uv run loom set-api https://loom-api-free.onrender.com
 ```
 
-The server also accepts:
+Online explore UI:
 
-- `--workspace-root` or `LOOM_SERVER_WORKSPACE_ROOT` to point at the repo root that contains `test-project/loom/loom_explore`
-- `--host` / `--port`, with `PORT` respected automatically on Render
-- `LOOM_SERVER_CORS_ORIGINS` as a comma-separated allowlist for browser clients; leave it unset to allow all origins
+- [https://loom-web.onrender.com](https://loom-web.onrender.com)
 
-Push and pull workspaces:
+## Notes
 
-```bash
-uv run python scripts/loom.py push energy --server-url http://127.0.0.1:8765
-uv run python scripts/loom.py pull energy --server-url http://127.0.0.1:8765
-uv run python scripts/loom.py pull-raw energy --server-url http://127.0.0.1:8765
-```
-
-For Python callers, Loom now supports a process-wide API base URL:
-
-```python
-import loom
-
-loom.set_base_url("https://loom-api-free.onrender.com")
-path = loom.get("energy/technology-data/costs.csv")
-```
-
-CLI users can keep using `--server-url ...` per command, or set `LOOM_SERVER_URL` once for the shell session.
-
-To persist a default server for future CLI commands on one machine, use:
-
-```bash
-loom set-api https://loom-api-free.onrender.com
-```
-
-Push and pull now use rebase-style workspace sync:
-
-- `push` will auto-confirm local pending changes, pull the latest remote revision when needed, rebase local confirmed work onto it, then continue the incremental push
-- `pull` will fast-forward when possible, or rebase local confirmed work onto the latest remote revision instead of blindly overwriting it
-- if a rebase conflict happens, Loom keeps conflict markers in `loom_explore`, returns a non-zero exit code, and asks you to resolve the files, run `loom confirm <workspace>`, then `loom push <workspace>`
-- normal `pull` / `push` raw refresh only updates files already present under `test-project/loom/.loom/raw/<workspace>/...`
-- `pull-raw` and `loom.pull(...)` still support intentional full raw cache refresh for a workspace
-- if local `test-project/loom/loom_raw/...` files disagree with the remote raw manifest, Loom will not overwrite them and will write `loom.raw-conflict.md` next to the nearest `loom.md`
-
-## Web App
-
-A React web app lives in [web/package.json](/Users/maxiao/Documents/code2/loom/web/package.json) and reads dataset summaries from the FastAPI server.
-
-Install and run it with `pnpm`:
-
-```bash
-cd /Users/maxiao/Documents/code2/loom/web
-pnpm install
-pnpm dev --host 127.0.0.1
-```
-
-Then open:
-
-```text
-http://127.0.0.1:4173
-```
-
-The Vite dev server proxies `/api` requests to the Loom FastAPI server on `http://127.0.0.1:8765`.
-
-For deployed builds, set `VITE_API_BASE_URL` to your public API origin, for example `https://loom-api-free.onrender.com`.
-
-## Render Deploy
-
-This repo now includes [render.yaml](/Users/maxiao/Documents/code2/loom/render.yaml) for the cheapest Render setup that fits this project:
-
-- `loom-web` as a Render static site that publishes `web/dist`
-- `loom-api` as a free Python web service
-- `loom-postgres` as a free Render Postgres database
-
-Deploy notes:
-
-- Render web services must bind `0.0.0.0:$PORT`, and the server now supports that automatically.
-- The API service uses a persistent disk mounted at `/var/data` for snapshot and raw object storage.
-- The static site build injects `VITE_API_BASE_URL`; verify the generated `onrender.com` API URL after the first deploy and update it if Render assigns a different hostname than `https://loom-api.onrender.com`.
-- Free Render Postgres is the cheapest option today, but Render's docs say it expires 30 days after creation and allows only one active free Postgres DB per workspace.
-
-## Workspace layout
-
-- Root workspace config: `pyproject.toml`
-- Client package source: `packages/loom/src/loom`
-- Service package source: `packages/loom-server/src/loom_server`
-
-## Publishing `loom-data`
-
-The import package remains `loom`, but the PyPI project name is `loom-data`.
-
-Build distributions:
-
-```bash
-uv build
-```
-
-Upload to TestPyPI first:
-
-```bash
-uv publish --publish-url https://test.pypi.org/legacy/
-```
-
-Upload to PyPI:
-
-```bash
-uv publish
-```
+- `loom-data` is the package name.
+- `loom` is the CLI command.
+- `import loom` is the Python API.
+- `loom scan` now works with or without a workspace name.
+- `loom install` now creates `./loom/` at the current project root.
+- `loom install` also prepares reusable agent skill files so other users can work with the same Loom workflow faster.

@@ -9,6 +9,7 @@ from .ops import (
     write_raw_cache_file,
 )
 from .paths import resolve_cache_root, resolve_local_raw_workspace_dir, resolve_loom_root, resolve_raw_cache_dir, resolve_workspace_root
+from .paths import list_local_raw_workspaces
 from .state import RawCacheState, load_raw_cache_state, save_raw_cache_state
 
 __all__ = [
@@ -17,6 +18,7 @@ __all__ = [
     "get_cached_raw_path",
     "is_cached_raw_path_current",
     "is_cached_raw_path_healthy",
+    "list_local_raw_workspaces",
     "list_cached_raw_paths",
     "load_raw_cache_state",
     "populate_raw_cache_from_local_source",

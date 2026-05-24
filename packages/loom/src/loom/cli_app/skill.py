@@ -1,33 +1,79 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 
-def install_skill(codex_home: Path, workspace_root: Path) -> Path:
-    skill_dir = codex_home / "skills" / "loom-scan"
-    skill_dir.mkdir(parents=True, exist_ok=True)
+SUPPORTED_AGENTS = ("codex", "claude", "cursor", "copilot")
+
+
+@dataclass(frozen=True)
+class InstalledSkill:
+    agent: str
+    path: Path
+
+
+def install_skills(codex_home: Path, workspace_root: Path, agents: tuple[str, ...] | None = None) -> tuple[InstalledSkill, ...]:
+    selected_agents = agents or SUPPORTED_AGENTS
+    installed: list[InstalledSkill] = []
     launcher = workspace_root / "scripts" / "loom.py"
-    (skill_dir / "SKILL.md").write_text(render_skill_markdown(workspace_root, launcher), encoding="utf-8")
-    return skill_dir
+    skill_markdown = render_skill_markdown(workspace_root, launcher)
+
+    for agent in selected_agents:
+        skill_dir = get_skill_dir(agent, codex_home, workspace_root)
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        (skill_dir / "SKILL.md").write_text(skill_markdown, encoding="utf-8")
+        installed.append(InstalledSkill(agent=agent, path=skill_dir))
+
+    return tuple(installed)
+
+
+def get_skill_dir(agent: str, codex_home: Path, workspace_root: Path) -> Path:
+    if agent == "codex":
+        return codex_home / "skills" / "loom-data"
+    if agent == "claude":
+        return workspace_root / ".claude" / "skills" / "loom-data"
+    if agent == "cursor":
+        return workspace_root / ".cursor" / "skills" / "loom-data"
+    if agent == "copilot":
+        return workspace_root / ".copilot" / "skills" / "loom-data"
+    raise ValueError(f"Unsupported agent: {agent}")
 
 
 def render_skill_markdown(workspace_root: Path, launcher: Path) -> str:
-    return f"""# loom-scan
+    return f"""---
+name: loom-data
+description: Use the local Loom CLI and Python package to scan raw datasets into data cards, confirm explore changes, sync workspaces, and fetch raw files on demand.
+---
 
-Use this skill when the user types a Loom request in chat, especially commands like `loom scan energy` or `loom confirm energy`.
+# loom-data
 
-## Purpose
+Use this skill when the user needs to work with data stored in the local Loom workspace.
 
-- Provide a fast path for Loom scan requests without doing broad repo exploration first.
-- Generate dataset summaries under `test-project/loom/loom_explore/<topic>`.
-- Track confirmed loom_explore changes in a dedicated git repository.
-- Route sync commands like `loom push energy` and `loom pull energy` into the local CLI fast path.
-- Prefer reading `loom_explore` outputs after the scan instead of reading raw CSV files directly.
+## Why Loom
 
-## Fast Path
+- Raw datasets are often too large for an agent to inspect directly without wasting time and tokens.
+- Loom first turns raw files into compact data cards under `loom/loom_explore`.
+- Agents should search those cards first, then fetch only the specific raw files they need.
 
-1. Do not browse unrelated files first.
-2. Do not read anything under `wiki/discard`.
-3. Run `uv run python {launcher} route "loom scan <topic>" --workspace-root {workspace_root}`.
-4. Or run `uv run python {launcher} scan <topic> --workspace-root {workspace_root}`.
+## Workspace layout
+
+- Raw data: `loom/loom_raw/<workspace>`
+- Generated cards: `loom/loom_explore/<workspace>`
+- Local raw cache: `loom/.loom/raw/<workspace>`
+
+## Fast path
+
+1. Prefer reading `loom/loom_explore` before opening raw CSV files.
+2. To scan one workspace, run `uv run python {launcher} scan <workspace> --workspace-root {workspace_root}`.
+3. To scan every workspace, run `uv run python {launcher} scan --workspace-root {workspace_root}`.
+4. After reviewing changes, confirm them with `uv run python {launcher} confirm <workspace> --workspace-root {workspace_root}`.
+5. For raw file access, use `import loom` and call `loom.get("workspace/path/to/file")`.
+
+## Useful commands
+
+- `uv run python {launcher} status [workspace] --workspace-root {workspace_root}`
+- `uv run python {launcher} push [workspace] --workspace-root {workspace_root}`
+- `uv run python {launcher} pull [workspace] --workspace-root {workspace_root}`
+- `uv run python {launcher} pull-raw [workspace] --workspace-root {workspace_root}`
 """

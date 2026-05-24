@@ -15,7 +15,10 @@ def print_status_summary(workspace_root: Path | str, workspace: str) -> None:
     print("Pending changes:")
     for entry in status.entries:
         print(f"{entry.code} {entry.path}")
-    print(f"Confirm with: uv run python {launcher} confirm {workspace}")
+    confirm_command = f"uv run python {launcher} confirm"
+    if workspace:
+        confirm_command = f"{confirm_command} {workspace}"
+    print(f"Confirm with: {confirm_command}")
 
 
 def print_workspace_status(workspace_root: Path | str, workspace: str | None) -> None:

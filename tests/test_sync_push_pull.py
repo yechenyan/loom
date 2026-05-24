@@ -25,7 +25,7 @@ class SyncPushPullTest(LoomTestCase):
             with TestClient(app) as client, self.patch_server(client):
                 self.assertIn("Pushed workspace: energy", self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])[1])
                 self.assertIn("Pulled workspace: energy", self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])[1])
-                profile = json.loads((workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "technology-data" / "profile.json").read_text(encoding="utf-8"))
+                profile = json.loads((workspace_b / "loom" / "loom_explore" / "energy" / "technology-data" / "profile.json").read_text(encoding="utf-8"))
                 self.assertEqual(profile["csv_count"], 1)
 
     def test_second_push_and_pull_use_incremental_deltas(self) -> None:

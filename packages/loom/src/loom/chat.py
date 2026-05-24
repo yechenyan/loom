@@ -13,13 +13,13 @@ class LoomCommandRequest:
 
 @dataclass(frozen=True)
 class ScanRequest:
-    topic: str
+    topic: str | None
     original_message: str
 
 
 _WORKSPACE_PATTERN = r"[a-z0-9][a-z0-9_./-]*"
 _SCAN_PATTERNS = (
-    re.compile(rf"(?i)(?:^|\b)loom\s+scan\s+(?P<workspace>{_WORKSPACE_PATTERN})\b"),
+    re.compile(rf"(?i)(?:^|\b)loom\s+scan(?:\s+(?P<workspace>{_WORKSPACE_PATTERN}))?\b"),
     re.compile(rf"(?i)(?:^|\b)(?:please\s+)?scan\s+(?P<workspace>{_WORKSPACE_PATTERN})\s+with\s+loom\b"),
 )
 _GENERIC_PATTERNS = (
@@ -33,12 +33,12 @@ def is_fast_scan_command(message: str) -> bool:
         return False
 
     lowered = normalized.lower()
-    return lowered.startswith("loom scan ") and len(normalized) > len("loom scan ")
+    return lowered == "loom scan" or (lowered.startswith("loom scan ") and len(normalized) > len("loom scan "))
 
 
 def parse_chat_request(message: str) -> ScanRequest | None:
     command_request = parse_loom_command(message)
-    if command_request is None or command_request.command != "scan" or command_request.workspace is None:
+    if command_request is None or command_request.command != "scan":
         return None
     return ScanRequest(topic=command_request.workspace, original_message=message)
 
@@ -75,15 +75,17 @@ def parse_loom_command(message: str) -> LoomCommandRequest | None:
 
 def _parse_fast_scan_command(normalized: str, original_message: str) -> LoomCommandRequest | None:
     parts = normalized.split(None, 2)
-    if len(parts) < 3:
+    if len(parts) < 2:
         return None
 
     if parts[0].lower() != "loom" or parts[1].lower() != "scan":
         return None
 
-    workspace = parts[2].strip().strip("/").split()[0]
-    if not re.fullmatch(_WORKSPACE_PATTERN, workspace, flags=re.IGNORECASE):
-        return None
+    workspace = None
+    if len(parts) == 3:
+        workspace = parts[2].strip().strip("/").split()[0]
+        if not re.fullmatch(_WORKSPACE_PATTERN, workspace, flags=re.IGNORECASE):
+            return None
 
     return LoomCommandRequest(command="scan", workspace=workspace, original_message=original_message)
 

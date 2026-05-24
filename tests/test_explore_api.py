@@ -20,7 +20,7 @@ class ExploreApiTest(unittest.TestCase):
     def test_lists_explore_workspace_and_dataset_profiles(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir)
-            dataset_dir = workspace_root / "test-project" / "loom" / "loom_raw" / "energy" / "technology-data"
+            dataset_dir = workspace_root / "loom" / "loom_raw" / "energy" / "technology-data"
             dataset_dir.mkdir(parents=True)
             (dataset_dir / "loom.md").write_text(
                 "source: https://example.com/energy\n\nEnergy dataset",

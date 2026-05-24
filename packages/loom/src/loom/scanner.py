@@ -8,6 +8,7 @@ from .chat import parse_chat_request
 from .csv_profile import profile_csv
 from .datacard import write_dataset_card, write_topic_index
 from .explore_repo import ensure_explore_repo
+from .raw_cache_support import list_local_raw_workspaces, resolve_loom_root
 from .scan_state import load_scan_state, save_scan_state
 from .scan_support import (
     build_dataset_scan_manifest,
@@ -42,7 +43,7 @@ def scan_topic_from_chat(message: str, workspace_root: Path | str) -> ScanResult
 
 def scan_topic_to_explore(topic: str, workspace_root: Path | str) -> ScanResult:
     root = Path(workspace_root)
-    raw_topic_dir = root / "test-project" / "loom" / "loom_raw" / topic
+    raw_topic_dir = resolve_loom_root(root) / "loom_raw" / topic
     explore_root_dir = ensure_explore_repo(root)
     explore_topic_dir = explore_root_dir / topic
 
@@ -118,3 +119,7 @@ def scan_topic_to_explore(topic: str, workspace_root: Path | str) -> ScanResult:
         skipped_dataset_dirs=tuple(skipped_dirs),
         missing_dataset_dirs=tuple(sorted(missing_dataset_dirs)),
     )
+
+
+def scan_all_topics_to_explore(workspace_root: Path | str) -> tuple[ScanResult, ...]:
+    return tuple(scan_topic_to_explore(topic, workspace_root) for topic in list_local_raw_workspaces(workspace_root))

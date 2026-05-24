@@ -27,11 +27,18 @@ def _add_install_parser(subparsers: argparse._SubParsersAction[argparse.Argument
     install_parser = subparsers.add_parser("install", help="Install the Loom Codex skill and initialize loom_explore git tracking.")
     install_parser.add_argument("--codex-home", type=Path, default=Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")))
     install_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
+    install_parser.add_argument(
+        "--agent",
+        dest="agents",
+        action="append",
+        choices=("codex", "claude", "cursor", "copilot"),
+        help="Install the Loom helper skill for one or more AI agents. Defaults to all supported agents.",
+    )
 
 
 def _add_scan_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     scan_parser = subparsers.add_parser("scan", help="Scan a Loom topic from loom_raw into loom_explore.")
-    scan_parser.add_argument("topic")
+    scan_parser.add_argument("topic", nargs="?")
     scan_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
     route_parser = subparsers.add_parser("route", help="Parse a chat message and run loom scan if it matches.")
@@ -43,12 +50,12 @@ def _add_data_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
     set_api_parser = subparsers.add_parser("set-api", help="Persist the default Loom sync server base URL for future CLI commands.")
     set_api_parser.add_argument("base_url")
 
-    get_parser = subparsers.add_parser("get", help="Ensure one raw file exists under test-project/loom/.loom/raw and print its local path.")
+    get_parser = subparsers.add_parser("get", help="Ensure one raw file exists under loom/.loom/raw and print its local path.")
     get_parser.add_argument("resource")
     get_parser.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     get_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
-    pull_raw_parser = subparsers.add_parser("pull-raw", help="Pull latest raw files into test-project/loom/.loom/raw.")
+    pull_raw_parser = subparsers.add_parser("pull-raw", help="Pull latest raw files into loom/.loom/raw.")
     pull_raw_parser.add_argument("workspace", nargs="?")
     pull_raw_parser.add_argument("--server-url", default=DEFAULT_SERVER_URL)
     pull_raw_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())

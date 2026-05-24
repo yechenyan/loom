@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 
+from .raw_cache_support import resolve_loom_root
+
 
 @dataclass(frozen=True)
 class RepoStatusEntry:
@@ -17,8 +19,7 @@ class RepoStatus:
     scope: str | None
     entries: tuple[RepoStatusEntry, ...]
 def get_explore_repo_dir(workspace_root: Path | str) -> Path:
-    root = Path(workspace_root)
-    return root / "test-project" / "loom" / "loom_explore"
+    return resolve_loom_root(workspace_root) / "loom_explore"
 def ensure_explore_repo(workspace_root: Path | str) -> Path:
     repo_dir = get_explore_repo_dir(workspace_root)
     repo_dir.mkdir(parents=True, exist_ok=True)

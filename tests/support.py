@@ -41,7 +41,7 @@ class LoomTestCase(unittest.TestCase):
         return dict(response.json())
 
     def write_energy_dataset(self, workspace_root: Path, *, cost_value: str = "10", include_legacy_file: bool = False) -> Path:
-        dataset_dir = workspace_root / "test-project" / "loom" / "loom_raw" / "energy" / "technology-data"
+        dataset_dir = workspace_root / "loom" / "loom_raw" / "energy" / "technology-data"
         dataset_dir.mkdir(parents=True, exist_ok=True)
         (dataset_dir / "loom.md").write_text("source: https://example.com/energy\n\nEnergy dataset", encoding="utf-8")
         raw_file = dataset_dir / "costs.csv"

@@ -28,14 +28,22 @@ class InstallCommandTest(unittest.TestCase):
             )
 
             self.assertEqual(exit_code, 0)
-            skill_path = codex_home / "skills" / "loom-scan" / "SKILL.md"
+            skill_path = codex_home / "skills" / "loom-data" / "SKILL.md"
             self.assertTrue(skill_path.exists())
             content = skill_path.read_text(encoding="utf-8")
-            self.assertIn("loom scan <topic>", content)
+            self.assertIn("scan <workspace>", content)
+            self.assertIn("scan every workspace", content)
             self.assertIn(str(workspace_root / "scripts" / "loom.py"), content)
 
-            explore_git_dir = workspace_root / "test-project" / "loom" / "loom_explore" / ".git"
+            explore_git_dir = workspace_root / "loom" / "loom_explore" / ".git"
             self.assertTrue(explore_git_dir.exists())
+
+            claude_skill_path = workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md"
+            cursor_skill_path = workspace_root / ".cursor" / "skills" / "loom-data" / "SKILL.md"
+            copilot_skill_path = workspace_root / ".copilot" / "skills" / "loom-data" / "SKILL.md"
+            self.assertTrue(claude_skill_path.exists())
+            self.assertTrue(cursor_skill_path.exists())
+            self.assertTrue(copilot_skill_path.exists())
 
 
 if __name__ == "__main__":

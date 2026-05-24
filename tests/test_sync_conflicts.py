@@ -23,8 +23,8 @@ class SyncConflictTest(LoomTestCase):
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
-                readme_a = workspace_a / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
-                readme_b = workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                readme_a = workspace_a / "loom" / "loom_explore" / "energy" / "README.md"
+                readme_b = workspace_b / "loom" / "loom_explore" / "energy" / "README.md"
                 readme_a.write_text("remote pull conflict\n", encoding="utf-8")
                 readme_b.write_text("local pull conflict\n", encoding="utf-8")
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
@@ -47,8 +47,8 @@ class SyncConflictTest(LoomTestCase):
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
-                readme_a = workspace_a / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
-                readme_b = workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                readme_a = workspace_a / "loom" / "loom_explore" / "energy" / "README.md"
+                readme_b = workspace_b / "loom" / "loom_explore" / "energy" / "README.md"
                 readme_a.write_text("remote change\n", encoding="utf-8")
                 readme_b.write_text("local change\n", encoding="utf-8")
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
@@ -59,4 +59,4 @@ class SyncConflictTest(LoomTestCase):
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_b)])
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_c), "--server-url", "http://loom.test"])
-                self.assertEqual((workspace_c / "test-project" / "loom" / "loom_explore" / "energy" / "README.md").read_text(encoding="utf-8"), "resolved change\n")
+                self.assertEqual((workspace_c / "loom" / "loom_explore" / "energy" / "README.md").read_text(encoding="utf-8"), "resolved change\n")
