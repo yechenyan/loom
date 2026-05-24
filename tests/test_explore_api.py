@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import json
 import sys
 from pathlib import Path
@@ -13,11 +14,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.scanner import scan_topic_to_explore
+from loom.workspace_snapshot import build_workspace_snapshot, encode_workspace_files
 from loom_server.sync_server import create_app
 
 
 class ExploreApiTest(unittest.TestCase):
-    def test_lists_explore_workspace_and_dataset_profiles(self) -> None:
+    def test_lists_explore_workspace_and_dataset_profiles_from_synced_revision(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir)
             dataset_dir = workspace_root / "loom" / "loom_raw" / "energy" / "technology-data"
@@ -38,9 +40,26 @@ class ExploreApiTest(unittest.TestCase):
             )
 
             scan_topic_to_explore("energy", workspace_root)
+            snapshot = build_workspace_snapshot(workspace_root, "energy")
             app = create_app(f"sqlite:///{workspace_root / 'loom.db'}", workspace_root / ".loom-server-storage")
 
             with TestClient(app) as client:
+                push_response = client.post(
+                    "/api/workspaces/energy/push",
+                    json={
+                        "base_revision": None,
+                        "local_commit": None,
+                        "tree_hash": snapshot.tree_hash,
+                        "message": "Push workspace energy",
+                        "files": encode_workspace_files(snapshot.files),
+                        "deleted_paths": [],
+                        "raw_files": [],
+                        "raw_deleted_paths": [],
+                    },
+                )
+                self.assertEqual(push_response.status_code, 200)
+                shutil.rmtree(workspace_root / "loom" / "loom_explore")
+
                 response = client.get("/api/explore/workspaces")
                 self.assertEqual(response.status_code, 200)
                 payload = response.json()

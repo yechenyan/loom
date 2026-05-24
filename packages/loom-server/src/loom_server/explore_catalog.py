@@ -22,16 +22,7 @@ class ExploreCatalog:
             if not workspace_dir.is_dir() or workspace_dir.name.startswith("."):
                 continue
 
-            readme_path = workspace_dir / "README.md"
-            datasets = self._list_datasets(workspace_dir)
-            workspaces.append(
-                {
-                    "name": workspace_dir.name,
-                    "dataset_count": len(datasets),
-                    "datasets": datasets,
-                    "readme_markdown": readme_path.read_text(encoding="utf-8") if readme_path.exists() else "",
-                }
-            )
+            workspaces.append(build_workspace_payload_from_file_map(workspace_dir.name, _load_workspace_file_map(workspace_dir)))
         return workspaces
 
     def get_workspace(self, workspace: str) -> dict[str, object] | None:
@@ -39,51 +30,78 @@ class ExploreCatalog:
         if not workspace_dir.exists() or not workspace_dir.is_dir():
             return None
 
-        readme_path = workspace_dir / "README.md"
-        datasets = self._list_datasets(workspace_dir)
-        return {
-            "name": workspace,
-            "dataset_count": len(datasets),
-            "readme_markdown": readme_path.read_text(encoding="utf-8") if readme_path.exists() else "",
-            "datasets": datasets,
-        }
-
-    def _list_datasets(self, workspace_dir: Path) -> list[dict[str, object]]:
-        datasets: list[dict[str, object]] = []
-        for profile_path in sorted(workspace_dir.rglob("profile.json")):
-            if profile_path.parent == workspace_dir:
-                continue
-
-            profile = json.loads(profile_path.read_text(encoding="utf-8"))
-            overview_path = profile_path.parent / "overview.md"
-            dataset_relative_dir = profile_path.parent.relative_to(workspace_dir).as_posix()
-            csv_profiles = self._load_csv_profiles(profile_path.parent, profile)
-
-            datasets.append(
-                {
-                    "name": profile_path.parent.name,
-                    "path": dataset_relative_dir,
-                    "overview_markdown": overview_path.read_text(encoding="utf-8") if overview_path.exists() else "",
-                    "source": profile.get("source", {}),
-                    "csv_count": profile.get("csv_count", len(csv_profiles)),
-                    "total_row_count": profile.get("total_row_count", 0),
-                    "csv_files": profile.get("csv_files", []),
-                    "csv_profiles": csv_profiles,
-                }
-            )
-        return datasets
+        return build_workspace_payload_from_file_map(workspace, _load_workspace_file_map(workspace_dir))
 
     def _load_csv_profiles(self, dataset_dir: Path, dataset_profile: dict[str, object]) -> list[dict[str, object]]:
-        csv_profiles: list[dict[str, object]] = []
-        for csv_entry in dataset_profile.get("csv_files", []):
-            profile_name = csv_entry.get("profile_file")
-            if not isinstance(profile_name, str):
-                continue
-            csv_profile_path = dataset_dir / profile_name
-            if not csv_profile_path.exists():
-                continue
-            csv_profiles.append(json.loads(csv_profile_path.read_text(encoding="utf-8")))
-        return csv_profiles
+        return _load_csv_profiles_from_file_map(
+            {
+                path.relative_to(dataset_dir).as_posix(): path.read_text(encoding="utf-8")
+                for path in sorted(dataset_dir.rglob("*"))
+                if path.is_file()
+            },
+            dataset_profile,
+        )
+
+
+def build_workspace_payload_from_file_map(workspace: str, file_map: dict[str, str]) -> dict[str, object]:
+    datasets = _list_datasets_from_file_map(file_map)
+    return {
+        "name": workspace,
+        "dataset_count": len(datasets),
+        "readme_markdown": file_map.get("README.md", ""),
+        "datasets": datasets,
+    }
+
+
+def _load_workspace_file_map(workspace_dir: Path) -> dict[str, str]:
+    file_map: dict[str, str] = {}
+    for path in sorted(workspace_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        file_map[path.relative_to(workspace_dir).as_posix()] = path.read_text(encoding="utf-8")
+    return file_map
+
+
+def _list_datasets_from_file_map(file_map: dict[str, str]) -> list[dict[str, object]]:
+    datasets: list[dict[str, object]] = []
+    for relative_path in sorted(file_map):
+        if relative_path == "profile.json" or not relative_path.endswith("/profile.json"):
+            continue
+
+        dataset_relative_dir = relative_path[: -len("/profile.json")]
+        profile = json.loads(file_map[relative_path])
+        dataset_file_map = {
+            path[len(dataset_relative_dir) + 1 :]: content
+            for path, content in file_map.items()
+            if path.startswith(f"{dataset_relative_dir}/")
+        }
+        csv_profiles = _load_csv_profiles_from_file_map(dataset_file_map, profile)
+        datasets.append(
+            {
+                "name": Path(dataset_relative_dir).name,
+                "path": dataset_relative_dir,
+                "overview_markdown": file_map.get(f"{dataset_relative_dir}/overview.md", ""),
+                "source": profile.get("source", {}),
+                "csv_count": profile.get("csv_count", len(csv_profiles)),
+                "total_row_count": profile.get("total_row_count", 0),
+                "csv_files": profile.get("csv_files", []),
+                "csv_profiles": csv_profiles,
+            }
+        )
+    return datasets
+
+
+def _load_csv_profiles_from_file_map(file_map: dict[str, str], dataset_profile: dict[str, object]) -> list[dict[str, object]]:
+    csv_profiles: list[dict[str, object]] = []
+    for csv_entry in dataset_profile.get("csv_files", []):
+        profile_name = csv_entry.get("profile_file")
+        if not isinstance(profile_name, str):
+            continue
+        profile_content = file_map.get(profile_name)
+        if profile_content is None:
+            continue
+        csv_profiles.append(json.loads(profile_content))
+    return csv_profiles
 
 
 def build_explore_catalog(workspace_root: Path | str) -> ExploreCatalog:

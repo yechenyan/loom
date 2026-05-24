@@ -8,6 +8,7 @@ import uuid
 
 import sqlalchemy as sa
 
+from ..explore_catalog import build_workspace_payload_from_file_map
 from .errors import WorkspaceConflictError, WorkspaceNotFoundError
 from .helpers import blob_storage_path, compute_tree_hash, raw_blob_storage_path
 from .queries import get_raw_current_manifest, get_raw_object_row, get_revision_manifest, get_revision_tree_hash, get_workspace_row, raw_object_exists
@@ -36,6 +37,26 @@ class LoomSyncService:
             if workspace_row is None:
                 raise WorkspaceNotFoundError(f"Remote workspace `{workspace}` was not found.")
             return {"workspace": workspace, "head_revision_id": workspace_row["head_revision_id"]}
+
+    def list_explore_workspaces(self) -> list[dict[str, object]]:
+        with self.engine.begin() as connection:
+            rows = connection.execute(
+                sa.select(workspaces_table.c.name, workspaces_table.c.head_revision_id)
+                .where(workspaces_table.c.head_revision_id.is_not(None))
+                .order_by(workspaces_table.c.name)
+            ).mappings()
+            return [
+                build_workspace_payload_from_file_map(str(row["name"]), _load_workspace_text_file_map(connection, self.storage_root, str(row["head_revision_id"])))
+                for row in rows
+                if row["head_revision_id"]
+            ]
+
+    def get_explore_workspace(self, workspace: str) -> dict[str, object]:
+        with self.engine.begin() as connection:
+            workspace_row = get_workspace_row(connection, workspace)
+            if workspace_row is None or workspace_row["head_revision_id"] is None:
+                raise WorkspaceNotFoundError(f"Remote workspace `{workspace}` was not found.")
+            return build_workspace_payload_from_file_map(workspace, _load_workspace_text_file_map(connection, self.storage_root, str(workspace_row["head_revision_id"])))
 
     def get_missing_raw_hashes(self, hashes: list[str]) -> list[str]:
         normalized_hashes = sorted({item for item in hashes if item})
@@ -192,3 +213,15 @@ def _filter_raw_manifest_with_existing_objects(connection: sa.Connection, storag
 
 def _raw_object_storage_exists(storage_root: Path, raw_object_row: dict[str, object]) -> bool:
     return (storage_root / str(raw_object_row["storage_path"])).exists()
+
+
+def _load_workspace_text_file_map(connection: sa.Connection, storage_root: Path, revision_id: str) -> dict[str, str]:
+    manifest = _filter_manifest_with_existing_blobs(storage_root, get_revision_manifest(connection, revision_id))
+    file_map: dict[str, str] = {}
+    for path, file_entry in manifest.items():
+        file_path = storage_root / str(file_entry["storage_path"])
+        try:
+            file_map[path] = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+    return file_map

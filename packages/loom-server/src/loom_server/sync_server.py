@@ -7,7 +7,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from .explore_catalog import build_explore_catalog
 from .sync_service import LoomSyncService, WorkspaceConflictError, WorkspaceNotFoundError
 
 
@@ -65,7 +64,7 @@ def create_app(
     app.state.sync_service = service
     default_workspace_root = Path(storage_root).resolve().parent
     resolved_workspace_root = Path(workspace_root if workspace_root is not None else default_workspace_root).resolve()
-    app.state.explore_catalog = build_explore_catalog(resolved_workspace_root)
+    app.state.workspace_root = resolved_workspace_root
 
     @app.get("/health")
     def health() -> dict[str, bool]:
@@ -92,14 +91,14 @@ def create_app(
 
     @app.get("/api/explore/workspaces")
     def list_explore_workspaces() -> dict[str, list[dict[str, object]]]:
-        return {"workspaces": app.state.explore_catalog.list_workspaces()}
+        return {"workspaces": service.list_explore_workspaces()}
 
     @app.get("/api/explore/workspaces/{workspace}")
     def get_explore_workspace(workspace: str) -> dict[str, object]:
-        workspace_payload = app.state.explore_catalog.get_workspace(workspace)
-        if workspace_payload is None:
-            raise HTTPException(status_code=404, detail=f"Explore workspace `{workspace}` was not found.")
-        return workspace_payload
+        try:
+            return service.get_explore_workspace(workspace)
+        except WorkspaceNotFoundError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
 
     @app.get("/api/workspaces/{workspace}")
     def get_workspace_head(workspace: str) -> dict[str, str | None]:
