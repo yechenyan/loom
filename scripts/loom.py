@@ -5,9 +5,9 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "packages" / "loom_scan" / "src"))
+sys.path.insert(0, str(ROOT / "packages" / "loom" / "src"))
 
-from loom_scan.cli import main
+from loom.cli import main
 
 
 if __name__ == "__main__":

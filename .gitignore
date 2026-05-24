@@ -8,3 +8,5 @@ __pycache__/
 dist/
 build/
 test-project/
+web/node_modules/
+.loom-server-storage/

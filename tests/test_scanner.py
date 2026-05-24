@@ -5,12 +5,13 @@ import sys
 from pathlib import Path
 import tempfile
 import textwrap
+import time
 import unittest
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom_scan" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
-from loom_scan.scanner import scan_topic_from_chat, scan_topic_to_explore
+from loom.scanner import scan_topic_from_chat, scan_topic_to_explore
 
 
 class ScannerTest(unittest.TestCase):
@@ -58,6 +59,8 @@ class ScannerTest(unittest.TestCase):
             self.assertEqual(profile["source"]["summary"], "Energy dataset")
             self.assertEqual(profile["source"]["key_sites"], [])
             self.assertEqual(profile["csv_files"][0]["summary"], "This table appears to describe records organized around `tech`, `cost`.")
+            self.assertEqual(profile["scan_manifest"]["csv_files"][0]["topic_relative_path"], "technology-data/costs.csv")
+            self.assertIn("sha256", profile["scan_manifest"]["csv_files"][0])
 
             overview_text = overview_path.read_text(encoding="utf-8")
             self.assertIn("## Source", overview_text)
@@ -94,6 +97,59 @@ class ScannerTest(unittest.TestCase):
 
             overview_path = workspace / "test-project" / "loom" / "loom_explore" / "energy" / "parent" / "overview.md"
             self.assertTrue(overview_path.exists())
+
+    def test_skips_unchanged_dataset_and_keeps_missing_dataset_outputs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir)
+            raw_energy = workspace / "test-project" / "loom" / "loom_raw" / "energy"
+            alpha = raw_energy / "alpha"
+            beta = raw_energy / "beta"
+            alpha.mkdir(parents=True)
+            beta.mkdir(parents=True)
+
+            (alpha / "loom.md").write_text("alpha dataset", encoding="utf-8")
+            (beta / "loom.md").write_text("beta dataset", encoding="utf-8")
+            (alpha / "alpha.csv").write_text("name,value\nx,1\n", encoding="utf-8")
+            (beta / "beta.csv").write_text("name,value\ny,2\n", encoding="utf-8")
+
+            first_result = scan_topic_to_explore("energy", workspace)
+            self.assertEqual(len(first_result.rebuilt_dataset_dirs), 2)
+            self.assertEqual(len(first_result.skipped_dataset_dirs), 0)
+
+            alpha_profile = (
+                workspace / "test-project" / "loom" / "loom_explore" / "energy" / "alpha" / "profile.json"
+            )
+            alpha_profile_mtime = alpha_profile.stat().st_mtime_ns
+
+            time.sleep(0.02)
+            second_result = scan_topic_to_explore("energy", workspace)
+            self.assertEqual(len(second_result.rebuilt_dataset_dirs), 0)
+            self.assertEqual(len(second_result.skipped_dataset_dirs), 2)
+            self.assertEqual(alpha_profile.stat().st_mtime_ns, alpha_profile_mtime)
+
+            (beta / "loom.md").unlink()
+
+            time.sleep(0.02)
+            third_result = scan_topic_to_explore("energy", workspace)
+            self.assertEqual(third_result.missing_dataset_dirs, ("beta",))
+
+            topic_readme = (
+                workspace / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+            ).read_text(encoding="utf-8")
+            self.assertIn("`beta` [missing]", topic_readme)
+
+            manifest = json.loads(
+                (
+                    workspace / "test-project" / "loom" / "loom_explore" / "energy" / "scan-manifest.json"
+                ).read_text(encoding="utf-8")
+            )
+            beta_entry = next(entry for entry in manifest["datasets"] if entry["relative_dir"] == "beta")
+            self.assertEqual(beta_entry["status"], "missing")
+            self.assertTrue(
+                (
+                    workspace / "test-project" / "loom" / "loom_explore" / "energy" / "beta" / "beta.card.md"
+                ).exists()
+            )
 
 
 if __name__ == "__main__":

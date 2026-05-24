@@ -26,6 +26,7 @@ def get_explore_repo_dir(workspace_root: Path | str) -> Path:
 def ensure_explore_repo(workspace_root: Path | str) -> Path:
     repo_dir = get_explore_repo_dir(workspace_root)
     repo_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_repo_gitignore(repo_dir)
 
     git_dir = repo_dir / ".git"
     if git_dir.exists():
@@ -80,7 +81,33 @@ def confirm_changes(workspace_root: Path | str, scope: str | None = None, messag
         ],
     )
 
-    return _extract_commit_hash(result.stdout) or "unknown"
+    return get_repo_head_commit(workspace_root)
+
+
+def get_repo_head_commit(workspace_root: Path | str) -> str | None:
+    repo_dir = ensure_explore_repo(workspace_root)
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_dir,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def list_workspaces(workspace_root: Path | str) -> tuple[str, ...]:
+    repo_dir = ensure_explore_repo(workspace_root)
+    workspaces: list[str] = []
+    for child in sorted(repo_dir.iterdir()):
+        if not child.is_dir():
+            continue
+        if child.name.startswith("."):
+            continue
+        workspaces.append(child.name)
+    return tuple(workspaces)
 
 
 def _default_commit_message(scope: str | None) -> str:
@@ -94,6 +121,23 @@ def _extract_commit_hash(output: str) -> str | None:
         if len(token) >= 7 and all(character in "0123456789abcdef" for character in token.lower()):
             return token.strip("[]")
     return None
+
+
+def _ensure_repo_gitignore(repo_dir: Path) -> None:
+    gitignore_path = repo_dir / ".gitignore"
+    required_lines = [".DS_Store"]
+
+    existing_lines: list[str] = []
+    if gitignore_path.exists():
+        existing_lines = gitignore_path.read_text(encoding="utf-8").splitlines()
+
+    updated_lines = list(existing_lines)
+    for line in required_lines:
+        if line not in updated_lines:
+            updated_lines.append(line)
+
+    if updated_lines != existing_lines:
+        gitignore_path.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
 
 
 def _run_git(repo_dir: Path, args: list[str]) -> subprocess.CompletedProcess[str]:

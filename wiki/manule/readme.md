@@ -1,6 +1,6 @@
 # Loom Manual
 
-这个文档说明当前项目怎么使用，重点是 `loom scan` 相关流程。
+这个文档说明当前项目怎么使用，覆盖 `loom scan`、同步服务器和原始数据读取缓存流程。
 
 ## 项目目的
 
@@ -14,10 +14,12 @@
   原始数据目录。
 - `test-project/loom/loom_explore/<topic>`
   扫描后生成的摘要目录。
-- `packages/loom_scan`
-  `loom scan` 的核心实现。
-- `scripts/loom_scan.py`
-  命令行入口。
+- `test-project/loom/.loom/raw/<workspace>`
+  原始数据本地缓存目录。
+- `packages/loom`
+  当前 `loom` Python package 和 CLI 的核心实现。
+- `scripts/loom.py`
+  当前命令行入口。
 
 ## 数据集识别规则
 
@@ -27,7 +29,20 @@
 
 ## 安装
 
-先执行一次安装命令：
+先同步依赖：
+
+```bash
+cd /Users/maxiao/Documents/code2/loom
+uv sync
+```
+
+如果你希望直接在 shell 里使用 `loom` 命令和 `import loom`：
+
+```bash
+uv pip install -e .
+```
+
+再执行一次安装命令：
 
 ```bash
 uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py install
@@ -75,7 +90,48 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py scan energy
 - 把结果写入 `loom_explore/energy`
 - 输出当前 workspace 下有哪些文件发生了变化
 
-### 3. 查看和确认变更
+### 3. 读取原始数据
+
+项目提供了 Python API 和 CLI 来读取原始数据，并缓存到 `test-project/loom/.loom/raw`。
+
+Python:
+
+```python
+import loom
+
+local_path = loom.get("energy/technology-data/costs.csv")
+```
+
+CLI:
+
+```bash
+loom get energy/technology-data/costs.csv
+```
+
+处理规则：
+
+- 第一次读取时，先检查 `test-project/loom/.loom/raw/...` 是否已经有缓存。
+- 如果本地 `test-project/loom/loom_raw/...` 或 `.raw_data/...` 里已经有同路径文件，就直接在 `.loom/raw` 下建立 link。
+- 如果本地 link 或缓存不存在，再从 Loom sync server 下载最新文件。
+- 第二次读取同一个文件时，直接复用本地缓存。
+
+如果你想一次把一个 workspace 的原始数据缓存下来：
+
+```python
+import loom
+
+loom.pull("energy")
+```
+
+或者：
+
+```bash
+loom pull-raw energy --server-url http://127.0.0.1:8765
+```
+
+`loom.pull(...)` / `loom pull-raw ...` 会按远端 raw manifest 的 `path + sha256` 增量检查 `.loom/raw` 是否最新，只刷新变更或删除的文件，不会下载历史版本。
+
+### 4. 查看和确认变更
 
 扫描完成后，可以先看本地改动：
 
@@ -91,7 +147,91 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py confirm energy
 
 这会把 `loom_explore/energy` 下当前待确认的文件提交到 `loom_explore` 这个独立 git 仓库里，作为本地确认版本。
 
-### 4. 检查聊天消息是否会触发扫描
+### 5. 运行同步服务器
+
+服务端使用 FastAPI，版本元数据存在 PostgreSQL，文件快照存在服务器本地存储目录。
+
+默认数据库连接是本地 PostgreSQL：
+
+```text
+postgresql+psycopg2://loom@127.0.0.1:5432/loom
+```
+
+如果本地 PostgreSQL 可连接，`server-init-db` 和 `server-run` 会自动创建 `loom` 这个数据库。
+
+先初始化数据库表：
+
+```bash
+uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py server-init-db
+```
+
+然后启动服务：
+
+```bash
+uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py server-run --storage-root /tmp/loom-server-storage
+```
+
+默认 API 地址是：
+
+```text
+http://127.0.0.1:8765
+```
+
+### 6. Push / Pull workspace
+
+把本地某个 workspace 推到服务器：
+
+```bash
+uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py push energy --server-url http://127.0.0.1:8765
+```
+
+从服务器拉回某个 workspace：
+
+```bash
+uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py pull energy --server-url http://127.0.0.1:8765
+```
+
+如果不写 workspace，`push` 会推送本地所有一级 workspace，`pull` 会拉取服务器当前所有 workspace。
+
+当前 `push/pull` 的冲突策略很简单，都是直接覆盖：
+
+- `push` 时如果本地 workspace 还有待确认文件，会先自动做一次本地 confirm，然后把最新内容推到服务器。
+- `pull` 时会直接用服务器 snapshot 覆盖本地 workspace，然后自动生成一条本地 confirm 提交记录这次拉取。
+
+如果还要同步原始数据缓存：
+
+```bash
+uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py pull-raw energy --server-url http://127.0.0.1:8765
+```
+
+这条命令只会把最新 raw 文件同步到 `test-project/loom/.loom/raw/energy/...`，不会拉历史数据。
+
+### 7. Web 查看数据
+
+项目里已经有一个 React web app，可以直接浏览 `loom_explore` 的 workspace、dataset 和 CSV profile。
+
+前提：
+
+- Loom FastAPI server 运行在 `http://127.0.0.1:8765`
+- 前端使用 `pnpm`
+
+启动前端：
+
+```bash
+cd /Users/maxiao/Documents/code2/loom/web
+pnpm install
+pnpm dev --host 127.0.0.1
+```
+
+打开：
+
+```text
+http://127.0.0.1:4173
+```
+
+前端会通过 Vite proxy 把 `/api` 请求转发到 `http://127.0.0.1:8765`。
+
+### 8. 检查聊天消息是否会触发扫描
 
 如果想测试某条聊天消息会不会触发：
 
@@ -132,8 +272,11 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py route "loom sca
 ## 推荐使用方式
 
 - 在聊天中优先使用 `loom scan <topic>` 这种标准格式。
+- 如果只想读原始数据，优先用 `loom.get(...)` 或 `loom pull-raw ...`，不要手动维护 `.loom/raw`。
 - 安装后，`loom_explore` 会由独立 git 仓库跟踪。
 - 扫描完成后，先看变更，再执行 `loom confirm <topic>`。
+- `push` 前要求当前 workspace 没有待确认改动。
+- `pull` 前要求当前 workspace 没有本地未同步改动。
 - 扫描完成后，后续 agent 优先读取 `loom_explore`。
 - 除非 `loom_explore` 缺失或明显不完整，否则不要优先去看 `loom_raw`。
 - 不要读取 `wiki/discard` 里的内容作为正式实现依据。
@@ -142,17 +285,25 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py route "loom sca
 
 相关代码位置：
 
-- [chat.py](/Users/maxiao/Documents/code2/loom/packages/loom_scan/src/loom_scan/chat.py)
-- [scanner.py](/Users/maxiao/Documents/code2/loom/packages/loom_scan/src/loom_scan/scanner.py)
-- [csv_profile.py](/Users/maxiao/Documents/code2/loom/packages/loom_scan/src/loom_scan/csv_profile.py)
-- [datacard.py](/Users/maxiao/Documents/code2/loom/packages/loom_scan/src/loom_scan/datacard.py)
-- [cli.py](/Users/maxiao/Documents/code2/loom/packages/loom_scan/src/loom_scan/cli.py)
-- [explore_repo.py](/Users/maxiao/Documents/code2/loom/packages/loom_scan/src/loom_scan/explore_repo.py)
-- [scripts/loom_scan.py](/Users/maxiao/Documents/code2/loom/scripts/loom_scan.py)
+- [chat.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/chat.py)
+- [scanner.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/scanner.py)
+- [csv_profile.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/csv_profile.py)
+- [datacard.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/datacard.py)
+- [data.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/data.py)
+- [raw_cache.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/raw_cache.py)
+- [cli.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/cli.py)
+- [explore_repo.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/explore_repo.py)
+- [sync_client.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/sync_client.py)
+- [sync_server.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/sync_server.py)
+- [sync_service.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/sync_service.py)
+- [sync_state.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/sync_state.py)
+- [workspace_snapshot.py](/Users/maxiao/Documents/code2/loom/packages/loom/src/loom/workspace_snapshot.py)
 - [scripts/loom.py](/Users/maxiao/Documents/code2/loom/scripts/loom.py)
+- [web/src/App.jsx](/Users/maxiao/Documents/code2/loom/web/src/App.jsx)
+- [web/src/styles.css](/Users/maxiao/Documents/code2/loom/web/src/styles.css)
 
 常用测试命令：
 
 ```bash
-PYTHONPATH=packages/loom_scan/src python -m unittest discover -s tests
+python -m pytest tests/test_raw_access.py tests/test_sync_workflow.py tests/test_cli_workflow.py
 ```

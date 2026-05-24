@@ -8,6 +8,39 @@ This repository is configured as a `uv` workspace.
 uv sync
 ```
 
+Install the package in editable mode if you want both the Python API and the `loom` CLI on your shell path:
+
+```bash
+uv pip install -e .
+```
+
+Then you can use either form:
+
+```python
+import loom
+
+path = loom.get("energy/technology-data/costs.csv")
+```
+
+```bash
+loom get energy/technology-data/costs.csv
+loom pull-raw energy
+```
+
+Raw cache and local Loom state now live under:
+
+```text
+test-project/loom/.loom/
+```
+
+Raw access behavior:
+
+- `loom.get("workspace/path/to/file")` first checks `test-project/loom/.loom/raw/...`
+- if the file is already available locally, Loom reuses it
+- if a matching local raw source exists under `test-project/loom/loom_raw` or `.raw_data`, Loom links that file into `.loom/raw`
+- otherwise Loom fetches only the missing latest file from the sync server
+- `loom.pull(...)` and `loom pull-raw ...` compare the remote raw manifest by path and hash, then refresh only changed or deleted cache entries
+
 ## Install Loom Scan Fast Path
 
 Run this once to install the local Codex skill for `loom scan <topic>` and initialize the `loom_explore` git repo:
@@ -30,6 +63,64 @@ After scanning, review changes and confirm them into the local `loom_explore` hi
 uv run python scripts/loom.py status energy
 uv run python scripts/loom.py confirm energy
 ```
+
+## Sync Server
+
+The sync server uses FastAPI for the API layer and PostgreSQL for revision metadata.
+
+By default, Loom expects a local PostgreSQL instance at:
+
+```text
+postgresql+psycopg2://loom@127.0.0.1:5432/loom
+```
+
+`server-init-db` and `server-run` will automatically create the `loom` database if the local PostgreSQL server is reachable and the database does not exist yet.
+
+Initialize the server schema:
+
+```bash
+uv run python scripts/loom.py server-init-db
+```
+
+Run the server:
+
+```bash
+uv run python scripts/loom.py server-run --storage-root .loom-server-storage
+```
+
+Push and pull workspaces:
+
+```bash
+uv run python scripts/loom.py push energy --server-url http://127.0.0.1:8765
+uv run python scripts/loom.py pull energy --server-url http://127.0.0.1:8765
+uv run python scripts/loom.py pull-raw energy --server-url http://127.0.0.1:8765
+```
+
+Push and pull currently use simple overwrite semantics:
+
+- `push` will auto-confirm local pending changes, then overwrite the remote workspace head with a new revision.
+- `pull` will overwrite the local workspace with the server snapshot, then auto-confirm that pulled state into the local `loom_explore` git history.
+- `pull-raw` will refresh `test-project/loom/.loom/raw/<workspace>/...` against the latest raw manifest and download only missing files.
+
+## Web App
+
+A React web app lives in [web/package.json](/Users/maxiao/Documents/code2/loom/web/package.json) and reads dataset summaries from the FastAPI server.
+
+Install and run it with `pnpm`:
+
+```bash
+cd /Users/maxiao/Documents/code2/loom/web
+pnpm install
+pnpm dev --host 127.0.0.1
+```
+
+Then open:
+
+```text
+http://127.0.0.1:4173
+```
+
+The Vite dev server proxies `/api` requests to the Loom FastAPI server on `http://127.0.0.1:8765`.
 
 ## Workspace layout
 

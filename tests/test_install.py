@@ -6,9 +6,9 @@ import tempfile
 import unittest
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom_scan" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
-from loom_scan.cli import main
+from loom.cli import main
 
 
 class InstallCommandTest(unittest.TestCase):

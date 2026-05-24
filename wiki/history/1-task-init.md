@@ -23,16 +23,16 @@ test-project/loom/loom_raw/energy/technology-data/loom.md 这类 loom.md 文件�
 
 ## Completed Work
 
-- Added the `packages/loom_scan` package to parse chat messages like `loom scan energy` and route them into a scan flow.
+- Added the `packages/loom` package to parse chat messages like `loom scan energy` and route them into a scan flow.
 - Implemented dataset discovery based on `loom.md`, including parent-child dataset boundary handling.
 - Implemented CSV profiling with row counts, column lists, head/tail samples, null handling, inferred type counts, numeric stats, and top values.
 - Implemented generation of `loom_explore` outputs including topic-level README, dataset overview, CSV cards, and machine-readable profile JSON files.
 - Added a fast-path parser for the standard `loom scan <topic>` chat format so it can be recognized without broad repo exploration first.
 - Added a local install command and CLI entrypoint:
-  `uv run python /Users/maxiao/Documents/code2/loom/scripts/loom_scan.py install`
+  `uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py install`
 - Added manual scan and route commands:
-  `uv run python /Users/maxiao/Documents/code2/loom/scripts/loom_scan.py scan energy`
-  `uv run python /Users/maxiao/Documents/code2/loom/scripts/loom_scan.py route "loom scan energy" --workspace-root /Users/maxiao/Documents/code2/loom`
+  `uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py scan energy`
+  `uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py route "loom scan energy" --workspace-root /Users/maxiao/Documents/code2/loom`
 - Added and updated tests for chat parsing, CSV profiling, scanner behavior, and install flow.
 - Documented the project usage in `wiki/manule/readme.md`.
 

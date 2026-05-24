@@ -7,9 +7,9 @@ import textwrap
 import unittest
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom_scan" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
-from loom_scan.csv_profile import profile_csv
+from loom.csv_profile import profile_csv
 
 
 class CsvProfileTest(unittest.TestCase):

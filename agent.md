@@ -3,6 +3,8 @@
 ## Documentation
 
 - Every time a new feature, command, install step, usage pattern, or workflow change is added, update [wiki/manule/readme.md](/Users/maxiao/Documents/code2/loom/wiki/manule/readme.md).
+- Keep the README practical and onboarding-friendly so a new teammate can use it as the primary guide for installation, running the project, and the main workflows.
+- If behavior changes, also update the README's output descriptions and recommended workflow.
 
 ## Task Completion Workflow
 

@@ -5,9 +5,9 @@ from pathlib import Path
 import unittest
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom_scan" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
-from loom_scan.chat import is_fast_scan_command, parse_chat_request
+from loom.chat import is_fast_scan_command, parse_chat_request, parse_loom_command
 
 
 class ParseChatRequestTest(unittest.TestCase):
@@ -35,6 +35,27 @@ class ParseChatRequestTest(unittest.TestCase):
 
     def test_ignores_non_scan_messages(self) -> None:
         self.assertIsNone(parse_chat_request("show me energy"))
+
+    def test_parses_confirm_command(self) -> None:
+        request = parse_loom_command("loom confirm energy")
+        self.assertIsNotNone(request)
+        assert request is not None
+        self.assertEqual(request.command, "confirm")
+        self.assertEqual(request.workspace, "energy")
+
+    def test_parses_push_without_workspace(self) -> None:
+        request = parse_loom_command("loom push")
+        self.assertIsNotNone(request)
+        assert request is not None
+        self.assertEqual(request.command, "push")
+        self.assertIsNone(request.workspace)
+
+    def test_parses_pull_command(self) -> None:
+        request = parse_loom_command("loom pull energy")
+        self.assertIsNotNone(request)
+        assert request is not None
+        self.assertEqual(request.command, "pull")
+        self.assertEqual(request.workspace, "energy")
 
 
 if __name__ == "__main__":

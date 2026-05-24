@@ -11,6 +11,7 @@ def write_dataset_card(
     raw_dataset_dir: Path,
     loom_text: str,
     csv_profiles: list[dict[str, Any]],
+    scan_manifest: dict[str, Any] | None = None,
 ) -> None:
     dataset_dir.mkdir(parents=True, exist_ok=True)
     legacy_datacard = dataset_dir / "datacard.md"
@@ -29,6 +30,8 @@ def write_dataset_card(
         "csv_files": csv_entries,
         "csv_profiles": csv_profiles,
     }
+    if scan_manifest is not None:
+        profile_payload["scan_manifest"] = scan_manifest
     (dataset_dir / "profile.json").write_text(
         json.dumps(profile_payload, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
@@ -68,8 +71,12 @@ def write_topic_index(
     else:
         for dataset in datasets:
             relative_dir = dataset["relative_dir"]
+            status = str(dataset.get("status", "current"))
+            status_suffix = ""
+            if status != "current":
+                status_suffix = f" [{status}]"
             lines.append(
-                f"- `{relative_dir}`: {dataset['csv_file_count']} CSV files, "
+                f"- `{relative_dir}`{status_suffix}: {dataset['csv_file_count']} CSV files, "
                 f"{dataset['row_count']} total rows in profiled CSVs"
             )
             lines.append(f"  overview: `{relative_dir}/overview.md`")
