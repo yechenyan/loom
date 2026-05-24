@@ -31,11 +31,14 @@ class InstallCommandTest(unittest.TestCase):
             skill_path = codex_home / "skills" / "loom-data" / "SKILL.md"
             self.assertTrue(skill_path.exists())
             content = skill_path.read_text(encoding="utf-8")
+            self.assertIn("Loom installs as the `loom-data` package", content)
             self.assertIn("Read `loom/loom_explore` first.", content)
-            self.assertIn("Search the generated cards and summaries", content)
             self.assertIn("loom get energy/technology-data/costs.csv", content)
+            self.assertIn("Run `uv run loom get <workspace/path/to/file>` immediately, or use `loom.get(\"workspace/path/to/file\")` in Python.", content)
+            self.assertIn("Do not spend turns rediscovering how Loom fetch works", content)
             self.assertIn('local_path = loom.get("energy/technology-data/costs.csv")', content)
-            self.assertIn("scan <workspace>", content)
+            self.assertIn("Push one workspace: `uv run loom push energy`", content)
+            self.assertIn("Pull raw files for one workspace: `uv run loom pull-raw energy`", content)
             self.assertIn(str(workspace_root / "scripts" / "loom.py"), content)
 
             explore_git_dir = workspace_root / "loom" / "loom_explore" / ".git"

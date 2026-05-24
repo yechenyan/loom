@@ -53,11 +53,16 @@ description: Use the local Loom CLI and Python package to scan raw datasets into
 
 Use this skill when the user needs to work with data stored in the local Loom workspace.
 
-## Why Loom
+## How to use
 
-- Raw datasets are often too large for an agent to inspect directly without wasting time and tokens.
-- Loom first turns raw files into compact data cards under `loom/loom_explore`.
-- Agents should search those cards first, then fetch only the specific raw files they need.
+Loom installs as the `loom-data` package, but the Python import is `loom` and the CLI command is `loom`.
+
+Loom is designed for large local datasets:
+
+1. Keep raw source files under `loom/loom_raw`.
+2. Scan them into compact cards under `loom/loom_explore`.
+3. Let agents search summaries first.
+4. Download raw files only when they are actually needed.
 
 ## Workspace layout
 
@@ -65,12 +70,22 @@ Use this skill when the user needs to work with data stored in the local Loom wo
 - Generated cards: `loom/loom_explore/<workspace>`
 - Local raw cache: `loom/.loom/raw/<workspace>`
 
-## Fast path
+## Default lookup workflow
+
+When the user asks for a value inside a dataset, use this path by default:
 
 1. Read `loom/loom_explore` first.
-2. Search the generated cards and summaries before touching raw files.
-3. Decide which exact raw file is needed.
-4. Fetch that file on demand with `loom get workspace/path/to/file` or `loom.get("workspace/path/to/file")`.
+2. Search the generated cards and summaries only long enough to identify the exact raw file path.
+3. Run `uv run loom get <workspace/path/to/file>` immediately, or use `loom.get("workspace/path/to/file")` in Python.
+4. Search or parse the fetched local file to answer the question.
+
+Do not spend turns rediscovering how Loom fetch works by reading `README.md`, `pyproject.toml`, or `scripts/loom.py` unless `loom get` actually fails.
+
+Example lookup:
+
+- User asks: `查找 OCGT 成本`
+- First fetch: `uv run loom get energy2/technology-data/costs_2035.csv`
+- Then inspect the fetched CSV for `OCGT`
 
 Example:
 
@@ -82,17 +97,45 @@ import loom
 local_path = loom.get("energy/technology-data/costs.csv")
 ```
 
-## Scan and confirm
+`loom.get(...)` prefers local cache and fetches only the file you ask for.
 
-1. To scan one workspace, run `uv run python {launcher} scan <workspace> --workspace-root {workspace_root}`.
-2. To scan every workspace, run `uv run python {launcher} scan --workspace-root {workspace_root}`.
-3. After reviewing changes, confirm them with `uv run python {launcher} confirm <workspace> --workspace-root {workspace_root}`.
+## Common commands
 
-## Useful commands
+- Scan one workspace: `uv run loom scan energy`
+- Scan all workspaces: `uv run loom scan`
+- Confirm one workspace: `uv run loom confirm energy`
+- Confirm all pending explore changes: `uv run loom confirm`
+
+If you need the workspace-root-aware launcher, use:
+
+- `uv run python {launcher} scan <workspace> --workspace-root {workspace_root}`
+- `uv run python {launcher} scan --workspace-root {workspace_root}`
+- `uv run python {launcher} confirm <workspace> --workspace-root {workspace_root}`
+- `uv run python {launcher} confirm --workspace-root {workspace_root}`
+
+## More commands
+
+- Push one workspace: `uv run loom push energy`
+- Push all workspaces: `uv run loom push`
+- Pull one workspace: `uv run loom pull energy`
+- Pull all workspaces: `uv run loom pull`
+- Pull raw files for one workspace: `uv run loom pull-raw energy`
+- Set the default API endpoint: `uv run loom set-api https://loom-api-free.onrender.com`
+
+Workspace-root-aware variants:
 
 - `uv run python {launcher} status [workspace] --workspace-root {workspace_root}`
 - `uv run python {launcher} get workspace/path/to/file --workspace-root {workspace_root}`
 - `uv run python {launcher} push [workspace] --workspace-root {workspace_root}`
 - `uv run python {launcher} pull [workspace] --workspace-root {workspace_root}`
 - `uv run python {launcher} pull-raw [workspace] --workspace-root {workspace_root}`
+- `uv run python {launcher} set-api <url> --workspace-root {workspace_root}`
+
+## Notes
+
+- `loom-data` is the package name.
+- `loom` is the CLI command.
+- `import loom` is the Python API.
+- `loom scan` works with or without a workspace name.
+- `loom install` creates `./loom/` at the current project root.
 """
