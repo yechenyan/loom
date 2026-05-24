@@ -2,6 +2,12 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 
+[manifest]
+members = [
+    "loom-data",
+    "loom-server",
+]
+
 [[package]]
 name = "annotated-doc"
 version = "0.0.4"
@@ -144,9 +150,19 @@ wheels = [
 ]
 
 [[package]]
-name = "loom"
+name = "loom-data"
 version = "0.1.0"
 source = { editable = "." }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = []
+
+[[package]]
+name = "loom-server"
+version = "0.1.0"
+source = { editable = "packages/loom-server" }
 dependencies = [
     { name = "fastapi" },
     { name = "psycopg2-binary" },
@@ -161,9 +177,6 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.0,<3.0.0" },
     { name = "uvicorn", specifier = ">=0.47.0,<1.0.0" },
 ]
-
-[package.metadata.requires-dev]
-dev = []
 
 [[package]]
 name = "psycopg2-binary"

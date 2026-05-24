@@ -3,10 +3,28 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "loom"
+name = "loom-data"
 version = "0.1.0"
+description = "Python client and CLI for Loom workspace data and sync workflows."
 requires-python = ">=3.12"
+readme = "packages/loom/README.md"
+keywords = ["cli", "data", "loom", "sync", "workspace"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/yechenyan/loom"
+Repository = "https://github.com/yechenyan/loom"
+Issues = "https://github.com/yechenyan/loom/issues"
 
 [project.scripts]
 loom = "loom.cli:main"

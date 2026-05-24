@@ -14,6 +14,12 @@ Install the client package in editable mode if you want both the Python API and 
 uv pip install -e .
 ```
 
+For PyPI installs, use the published project name `loom-data`:
+
+```bash
+pip install loom-data
+```
+
 Install the service package separately when you want the FastAPI sync service and the `loom-server` CLI:
 
 ```bash
@@ -136,3 +142,25 @@ The Vite dev server proxies `/api` requests to the Loom FastAPI server on `http:
 - Root workspace config: `pyproject.toml`
 - Client package source: `packages/loom/src/loom`
 - Service package source: `packages/loom-server/src/loom_server`
+
+## Publishing `loom-data`
+
+The import package remains `loom`, but the PyPI project name is `loom-data`.
+
+Build distributions:
+
+```bash
+uv build
+```
+
+Upload to TestPyPI first:
+
+```bash
+uv publish --publish-url https://test.pypi.org/legacy/
+```
+
+Upload to PyPI:
+
+```bash
+uv publish
+```
