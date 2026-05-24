@@ -6,7 +6,7 @@ import tempfile
 import textwrap
 import unittest
 
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-server" / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.csv_profile import profile_csv

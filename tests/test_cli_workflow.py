@@ -9,7 +9,7 @@ import textwrap
 import unittest
 from contextlib import redirect_stdout
 
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-server" / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.cli import DEFAULT_DATABASE_URL, main

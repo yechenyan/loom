@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 import unittest
 
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-server" / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.chat import is_fast_scan_command, parse_chat_request, parse_loom_command

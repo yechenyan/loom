@@ -8,10 +8,16 @@ This repository is configured as a `uv` workspace.
 uv sync
 ```
 
-Install the package in editable mode if you want both the Python API and the `loom` CLI on your shell path:
+Install the client package in editable mode if you want both the Python API and the `loom` CLI on your shell path:
 
 ```bash
 uv pip install -e .
+```
+
+Install the service package separately when you want the FastAPI sync service and the `loom-server` CLI:
+
+```bash
+uv pip install -e packages/loom-server
 ```
 
 Then you can use either form:
@@ -66,7 +72,7 @@ uv run python scripts/loom.py confirm energy
 
 ## Sync Server
 
-The sync server uses FastAPI for the API layer and PostgreSQL for revision metadata.
+The sync server now lives in the separate `packages/loom-server` package. It uses FastAPI for the API layer and PostgreSQL for revision metadata.
 
 By default, Loom expects a local PostgreSQL instance at:
 
@@ -74,18 +80,18 @@ By default, Loom expects a local PostgreSQL instance at:
 postgresql+psycopg2://loom@127.0.0.1:5432/loom
 ```
 
-`server-init-db` and `server-run` will automatically create the `loom` database if the local PostgreSQL server is reachable and the database does not exist yet.
+`loom-server init-db` and `loom-server run` will automatically create the `loom` database if the local PostgreSQL server is reachable and the database does not exist yet.
 
 Initialize the server schema:
 
 ```bash
-uv run python scripts/loom.py server-init-db
+uv run python scripts/loom-server.py init-db
 ```
 
 Run the server:
 
 ```bash
-uv run python scripts/loom.py server-run --storage-root .loom-server-storage
+uv run python scripts/loom-server.py run --storage-root .loom-server-storage
 ```
 
 Push and pull workspaces:
@@ -128,4 +134,5 @@ The Vite dev server proxies `/api` requests to the Loom FastAPI server on `http:
 ## Workspace layout
 
 - Root workspace config: `pyproject.toml`
-- Package member: `test-project/loom`
+- Client package source: `packages/loom/src/loom`
+- Service package source: `packages/loom-server/src/loom_server`

@@ -18,8 +18,12 @@
   原始数据本地缓存目录。
 - `packages/loom`
   当前 `loom` Python package 和 CLI 的核心实现。
+- `packages/loom-server`
+  当前同步服务端实现。
 - `scripts/loom.py`
   当前命令行入口。
+- `scripts/loom-server.py`
+  当前服务端命令行入口。
 
 ## 数据集识别规则
 
@@ -40,6 +44,12 @@ uv sync
 
 ```bash
 uv pip install -e .
+```
+
+如果你也要启动同步服务，额外安装服务端包：
+
+```bash
+uv pip install -e packages/loom-server
 ```
 
 再执行一次安装命令：
@@ -157,18 +167,18 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py confirm energy
 postgresql+psycopg2://loom@127.0.0.1:5432/loom
 ```
 
-如果本地 PostgreSQL 可连接，`server-init-db` 和 `server-run` 会自动创建 `loom` 这个数据库。
+如果本地 PostgreSQL 可连接，`loom-server init-db` 和 `loom-server run` 会自动创建 `loom` 这个数据库。
 
 先初始化数据库表：
 
 ```bash
-uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py server-init-db
+uv run python /Users/maxiao/Documents/code2/loom/scripts/loom-server.py init-db
 ```
 
 然后启动服务：
 
 ```bash
-uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py server-run --storage-root /tmp/loom-server-storage
+uv run python /Users/maxiao/Documents/code2/loom/scripts/loom-server.py run --storage-root /tmp/loom-server-storage
 ```
 
 默认 API 地址是：

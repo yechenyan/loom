@@ -9,11 +9,11 @@ import unittest
 
 from fastapi.testclient import TestClient
 
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-server" / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.scanner import scan_topic_to_explore
-from loom.sync_server import create_app
+from loom_server.sync_server import create_app
 
 
 class ExploreApiTest(unittest.TestCase):

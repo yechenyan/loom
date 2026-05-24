@@ -5,6 +5,7 @@
 - Every time a new feature, command, install step, usage pattern, or workflow change is added, update [wiki/manule/readme.md](/Users/maxiao/Documents/code2/loom/wiki/manule/readme.md).
 - Keep the README practical and onboarding-friendly so a new teammate can use it as the primary guide for installation, running the project, and the main workflows.
 - If behavior changes, also update the README's output descriptions and recommended workflow.
+- `wiki/history/` files are reference material only. If any history note disagrees with the current implementation, the code is the source of truth.
 
 ## Task Completion Workflow
 
@@ -15,3 +16,8 @@
 
 
 ## Do not read wiki/discard
+
+## Codebase Rules
+
+- No code file may exceed 200 lines.
+- Remove unused files instead of keeping dead code or generated leftovers in the repo.

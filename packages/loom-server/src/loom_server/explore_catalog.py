@@ -4,7 +4,9 @@ from dataclasses import dataclass
 import json
 from pathlib import Path
 
-from .explore_repo import get_explore_repo_dir
+
+def get_explore_repo_dir(workspace_root: Path | str) -> Path:
+    return Path(workspace_root) / "test-project" / "loom" / "loom_explore"
 
 
 @dataclass(frozen=True)
@@ -13,6 +15,9 @@ class ExploreCatalog:
 
     def list_workspaces(self) -> list[dict[str, object]]:
         workspaces: list[dict[str, object]] = []
+        if not self.workspace_root.exists():
+            return workspaces
+
         for workspace_dir in sorted(self.workspace_root.iterdir()):
             if not workspace_dir.is_dir() or workspace_dir.name.startswith("."):
                 continue

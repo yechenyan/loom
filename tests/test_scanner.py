@@ -8,7 +8,7 @@ import textwrap
 import time
 import unittest
 
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-server" / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.scanner import scan_topic_from_chat, scan_topic_to_explore
