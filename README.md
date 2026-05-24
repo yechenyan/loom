@@ -96,11 +96,14 @@ uv run python scripts/loom.py pull energy --server-url http://127.0.0.1:8765
 uv run python scripts/loom.py pull-raw energy --server-url http://127.0.0.1:8765
 ```
 
-Push and pull currently use simple overwrite semantics:
+Push and pull now use rebase-style workspace sync:
 
-- `push` will auto-confirm local pending changes, then overwrite the remote workspace head with a new revision.
-- `pull` will overwrite the local workspace with the server snapshot, then auto-confirm that pulled state into the local `loom_explore` git history.
-- `pull-raw` will refresh `test-project/loom/.loom/raw/<workspace>/...` against the latest raw manifest and download only missing files.
+- `push` will auto-confirm local pending changes, pull the latest remote revision when needed, rebase local confirmed work onto it, then continue the incremental push
+- `pull` will fast-forward when possible, or rebase local confirmed work onto the latest remote revision instead of blindly overwriting it
+- if a rebase conflict happens, Loom keeps conflict markers in `loom_explore`, returns a non-zero exit code, and asks you to resolve the files, run `loom confirm <workspace>`, then `loom push <workspace>`
+- normal `pull` / `push` raw refresh only updates files already present under `test-project/loom/.loom/raw/<workspace>/...`
+- `pull-raw` and `loom.pull(...)` still support intentional full raw cache refresh for a workspace
+- if local `test-project/loom/loom_raw/...` files disagree with the remote raw manifest, Loom will not overwrite them and will write `loom.raw-conflict.md` next to the nearest `loom.md`
 
 ## Web App
 

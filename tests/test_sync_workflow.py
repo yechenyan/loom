@@ -410,6 +410,294 @@ class SyncWorkflowTest(unittest.TestCase):
                     self.assertIn(("copies/costs-copy.csv", "deleted"), history_actions)
                     self.assertIn(("copies/renamed-costs.csv", "created"), history_actions)
 
+    def test_push_auto_rebases_local_commits_before_sync(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace_a = root / "workspace-a"
+            workspace_b = root / "workspace-b"
+            workspace_c = root / "workspace-c"
+            database_path = root / "loom.db"
+            storage_root = root / "server-storage"
+
+            self._write_energy_dataset(workspace_a, cost_value="10")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["scan", "energy", "--workspace-root", str(workspace_a)]), 0)
+                self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+
+            app = create_app(f"sqlite:///{database_path}", storage_root)
+            with TestClient(app) as client:
+                server_url = "http://loom.test"
+                with mock.patch.object(
+                    sync_client,
+                    "_request_json",
+                    side_effect=lambda method, url, payload=None: self._call_app(client, method, url, payload),
+                ):
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            0,
+                        )
+
+                    local_note = (
+                        workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
+                    )
+                    local_note.parent.mkdir(parents=True, exist_ok=True)
+                    local_note.write_text("local note\n", encoding="utf-8")
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_b)]), 0)
+
+                    self._write_energy_dataset(workspace_a, cost_value="42")
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["scan", "energy", "--workspace-root", str(workspace_a)]), 0)
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+
+                    push_stdout = io.StringIO()
+                    with redirect_stdout(push_stdout):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            0,
+                        )
+                    self.assertIn("Pushed workspace: energy", push_stdout.getvalue())
+
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_c), "--server-url", server_url]),
+                            0,
+                        )
+
+                    remote_note = (
+                        workspace_c / "test-project" / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
+                    )
+                    remote_profile = (
+                        workspace_c
+                        / "test-project"
+                        / "loom"
+                        / "loom_explore"
+                        / "energy"
+                        / "technology-data"
+                        / "profile.json"
+                    )
+                    self.assertEqual(remote_note.read_text(encoding="utf-8"), "local note\n")
+                    self.assertIn('"csv_count": 1', remote_profile.read_text(encoding="utf-8"))
+
+    def test_pull_rebases_local_commits_when_workspace_has_confirmed_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace_a = root / "workspace-a"
+            workspace_b = root / "workspace-b"
+            database_path = root / "loom.db"
+            storage_root = root / "server-storage"
+
+            self._write_energy_dataset(workspace_a, cost_value="10")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["scan", "energy", "--workspace-root", str(workspace_a)]), 0)
+                self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+
+            app = create_app(f"sqlite:///{database_path}", storage_root)
+            with TestClient(app) as client:
+                server_url = "http://loom.test"
+                with mock.patch.object(
+                    sync_client,
+                    "_request_json",
+                    side_effect=lambda method, url, payload=None: self._call_app(client, method, url, payload),
+                ):
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            0,
+                        )
+
+                    local_note = (
+                        workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
+                    )
+                    local_note.parent.mkdir(parents=True, exist_ok=True)
+                    local_note.write_text("local note from pull\n", encoding="utf-8")
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_b)]), 0)
+
+                    self._write_energy_dataset(workspace_a, cost_value="33")
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["scan", "energy", "--workspace-root", str(workspace_a)]), 0)
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+
+                    pull_stdout = io.StringIO()
+                    with redirect_stdout(pull_stdout):
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            0,
+                        )
+                    self.assertIn("Pulled workspace: energy", pull_stdout.getvalue())
+                    self.assertIn("Changed: yes", pull_stdout.getvalue())
+
+                    rebased_note = (
+                        workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "notes" / "local.md"
+                    )
+                    rebased_profile = (
+                        workspace_b
+                        / "test-project"
+                        / "loom"
+                        / "loom_explore"
+                        / "energy"
+                        / "technology-data"
+                        / "profile.json"
+                    )
+                    self.assertEqual(rebased_note.read_text(encoding="utf-8"), "local note from pull\n")
+                    self.assertIn('"csv_count": 1', rebased_profile.read_text(encoding="utf-8"))
+
+                    status_stdout = io.StringIO()
+                    with redirect_stdout(status_stdout):
+                        self.assertEqual(main(["status", "energy", "--workspace-root", str(workspace_b)]), 0)
+                    self.assertIn("No pending changes.", status_stdout.getvalue())
+                    self.assertIn("Pending rebase revision:", status_stdout.getvalue())
+
+    def test_pull_stops_on_conflict_and_waits_for_confirm(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace_a = root / "workspace-a"
+            workspace_b = root / "workspace-b"
+            database_path = root / "loom.db"
+            storage_root = root / "server-storage"
+
+            self._write_energy_dataset(workspace_a, cost_value="10")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["scan", "energy", "--workspace-root", str(workspace_a)]), 0)
+                self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+
+            app = create_app(f"sqlite:///{database_path}", storage_root)
+            with TestClient(app) as client:
+                server_url = "http://loom.test"
+                with mock.patch.object(
+                    sync_client,
+                    "_request_json",
+                    side_effect=lambda method, url, payload=None: self._call_app(client, method, url, payload),
+                ):
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            0,
+                        )
+
+                    readme_a = workspace_a / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                    readme_b = workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                    readme_a.write_text("remote pull conflict\n", encoding="utf-8")
+                    readme_b.write_text("local pull conflict\n", encoding="utf-8")
+
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_b)]), 0)
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+
+                    pull_stdout = io.StringIO()
+                    with redirect_stdout(pull_stdout):
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            1,
+                        )
+                    self.assertIn("Conflict detected during rebase", pull_stdout.getvalue())
+                    self.assertIn("loom confirm energy", pull_stdout.getvalue())
+                    self.assertIn("<<<<<<< LOCAL:README.md", readme_b.read_text(encoding="utf-8"))
+
+                    status_stdout = io.StringIO()
+                    with redirect_stdout(status_stdout):
+                        self.assertEqual(main(["status", "energy", "--workspace-root", str(workspace_b)]), 0)
+                    self.assertIn("Pending rebase revision:", status_stdout.getvalue())
+
+    def test_push_stops_on_conflict_then_allows_confirm_and_push(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace_a = root / "workspace-a"
+            workspace_b = root / "workspace-b"
+            workspace_c = root / "workspace-c"
+            database_path = root / "loom.db"
+            storage_root = root / "server-storage"
+
+            self._write_energy_dataset(workspace_a, cost_value="10")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["scan", "energy", "--workspace-root", str(workspace_a)]), 0)
+                self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+
+            app = create_app(f"sqlite:///{database_path}", storage_root)
+            with TestClient(app) as client:
+                server_url = "http://loom.test"
+                with mock.patch.object(
+                    sync_client,
+                    "_request_json",
+                    side_effect=lambda method, url, payload=None: self._call_app(client, method, url, payload),
+                ):
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            0,
+                        )
+
+                    readme_a = workspace_a / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                    readme_b = workspace_b / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                    readme_a.write_text("remote change\n", encoding="utf-8")
+                    readme_b.write_text("local change\n", encoding="utf-8")
+
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_a)]), 0)
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_b)]), 0)
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", server_url]),
+                            0,
+                        )
+
+                    push_stdout = io.StringIO()
+                    with redirect_stdout(push_stdout):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            1,
+                        )
+                    self.assertIn("Conflict detected during rebase", push_stdout.getvalue())
+                    self.assertIn("<<<<<<< LOCAL:README.md", readme_b.read_text(encoding="utf-8"))
+
+                    readme_b.write_text("resolved change\n", encoding="utf-8")
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace_b)]), 0)
+                    final_push_stdout = io.StringIO()
+                    with redirect_stdout(final_push_stdout):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", server_url]),
+                            0,
+                        )
+                    self.assertIn("Pushed workspace: energy", final_push_stdout.getvalue())
+
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(workspace_c), "--server-url", server_url]),
+                            0,
+                        )
+                    readme_c = workspace_c / "test-project" / "loom" / "loom_explore" / "energy" / "README.md"
+                    self.assertEqual(readme_c.read_text(encoding="utf-8"), "resolved change\n")
+
     def _write_energy_dataset(self, workspace_root: Path, cost_value: str = "10") -> None:
         dataset_dir = workspace_root / "test-project" / "loom" / "loom_raw" / "energy" / "technology-data"
         dataset_dir.mkdir(parents=True, exist_ok=True)

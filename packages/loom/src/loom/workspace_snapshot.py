@@ -6,7 +6,7 @@ from pathlib import Path
 import base64
 import shutil
 
-from .explore_repo import ensure_explore_repo, get_explore_repo_dir, list_workspaces
+from .explore_repo import ensure_explore_repo, get_commit_file_map, get_explore_repo_dir, list_workspaces
 
 
 @dataclass(frozen=True)
@@ -48,6 +48,22 @@ def build_workspace_snapshot(workspace_root: Path | str, workspace: str) -> Work
                 )
             )
 
+    return WorkspaceSnapshot(workspace=workspace, files=tuple(files), tree_hash=_compute_tree_hash(files))
+
+
+def build_workspace_snapshot_from_commit(
+    workspace_root: Path | str,
+    workspace: str,
+    commit: str | None,
+) -> WorkspaceSnapshot:
+    if not commit:
+        return WorkspaceSnapshot(workspace=workspace, files=(), tree_hash=_compute_tree_hash([]))
+
+    file_map = get_commit_file_map(workspace_root, workspace, commit)
+    files = [
+        WorkspaceFileSnapshot(path=path, sha256=sha256(content).hexdigest(), content=content)
+        for path, content in sorted(file_map.items())
+    ]
     return WorkspaceSnapshot(workspace=workspace, files=tuple(files), tree_hash=_compute_tree_hash(files))
 
 

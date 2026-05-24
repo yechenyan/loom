@@ -241,6 +241,82 @@ class RawAccessTest(unittest.TestCase):
                     self.assertIn("solar,25", cached_costs.read_text(encoding="utf-8"))
                     self.assertFalse(cached_legacy.exists())
 
+    def test_pull_only_refreshes_cached_raw_files_and_writes_conflict_notice(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_workspace = root / "source"
+            target_workspace = root / "target"
+            database_path = root / "loom.db"
+            storage_root = root / "server-storage"
+
+            self._write_energy_dataset(source_workspace, cost_value="10", include_legacy_file=True)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["scan", "energy", "--workspace-root", str(source_workspace)]), 0)
+                self.assertEqual(main(["confirm", "energy", "--workspace-root", str(source_workspace)]), 0)
+
+            app = create_app(f"sqlite:///{database_path}", storage_root)
+            with TestClient(app) as client:
+                server_url = "http://loom.test"
+                with mock.patch.object(
+                    sync_client,
+                    "_request_json",
+                    side_effect=lambda method, url, payload=None: self._call_app(client, method, url, payload),
+                ):
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", server_url]),
+                            0,
+                        )
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(target_workspace), "--server-url", server_url]),
+                            0,
+                        )
+
+                    cached_costs = loom.get(
+                        "energy/technology-data/costs.csv",
+                        workspace_root=target_workspace,
+                        server_url=server_url,
+                    )
+                    self.assertTrue(cached_costs.exists())
+                    cached_legacy = cached_costs.parent / "legacy.csv"
+                    self.assertFalse(cached_legacy.exists())
+
+                    local_raw_costs = (
+                        target_workspace
+                        / "test-project"
+                        / "loom"
+                        / "loom_raw"
+                        / "energy"
+                        / "technology-data"
+                        / "costs.csv"
+                    )
+                    local_raw_costs.parent.mkdir(parents=True, exist_ok=True)
+                    (local_raw_costs.parent / "loom.md").write_text("Energy dataset", encoding="utf-8")
+                    local_raw_costs.write_text("tech,cost\nsolar,999\n", encoding="utf-8")
+
+                    self._write_energy_dataset(source_workspace, cost_value="25", include_legacy_file=True)
+                    with redirect_stdout(io.StringIO()):
+                        self.assertEqual(main(["scan", "energy", "--workspace-root", str(source_workspace)]), 0)
+                        self.assertEqual(main(["confirm", "energy", "--workspace-root", str(source_workspace)]), 0)
+                        self.assertEqual(
+                            main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", server_url]),
+                            0,
+                        )
+
+                    pull_stdout = io.StringIO()
+                    with redirect_stdout(pull_stdout):
+                        self.assertEqual(
+                            main(["pull", "energy", "--workspace-root", str(target_workspace), "--server-url", server_url]),
+                            0,
+                        )
+                    self.assertIn("Raw conflict notice:", pull_stdout.getvalue())
+                    self.assertIn("solar,25", cached_costs.read_text(encoding="utf-8"))
+                    self.assertFalse(cached_legacy.exists())
+
+                    notice_path = local_raw_costs.parent / "loom.raw-conflict.md"
+                    self.assertTrue(notice_path.exists())
+                    self.assertIn("technology-data/costs.csv", notice_path.read_text(encoding="utf-8"))
+
     def _write_energy_dataset(
         self,
         workspace_root: Path,

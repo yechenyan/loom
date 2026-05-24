@@ -98,6 +98,39 @@ def get_repo_head_commit(workspace_root: Path | str) -> str | None:
     return result.stdout.strip() or None
 
 
+def list_scope_commits_since(workspace_root: Path | str, scope: str, since_commit: str | None) -> tuple[str, ...]:
+    repo_dir = ensure_explore_repo(workspace_root)
+    command = ["rev-list", "--reverse"]
+    if since_commit:
+        command.append(f"{since_commit}..HEAD")
+    else:
+        command.append("HEAD")
+    command.extend(["--", scope])
+    result = _run_git(repo_dir, command)
+    commits = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return tuple(commits)
+
+
+def get_commit_file_map(workspace_root: Path | str, scope: str, commit: str) -> dict[str, bytes]:
+    repo_dir = ensure_explore_repo(workspace_root)
+    list_result = _run_git(repo_dir, ["ls-tree", "-r", "--name-only", commit, "--", scope])
+    file_map: dict[str, bytes] = {}
+    scope_prefix = f"{scope}/"
+    for full_path in list_result.stdout.splitlines():
+        normalized_path = full_path.strip()
+        if not normalized_path:
+            continue
+        if normalized_path == scope:
+            relative_path = Path(normalized_path).name
+        elif normalized_path.startswith(scope_prefix):
+            relative_path = normalized_path[len(scope_prefix) :]
+        else:
+            continue
+        content = _run_git_bytes(repo_dir, ["show", f"{commit}:{normalized_path}"])
+        file_map[relative_path] = content
+    return file_map
+
+
 def list_workspaces(workspace_root: Path | str) -> tuple[str, ...]:
     repo_dir = ensure_explore_repo(workspace_root)
     workspaces: list[str] = []
@@ -152,3 +185,18 @@ def _run_git(repo_dir: Path, args: list[str]) -> subprocess.CompletedProcess[str
         message = result.stderr.strip() or result.stdout.strip() or "Unknown git error"
         raise RuntimeError(message)
     return result
+
+
+def _run_git_bytes(repo_dir: Path, args: list[str]) -> bytes:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=repo_dir,
+        check=False,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        message = result.stderr.decode("utf-8", errors="replace").strip() or result.stdout.decode(
+            "utf-8", errors="replace"
+        ).strip() or "Unknown git error"
+        raise RuntimeError(message)
+    return result.stdout

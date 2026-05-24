@@ -193,10 +193,14 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py pull energy --s
 
 如果不写 workspace，`push` 会推送本地所有一级 workspace，`pull` 会拉取服务器当前所有 workspace。
 
-当前 `push/pull` 的冲突策略很简单，都是直接覆盖：
+当前 `push/pull` 已经改成接近 git 的 rebase 语义：
 
-- `push` 时如果本地 workspace 还有待确认文件，会先自动做一次本地 confirm，然后把最新内容推到服务器。
-- `pull` 时会直接用服务器 snapshot 覆盖本地 workspace，然后自动生成一条本地 confirm 提交记录这次拉取。
+- `push` 时如果本地 workspace 还有待确认文件，会先自动做一次本地 confirm。
+- 如果远端已经比本地同步基线更新，`push` 会先自动执行一次 workspace rebase，再继续增量 push。
+- `pull` 时如果本地自上次同步后没有新的 confirm 提交，会直接 fast-forward 并自动 confirm。
+- `pull` 时如果本地已经有新的 confirm 提交，会把这些本地提交 rebase 到最新远端 revision 之上，而不是直接覆盖。
+- 如果 `pull` 或 `push` 过程中发生 rebase 冲突，命令会返回非 0，保留冲突标记，并提示用户先解决冲突，再执行 `loom confirm <workspace>` 和 `loom push <workspace>`。
+- `loom status <workspace>` 会显示 `Pending rebase revision`，方便识别当前 workspace 还处在冲突解决阶段。
 
 如果还要同步原始数据缓存：
 
@@ -205,6 +209,12 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py pull-raw energy
 ```
 
 这条命令只会把最新 raw 文件同步到 `test-project/loom/.loom/raw/energy/...`，不会拉历史数据。
+
+补充说明：
+
+- 普通 `loom pull <workspace>` / `loom push <workspace>` 之后触发的 raw 刷新，只会更新 `.loom/raw` 里已经存在的文件，不会把远端所有 raw 全部下载下来。
+- 如果想主动把整个 workspace 的 raw 缓存补齐，继续使用 `loom.pull(...)` 或 `loom pull-raw <workspace>`。
+- 如果本地 `test-project/loom/loom_raw/<workspace>/...` 和远端 raw manifest 冲突，Loom 不会覆盖本地源文件，而是会在对应 `loom.md` 旁生成 `loom.raw-conflict.md` 提示文件。
 
 ### 7. Web 查看数据
 

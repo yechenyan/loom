@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+from datetime import datetime, timezone
 import shutil
 from typing import Any
 
@@ -34,6 +35,10 @@ def resolve_cache_root(workspace_root: Path | str | None = None) -> Path:
 
 def resolve_raw_cache_dir(workspace_root: Path | str | None, workspace: str) -> Path:
     return resolve_cache_root(workspace_root) / "raw" / workspace
+
+
+def resolve_local_raw_workspace_dir(workspace_root: Path | str | None, workspace: str) -> Path:
+    return resolve_loom_root(workspace_root) / "loom_raw" / workspace
 
 
 def load_raw_cache_state(workspace_root: Path | str | None, workspace: str) -> RawCacheState:
@@ -98,6 +103,97 @@ def write_raw_cache_file(
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_bytes(content)
     return cache_path
+
+
+def list_cached_raw_paths(workspace_root: Path | str | None, workspace: str) -> tuple[str, ...]:
+    workspace_dir = resolve_raw_cache_dir(workspace_root, workspace)
+    if not workspace_dir.exists():
+        return ()
+    paths: list[str] = []
+    for path in sorted(workspace_dir.rglob("*")):
+        if not path.is_file() and not path.is_symlink():
+            continue
+        paths.append(path.relative_to(workspace_dir).as_posix())
+    return tuple(paths)
+
+
+def detect_local_raw_conflicts(
+    workspace_root: Path | str | None,
+    workspace: str,
+    remote_manifest: dict[str, dict[str, str | int]],
+) -> tuple[dict[str, str | int], ...]:
+    local_root = resolve_local_raw_workspace_dir(workspace_root, workspace)
+    conflicts: list[dict[str, str | int]] = []
+    if not local_root.exists():
+        return ()
+
+    for relative_path, item in sorted(remote_manifest.items()):
+        local_path = local_root / relative_path
+        if not local_path.is_file():
+            continue
+        local_sha256 = _hash_file(local_path)
+        remote_sha256 = str(item["sha256"])
+        if local_sha256 == remote_sha256:
+            continue
+        conflicts.append(
+            {
+                "path": relative_path,
+                "local_sha256": local_sha256,
+                "remote_sha256": remote_sha256,
+                "local_path": str(local_path),
+            }
+        )
+    return tuple(conflicts)
+
+
+def write_raw_conflict_notice(
+    workspace_root: Path | str | None,
+    workspace: str,
+    conflicts: tuple[dict[str, str | int], ...],
+) -> Path | None:
+    if not conflicts:
+        return None
+
+    local_root = resolve_local_raw_workspace_dir(workspace_root, workspace)
+    loom_md_path = next(iter(sorted(local_root.rglob("loom.md"))), None)
+    if loom_md_path is None:
+        notice_path = local_root / "loom.raw-conflict.md"
+    else:
+        notice_path = loom_md_path.parent / "loom.raw-conflict.md"
+
+    lines = [
+        "# Loom Raw Conflict Notice",
+        "",
+        "Local raw files differ from the latest server manifest. Loom did not overwrite `loom_raw`.",
+        "",
+        f"Generated at: {datetime.now(timezone.utc).isoformat()}",
+        "",
+        "Resolve these files manually if you want local raw sources to match the server:",
+        "",
+    ]
+    for item in conflicts:
+        lines.extend(
+            [
+                f"- path: {item['path']}",
+                f"  - local sha256: {item['local_sha256']}",
+                f"  - remote sha256: {item['remote_sha256']}",
+                f"  - local file: {item['local_path']}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "Suggested next steps:",
+            "",
+            "1. Review the local raw file and the synced explore output.",
+            "2. Decide whether to keep the local raw file or align it with the server version.",
+            "3. Re-run `loom scan`, then `loom confirm` if you intentionally keep the local version.",
+            "",
+        ]
+    )
+    notice_path.parent.mkdir(parents=True, exist_ok=True)
+    notice_path.write_text("\n".join(lines), encoding="utf-8")
+    return notice_path
 
 
 def remove_deleted_raw_cache_paths(

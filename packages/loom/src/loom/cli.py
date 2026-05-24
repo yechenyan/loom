@@ -365,6 +365,8 @@ def _run_status(args: argparse.Namespace) -> int:
         print(f"Last pushed revision: {state.last_pushed_revision or '-'}")
         print(f"Last synced tree hash: {state.last_synced_tree_hash or '-'}")
         print(f"Last sync commit: {state.last_sync_commit or '-'}")
+        if state.pending_rebase_revision:
+            print(f"Pending rebase revision: {state.pending_rebase_revision}")
 
     if not status.entries:
         print("No pending changes.")
@@ -394,7 +396,18 @@ def _run_push(args: argparse.Namespace) -> int:
         print("No local workspaces found to push.")
         return 0
 
+    exit_code = 0
     for result in results:
+        if result.conflicted:
+            exit_code = 1
+            print(f"Push paused for workspace: {result.workspace}")
+            print(f"Remote revision: {result.revision_id or '-'}")
+            print("Conflict detected during rebase. Resolve the files below, then run:")
+            print(f"  loom confirm {result.workspace}")
+            print(f"  loom push {result.workspace}")
+            for path in result.conflict_paths:
+                print(f"- conflict: {path}")
+            continue
         print(f"Pushed workspace: {result.workspace}")
         print(f"Revision: {result.revision_id}")
         print(f"Tree hash: {result.tree_hash}")
@@ -403,7 +416,9 @@ def _run_push(args: argparse.Namespace) -> int:
         print(f"Raw objects uploaded: {result.raw_uploaded_object_count}")
         print(f"Raw path mappings changed: {result.raw_mapping_changed_count}")
         print(f"Raw path mappings deleted: {result.raw_mapping_deleted_count}")
-    return 0
+        if result.raw_conflict_notice_path:
+            print(f"Raw conflict notice: {result.raw_conflict_notice_path}")
+    return exit_code
 
 
 def _run_pull(args: argparse.Namespace) -> int:
@@ -412,13 +427,23 @@ def _run_pull(args: argparse.Namespace) -> int:
         print("No remote workspaces found to pull.")
         return 0
 
+    exit_code = 0
     for result in results:
         print(f"Pulled workspace: {result.workspace}")
         print(f"Revision: {result.revision_id}")
         print(f"Changed: {'yes' if result.changed else 'no'}")
         print(f"Changed files: {result.changed_file_count}")
         print(f"Deleted files: {result.deleted_file_count}")
-    return 0
+        if result.conflicted:
+            exit_code = 1
+            print("Conflict detected during rebase. Resolve the files below, then run:")
+            print(f"  loom confirm {result.workspace}")
+            print(f"  loom push {result.workspace}")
+            for path in result.conflict_paths:
+                print(f"- conflict: {path}")
+        elif result.raw_conflict_notice_path:
+            print(f"Raw conflict notice: {result.raw_conflict_notice_path}")
+    return exit_code
 
 
 def _run_pull_raw(args: argparse.Namespace) -> int:
@@ -433,6 +458,8 @@ def _run_pull_raw(args: argparse.Namespace) -> int:
         print(f"Downloaded files: {result.downloaded_file_count}")
         print(f"Linked local files: {result.linked_file_count}")
         print(f"Deleted files: {result.deleted_file_count}")
+        if result.raw_conflict_notice_path:
+            print(f"Raw conflict notice: {result.raw_conflict_notice_path}")
     return 0
 
 

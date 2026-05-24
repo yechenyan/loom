@@ -17,6 +17,10 @@ class WorkspaceSyncState:
     last_sync_commit: str | None = None
     last_synced_files: dict[str, str] | None = None
     last_synced_raw_files: dict[str, str] | None = None
+    pending_rebase_revision: str | None = None
+    pending_rebase_tree_hash: str | None = None
+    pending_rebase_files: dict[str, str] | None = None
+    pending_rebase_raw_files: dict[str, str] | None = None
 
 
 def load_workspace_sync_state(workspace_root: Path | str, workspace: str) -> WorkspaceSyncState:
@@ -33,6 +37,10 @@ def load_workspace_sync_state(workspace_root: Path | str, workspace: str) -> Wor
         last_sync_commit=data.get("last_sync_commit"),
         last_synced_files=_normalize_synced_files(data.get("last_synced_files")),
         last_synced_raw_files=_normalize_synced_files(data.get("last_synced_raw_files")),
+        pending_rebase_revision=data.get("pending_rebase_revision"),
+        pending_rebase_tree_hash=data.get("pending_rebase_tree_hash"),
+        pending_rebase_files=_normalize_synced_files(data.get("pending_rebase_files")),
+        pending_rebase_raw_files=_normalize_synced_files(data.get("pending_rebase_raw_files")),
     )
 
 
