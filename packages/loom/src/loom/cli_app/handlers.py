@@ -5,6 +5,7 @@ import argparse
 from ..data import get as get_resource
 from ..explore_repo import confirm_changes, ensure_explore_repo
 from ..scanner import scan_topic_to_explore
+from ..server_config import persist_base_url
 from ..sync_client import pull_raw_workspaces, pull_workspaces, push_workspaces
 from .output import print_status_summary, print_workspace_status
 from .skill import install_skill
@@ -36,6 +37,12 @@ def run_scan(args: argparse.Namespace) -> int:
         for relative_dir in result.missing_dataset_dirs:
             print(f"- kept: {relative_dir}")
     print_status_summary(args.workspace_root, args.topic)
+    return 0
+
+
+def run_set_api(args: argparse.Namespace) -> int:
+    base_url = persist_base_url(args.base_url)
+    print(f"Default Loom API base URL set to: {base_url}")
     return 0
 
 

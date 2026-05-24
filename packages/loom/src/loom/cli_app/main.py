@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 import sys
 
-from .handlers import run_confirm, run_get, run_install, run_pull, run_pull_raw, run_push, run_scan, run_status
+from .handlers import run_confirm, run_get, run_install, run_pull, run_pull_raw, run_push, run_scan, run_set_api, run_status
 from .parser import build_parser
 from .routing import run_route
 
@@ -14,6 +14,7 @@ def main(argv: list[str] | None = None) -> int:
         "install": run_install,
         "scan": run_scan,
         "route": run_route,
+        "set-api": run_set_api,
         "get": run_get,
         "status": run_status,
         "confirm": run_confirm,

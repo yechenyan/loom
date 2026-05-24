@@ -107,6 +107,7 @@ Main commands:
 
 ```bash
 loom install
+loom set-api https://loom-api-free.onrender.com
 loom scan <topic>
 loom route "<message>"
 loom get <workspace/path/to/file>
@@ -185,7 +186,7 @@ Repeated reads reuse the local cache.
 Refresh one workspace:
 
 ```bash
-loom pull-raw energy --server-url http://127.0.0.1:8765
+loom pull-raw energy
 ```
 
 Or in Python:
@@ -203,19 +204,37 @@ loom.pull("energy")
 Push one workspace:
 
 ```bash
-loom push energy --server-url http://127.0.0.1:8765
+loom push energy
 ```
 
 Pull one workspace:
 
 ```bash
-loom pull energy --server-url http://127.0.0.1:8765
+loom pull energy
 ```
 
 Pull all workspaces:
 
 ```bash
-loom pull --server-url http://127.0.0.1:8765
+loom pull
+```
+
+By default, the published client now points at the current Render API:
+
+```text
+https://loom-api-free.onrender.com
+```
+
+You can persist a different default per machine:
+
+```bash
+loom set-api https://loom-api-free.onrender.com
+```
+
+Or override it for one shell session:
+
+```bash
+export LOOM_SERVER_URL=http://127.0.0.1:8765
 ```
 
 Current sync behavior is rebase-oriented:
@@ -259,7 +278,7 @@ loom server-run
 Default server URL:
 
 ```text
-http://127.0.0.1:8765
+https://loom-api-free.onrender.com
 ```
 
 Default database URL:
@@ -292,13 +311,19 @@ After scanning, Loom writes files such as:
 
 ## Release
 
-Build distributions:
+Bump the version in the root `pyproject.toml`, then build distributions:
 
 ```bash
 uv build
 ```
 
-Upload to TestPyPI first:
+Optionally verify the artifacts locally:
+
+```bash
+uv publish --dry-run
+```
+
+Upload to TestPyPI first if you want a rehearsal:
 
 ```bash
 uv publish --publish-url https://test.pypi.org/legacy/

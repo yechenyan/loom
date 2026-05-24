@@ -37,6 +37,7 @@ path = loom.get("energy/technology-data/costs.csv")
 ```bash
 loom get energy/technology-data/costs.csv
 loom pull-raw energy
+loom set-api https://loom-api-free.onrender.com
 ```
 
 Raw cache and local Loom state now live under:
@@ -119,11 +120,17 @@ For Python callers, Loom now supports a process-wide API base URL:
 ```python
 import loom
 
-loom.set_base_url("https://loom-api.onrender.com")
+loom.set_base_url("https://loom-api-free.onrender.com")
 path = loom.get("energy/technology-data/costs.csv")
 ```
 
 CLI users can keep using `--server-url ...` per command, or set `LOOM_SERVER_URL` once for the shell session.
+
+To persist a default server for future CLI commands on one machine, use:
+
+```bash
+loom set-api https://loom-api-free.onrender.com
+```
 
 Push and pull now use rebase-style workspace sync:
 
@@ -154,7 +161,7 @@ http://127.0.0.1:4173
 
 The Vite dev server proxies `/api` requests to the Loom FastAPI server on `http://127.0.0.1:8765`.
 
-For deployed builds, set `VITE_API_BASE_URL` to your public API origin, for example `https://loom-api.onrender.com`.
+For deployed builds, set `VITE_API_BASE_URL` to your public API origin, for example `https://loom-api-free.onrender.com`.
 
 ## Render Deploy
 

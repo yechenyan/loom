@@ -40,6 +40,9 @@ def _add_scan_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
 
 
 def _add_data_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    set_api_parser = subparsers.add_parser("set-api", help="Persist the default Loom sync server base URL for future CLI commands.")
+    set_api_parser.add_argument("base_url")
+
     get_parser = subparsers.add_parser("get", help="Ensure one raw file exists under test-project/loom/.loom/raw and print its local path.")
     get_parser.add_argument("resource")
     get_parser.add_argument("--server-url", default=DEFAULT_SERVER_URL)
