@@ -10,3 +10,4 @@ build/
 test-project/
 web/node_modules/
 .loom-server-storage/
+node_modules/
