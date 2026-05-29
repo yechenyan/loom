@@ -232,50 +232,92 @@ render deploys create srv-d89e8j5ckfvc738hm5og --output json --confirm
 
 PyPI 项目名是 `loom-data`，源码版本号在仓库根目录的 `pyproject.toml`。
 
-### 发布步骤
+### 推荐发布脚本
 
-1. 修改根目录 `pyproject.toml` 中的 `[project].version`
-2. 跑一遍最小回归测试
-3. 构建发行包
-4. 配置 PyPI 发布凭据
-5. 发布到 PyPI
-6. 在 PyPI 页面确认新版本已经上线
-
-当前命令：
+仓库里现在提供了一个本地发布 CLI：
 
 ```bash
-uv run pytest tests/test_server_config.py tests/test_set_api_command.py tests/test_packaging_metadata.py
-uv build
-uv publish
+python scripts/release_pypi.py patch
 ```
+
+这个脚本会按顺序执行：
+
+1. 自动修改根目录 `pyproject.toml` 里的 `[project].version`
+2. 对客户端发布相关代码跑 `ruff` lint
+3. 跑最小发布回归测试
+4. 清理旧的 `dist/` 和 `build/`
+5. 重新 `uv build`
+6. 调用 `uv publish`
+
+支持的版本参数：
+
+```bash
+python scripts/release_pypi.py patch
+python scripts/release_pypi.py minor
+python scripts/release_pypi.py major
+python scripts/release_pypi.py 0.1.5
+```
+
+常用附加参数：
+
+```bash
+python scripts/release_pypi.py patch --dry-run
+python scripts/release_pypi.py patch --test-pypi
+python scripts/release_pypi.py patch --skip-publish
+```
+
+如果 lint、测试、build 或 publish 任何一步失败，脚本默认会把 `pyproject.toml` 里的版本号自动改回去。只有显式传 `--keep-version-on-failure` 时，才会保留失败后的版本号变更。
 
 如果想先只验证上传流程而不真正上传：
 
 ```bash
-uv publish --dry-run
+python scripts/release_pypi.py patch --dry-run
 ```
 
 如果想先发到 TestPyPI：
 
 ```bash
-uv publish --publish-url https://test.pypi.org/legacy/
+python scripts/release_pypi.py patch --test-pypi
 ```
 
 ### PyPI 认证
 
 `uv publish` 需要 PyPI 凭据。当前仓库没有内置发布凭据，所以发布机器上需要提前配置。
 
+推荐把 gitignore 的私有发布配置单独放在：
+
+```toml
+config/local.toml
+```
+
+这个文件已经加入仓库根目录 `.gitignore`，不会被提交。
+
+`config/release.toml` 不作为 secret 文件使用，后面如果要放可共享的发布配置，可以单独放在那里并正常提交。
+
+建议内容：
+
+```toml
+[pypi]
+token = "pypi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+发布脚本会按这个优先级找 token：
+
+1. `UV_PUBLISH_TOKEN`
+2. `PYPI_TOKEN`
+3. `config/local.toml` 里的 `[pypi].token`
+
 推荐直接用 PyPI API token：
 
 ```bash
 export UV_PUBLISH_TOKEN=pypi-xxxx
-uv publish
+python scripts/release_pypi.py patch
 ```
 
 也可以显式传参：
 
 ```bash
-uv publish --token pypi-xxxx
+PYPI_TOKEN=pypi-xxxx python scripts/release_pypi.py patch
 ```
 
 如果未来改成 CI 发布，也可以接 PyPI Trusted Publishing；但在本地终端里直接运行 `uv publish` 时，默认不会自动拿到 OIDC token。

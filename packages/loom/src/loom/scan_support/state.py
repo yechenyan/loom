@@ -20,3 +20,29 @@ def normalize_dataset_state(datasets: object) -> dict[str, dict[str, Any]]:
         for key, value in datasets.items()
         if isinstance(key, str) and isinstance(value, dict) and "summary" in value and "scan_manifest" in value
     }
+
+
+def normalize_scan_sources(state: object) -> dict[str, dict[str, Any]]:
+    if not isinstance(state, dict):
+        return {}
+
+    sources = state.get("sources")
+    if isinstance(sources, dict):
+        normalized: dict[str, dict[str, Any]] = {}
+        for key, value in sources.items():
+            if not isinstance(key, str) or not isinstance(value, dict):
+                continue
+            source_path = value.get("source_path")
+            if not isinstance(source_path, str) or not source_path.strip():
+                continue
+            normalized[key] = {
+                "source_path": source_path,
+                "datasets": normalize_dataset_state(value.get("datasets", {})),
+            }
+        return normalized
+
+    legacy_source_path = state.get("source_path")
+    legacy_datasets = normalize_dataset_state(state.get("datasets", {}))
+    if isinstance(legacy_source_path, str) and legacy_source_path.strip():
+        return {legacy_source_path: {"source_path": legacy_source_path, "datasets": legacy_datasets}}
+    return {}

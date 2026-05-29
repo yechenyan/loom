@@ -32,6 +32,31 @@ def get_scan_state_path(workspace_root: Path | str, topic: str) -> Path:
     return resolve_cache_root(workspace_root) / "state" / f"{topic}-scan.json"
 
 
+def load_recent_workspace(workspace_root: Path | str) -> str | None:
+    state_path = get_recent_workspace_state_path(workspace_root)
+    if not state_path.exists():
+        return None
+
+    data = json.loads(state_path.read_text(encoding="utf-8"))
+    workspace = data.get("workspace") if isinstance(data, dict) else None
+    if not isinstance(workspace, str):
+        return None
+    normalized = workspace.strip().strip("/")
+    return normalized or None
+
+
+def save_recent_workspace(workspace_root: Path | str, workspace: str) -> Path:
+    state_path = get_recent_workspace_state_path(workspace_root)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"workspace": workspace}
+    state_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return state_path
+
+
+def get_recent_workspace_state_path(workspace_root: Path | str) -> Path:
+    return resolve_cache_root(workspace_root) / "state" / "recent-workspace.json"
+
+
 def hash_text(value: str) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
 

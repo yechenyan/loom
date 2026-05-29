@@ -16,29 +16,33 @@ from .config import (
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="loom")
     subparsers = parser.add_subparsers(dest="command")
-    _add_install_parser(subparsers)
+    _add_init_parser(subparsers)
     _add_scan_parsers(subparsers)
     _add_data_parsers(subparsers)
     _add_sync_parsers(subparsers)
     return parser
 
 
-def _add_install_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    install_parser = subparsers.add_parser("install", help="Install the Loom Codex skill and initialize loom_explore git tracking.")
-    install_parser.add_argument("--codex-home", type=Path, default=Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")))
-    install_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
-    install_parser.add_argument(
+def _add_init_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    init_parser = subparsers.add_parser(
+        "init",
+        aliases=["install"],
+        help="Interactively initialize Loom, install one agent skill, and prepare the local Loom git workspace.",
+    )
+    init_parser.add_argument("--codex-home", type=Path, default=Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")))
+    init_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
+    init_parser.add_argument(
         "--agent",
         dest="agents",
         action="append",
         choices=("codex", "claude", "cursor", "copilot"),
-        help="Install the Loom helper skill for one or more AI agents. Defaults to all supported agents.",
+        help="Compatibility flag. `loom init` now prompts for one assistant instead of installing all agents at once.",
     )
 
 
 def _add_scan_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    scan_parser = subparsers.add_parser("scan", help="Scan a Loom topic from loom_raw into loom_explore.")
-    scan_parser.add_argument("topic", nargs="?")
+    scan_parser = subparsers.add_parser("scan", help="Scan a source directory into a Loom workspace.")
+    scan_parser.add_argument("scan_args", nargs="*")
     scan_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
     route_parser = subparsers.add_parser("route", help="Parse a chat message and run loom scan if it matches.")
@@ -49,6 +53,11 @@ def _add_scan_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
 def _add_data_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     set_api_parser = subparsers.add_parser("set-api", help="Persist the default Loom sync server base URL for future CLI commands.")
     set_api_parser.add_argument("base_url")
+
+    ask_parser = subparsers.add_parser("ask", help="Search Loom cards first, then inspect the most relevant raw file.")
+    ask_parser.add_argument("query_parts", nargs="+")
+    ask_parser.add_argument("--server-url", default=DEFAULT_SERVER_URL)
+    ask_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
     get_parser = subparsers.add_parser("get", help="Ensure one raw file exists under loom/.loom/raw and print its local path.")
     get_parser.add_argument("resource")
@@ -62,8 +71,8 @@ def _add_data_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
 
 
 def _add_sync_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    _add_workspace_parser(subparsers, "status", "Show pending loom_explore changes.", include_message=False)
-    _add_workspace_parser(subparsers, "confirm", "Commit pending loom_explore changes.", include_message=True)
+    _add_workspace_parser(subparsers, "status", "Show pending Loom workspace changes.", include_message=False)
+    _add_workspace_parser(subparsers, "confirm", "Commit pending Loom workspace changes.", include_message=True)
     _add_workspace_parser(subparsers, "push", "Push local workspaces to the Loom sync server.", include_message=True, include_server=True)
     _add_workspace_parser(subparsers, "pull", "Pull remote workspaces from the Loom sync server.", include_server=True)
 

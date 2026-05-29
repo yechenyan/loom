@@ -22,12 +22,12 @@ class SyncPushPullTest(LoomTestCase):
             workspace_b = root / "workspace-b"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(workspace_a)
-            self.call_main(["scan", "energy", "--workspace-root", str(workspace_a)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(workspace_a)])
             self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
             with TestClient(app) as client, self.patch_server(client):
                 self.assertIn("Pushed workspace: energy", self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])[1])
                 self.assertIn("Pulled workspace: energy", self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])[1])
-                profile = json.loads((workspace_b / "loom" / "loom_explore" / "energy" / "technology-data" / "profile.json").read_text(encoding="utf-8"))
+                profile = json.loads((workspace_b / "loom" / "energy" / "technology-data" / "profile.json").read_text(encoding="utf-8"))
                 self.assertEqual(profile["csv_count"], 1)
 
     def test_second_push_and_pull_use_incremental_deltas(self) -> None:
@@ -38,14 +38,14 @@ class SyncPushPullTest(LoomTestCase):
             payloads: list[dict[str, object]] = []
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(workspace_a, cost_value="10")
-            self.call_main(["scan", "energy", "--workspace-root", str(workspace_a)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(workspace_a)])
             self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
             with TestClient(app) as client:
                 with self.patch_server(client):
                     self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                     self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
                     self.write_energy_dataset(workspace_a, cost_value="55")
-                    self.call_main(["scan", "energy", "--workspace-root", str(workspace_a)])
+                    self.call_main([*self.scan_command(), "--workspace-root", str(workspace_a)])
                     self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
                     time.sleep(0.02)
                     self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
@@ -59,7 +59,7 @@ class SyncPushPullTest(LoomTestCase):
             storage_root = root / "server-storage"
             app = create_app(f"sqlite:///{root / 'loom.db'}", storage_root)
             self.write_energy_dataset(workspace_a, cost_value="10")
-            self.call_main(["scan", "energy", "--workspace-root", str(workspace_a)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(workspace_a)])
             self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
             with TestClient(app) as client, self.patch_server(client):
                 self.assertEqual(self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])[0], 0)
@@ -67,7 +67,7 @@ class SyncPushPullTest(LoomTestCase):
                 missing_blob = blob_storage_path(storage_root, snapshot.files[0].sha256)
                 missing_blob.unlink()
                 self.write_energy_dataset(workspace_b, cost_value="55")
-                self.call_main(["scan", "energy", "--workspace-root", str(workspace_b)])
+                self.call_main([*self.scan_command(), "--workspace-root", str(workspace_b)])
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_b)])
                 exit_code, output = self.call_main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
                 self.assertEqual(exit_code, 0)

@@ -59,25 +59,27 @@ Loom installs as the `loom-data` package, but the Python import is `loom` and th
 
 Loom is designed for large local datasets:
 
-1. Keep raw source files under `loom/loom_raw`.
-2. Scan them into compact cards under `loom/loom_explore`.
+1. Keep raw source files in any local directory you want to scan.
+2. Scan them into compact cards under `loom/<workspace>`.
 3. Let agents search summaries first.
 4. Download raw files only when they are actually needed.
 
 ## Workspace layout
 
-- Raw data: `loom/loom_raw/<workspace>`
-- Generated cards: `loom/loom_explore/<workspace>`
+- Source data: `raw_data/<workspace>` by default, or any directory that contains `loom.md` and CSV files
+- Generated cards: `loom/<workspace>`
 - Local raw cache: `loom/.loom/raw/<workspace>`
 
 ## Default lookup workflow
 
 When the user asks for a value inside a dataset, use this path by default:
 
-1. Read `loom/loom_explore` first.
+1. Read `loom/` first.
 2. Search the generated cards and summaries only long enough to identify the exact raw file path.
 3. Run `uv run loom get <workspace/path/to/file>` immediately, or use `loom.get("workspace/path/to/file")` in Python.
 4. Search or parse the fetched local file to answer the question.
+
+If the user writes `loom ask <question>` or `loom <question>`, treat it as a request to inspect `./loom` first before touching raw files.
 
 Do not spend turns rediscovering how Loom fetch works by reading `README.md`, `pyproject.toml`, or `scripts/loom.py` unless `loom get` actually fails.
 
@@ -101,15 +103,16 @@ local_path = loom.get("energy/technology-data/costs.csv")
 
 ## Common commands
 
-- Scan one workspace: `uv run loom scan energy`
-- Scan all workspaces: `uv run loom scan`
+- Scan the default raw-data layout: `uv run loom scan raw_data/energy`
+- Scan a directory into a workspace: `uv run loom scan raw_data/energy to energy`
+- Scan a directory and reuse the most recent workspace: `uv run loom scan raw_data/energy`
 - Confirm one workspace: `uv run loom confirm energy`
 - Confirm all pending explore changes: `uv run loom confirm`
 
 If you need the workspace-root-aware launcher, use:
 
-- `uv run python {launcher} scan <workspace> --workspace-root {workspace_root}`
-- `uv run python {launcher} scan --workspace-root {workspace_root}`
+- `uv run python {launcher} scan raw_data/energy to energy --workspace-root {workspace_root}`
+- `uv run python {launcher} scan raw_data/energy --workspace-root {workspace_root}`
 - `uv run python {launcher} confirm <workspace> --workspace-root {workspace_root}`
 - `uv run python {launcher} confirm --workspace-root {workspace_root}`
 
@@ -136,6 +139,6 @@ Workspace-root-aware variants:
 - `loom-data` is the package name.
 - `loom` is the CLI command.
 - `import loom` is the Python API.
-- `loom scan` works with or without a workspace name.
-- `loom install` creates `./loom/` at the current project root.
+- `loom scan` requires a source path, uses `temporary` if no workspace history exists, and lets one workspace track multiple source directories as long as dataset paths do not collide.
+- `loom init` creates `./loom/` and `./raw_data/` at the current project root.
 """

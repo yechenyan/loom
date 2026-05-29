@@ -81,7 +81,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--workspace-root",
         type=Path,
         default=DEFAULT_WORKSPACE_ROOT,
-        help="Workspace root that contains loom/loom_explore.",
+        help="Workspace root that contains loom/.",
     )
 
     run_parser = subparsers.add_parser("run", help="Run the Loom sync FastAPI server.")
@@ -100,7 +100,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--workspace-root",
         type=Path,
         default=DEFAULT_WORKSPACE_ROOT,
-        help="Workspace root that contains loom/loom_explore.",
+        help="Workspace root that contains loom/.",
     )
     run_parser.add_argument("--host", default=DEFAULT_HOST, help="Host to bind the FastAPI server to.")
     run_parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port to bind the FastAPI server to.")

@@ -18,13 +18,13 @@ class SyncRawHistoryTest(LoomTestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             workspace = root / "workspace-a"
-            duplicate_dir = workspace / "loom" / "loom_raw" / "energy" / "copies"
+            duplicate_dir = workspace / "raw_data" / "energy" / "copies"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(workspace, cost_value="10")
             duplicate_dir.mkdir(parents=True, exist_ok=True)
-            source = workspace / "loom" / "loom_raw" / "energy" / "technology-data" / "costs.csv"
+            source = workspace / "raw_data" / "energy" / "technology-data" / "costs.csv"
             (duplicate_dir / "costs-copy.csv").write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-            self.call_main(["scan", "energy", "--workspace-root", str(workspace)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(workspace)])
             self.call_main(["confirm", "energy", "--workspace-root", str(workspace)])
             request_log: list[tuple[str, str, dict[str, object] | None]] = []
             with TestClient(app) as client:

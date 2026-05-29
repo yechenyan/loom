@@ -19,7 +19,7 @@ class RawAccessRefreshTest(LoomTestCase):
             target_workspace = root / "target"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(source_workspace, cost_value="10", include_legacy_file=True)
-            self.call_main(["scan", "energy", "--workspace-root", str(source_workspace)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(source_workspace)])
             self.call_main(["confirm", "energy", "--workspace-root", str(source_workspace)])
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])
@@ -38,18 +38,18 @@ class RawAccessRefreshTest(LoomTestCase):
             target_workspace = root / "target"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(source_workspace, cost_value="10", include_legacy_file=True)
-            self.call_main(["scan", "energy", "--workspace-root", str(source_workspace)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(source_workspace)])
             self.call_main(["confirm", "energy", "--workspace-root", str(source_workspace)])
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(target_workspace), "--server-url", "http://loom.test"])
                 cached_costs = loom.get("energy/technology-data/costs.csv", workspace_root=target_workspace, server_url="http://loom.test")
-                local_raw_costs = target_workspace / "loom" / "loom_raw" / "energy" / "technology-data" / "costs.csv"
+                local_raw_costs = target_workspace / "raw_data" / "energy" / "technology-data" / "costs.csv"
                 local_raw_costs.parent.mkdir(parents=True, exist_ok=True)
                 (local_raw_costs.parent / "loom.md").write_text("Energy dataset", encoding="utf-8")
                 local_raw_costs.write_text("tech,cost\nsolar,999\n", encoding="utf-8")
                 self.write_energy_dataset(source_workspace, cost_value="25", include_legacy_file=True)
-                self.call_main(["scan", "energy", "--workspace-root", str(source_workspace)])
+                self.call_main([*self.scan_command(), "--workspace-root", str(source_workspace)])
                 self.call_main(["confirm", "energy", "--workspace-root", str(source_workspace)])
                 self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])
                 exit_code, output = self.call_main(["pull", "energy", "--workspace-root", str(target_workspace), "--server-url", "http://loom.test"])

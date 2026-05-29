@@ -30,7 +30,7 @@ class RawAccessCacheTest(LoomTestCase):
             target_workspace = root / "target"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(source_workspace)
-            self.assertEqual(self.call_main(["scan", "energy", "--workspace-root", str(source_workspace)])[0], 0)
+            self.assertEqual(self.call_main([*self.scan_command(), "--workspace-root", str(source_workspace)])[0], 0)
             self.assertEqual(self.call_main(["confirm", "energy", "--workspace-root", str(source_workspace)])[0], 0)
             with TestClient(app) as client, self.patch_server(client):
                 self.assertEqual(self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])[0], 0)
@@ -45,7 +45,7 @@ class RawAccessCacheTest(LoomTestCase):
             target_workspace = root / "target"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(source_workspace)
-            self.call_main(["scan", "energy", "--workspace-root", str(source_workspace)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(source_workspace)])
             self.call_main(["confirm", "energy", "--workspace-root", str(source_workspace)])
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])
@@ -60,7 +60,7 @@ class RawAccessCacheTest(LoomTestCase):
             storage_root = root / "server-storage"
             app = create_app(f"sqlite:///{root / 'loom.db'}", storage_root)
             raw_file = self.write_energy_dataset(source_workspace)
-            self.call_main(["scan", "energy", "--workspace-root", str(source_workspace)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(source_workspace)])
             self.call_main(["confirm", "energy", "--workspace-root", str(source_workspace)])
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])

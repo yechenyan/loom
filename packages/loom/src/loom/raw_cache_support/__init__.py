@@ -8,8 +8,15 @@ from .ops import (
     remove_deleted_raw_cache_paths,
     write_raw_cache_file,
 )
-from .paths import resolve_cache_root, resolve_local_raw_workspace_dir, resolve_loom_root, resolve_raw_cache_dir, resolve_workspace_root
-from .paths import list_local_raw_workspaces
+from .paths import (
+    list_local_raw_workspaces,
+    resolve_cache_root,
+    resolve_local_raw_workspace_dir,
+    resolve_loom_root,
+    resolve_raw_cache_dir,
+    resolve_raw_data_root,
+    resolve_workspace_root,
+)
 from .state import RawCacheState, load_raw_cache_state, save_raw_cache_state
 
 __all__ = [
@@ -27,6 +34,7 @@ __all__ = [
     "resolve_local_raw_workspace_dir",
     "resolve_loom_root",
     "resolve_raw_cache_dir",
+    "resolve_raw_data_root",
     "resolve_workspace_root",
     "save_raw_cache_state",
     "write_raw_cache_file",

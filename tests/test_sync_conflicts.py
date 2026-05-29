@@ -18,13 +18,13 @@ class SyncConflictTest(LoomTestCase):
             workspace_b = root / "workspace-b"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(workspace_a, cost_value="10")
-            self.call_main(["scan", "energy", "--workspace-root", str(workspace_a)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(workspace_a)])
             self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
-                readme_a = workspace_a / "loom" / "loom_explore" / "energy" / "README.md"
-                readme_b = workspace_b / "loom" / "loom_explore" / "energy" / "README.md"
+                readme_a = workspace_a / "loom" / "energy" / "README.md"
+                readme_b = workspace_b / "loom" / "energy" / "README.md"
                 readme_a.write_text("remote pull conflict\n", encoding="utf-8")
                 readme_b.write_text("local pull conflict\n", encoding="utf-8")
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
@@ -42,13 +42,13 @@ class SyncConflictTest(LoomTestCase):
             workspace_c = root / "workspace-c"
             app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
             self.write_energy_dataset(workspace_a, cost_value="10")
-            self.call_main(["scan", "energy", "--workspace-root", str(workspace_a)])
+            self.call_main([*self.scan_command(), "--workspace-root", str(workspace_a)])
             self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
             with TestClient(app) as client, self.patch_server(client):
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
-                readme_a = workspace_a / "loom" / "loom_explore" / "energy" / "README.md"
-                readme_b = workspace_b / "loom" / "loom_explore" / "energy" / "README.md"
+                readme_a = workspace_a / "loom" / "energy" / "README.md"
+                readme_b = workspace_b / "loom" / "energy" / "README.md"
                 readme_a.write_text("remote change\n", encoding="utf-8")
                 readme_b.write_text("local change\n", encoding="utf-8")
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
@@ -59,4 +59,4 @@ class SyncConflictTest(LoomTestCase):
                 self.call_main(["confirm", "energy", "--workspace-root", str(workspace_b)])
                 self.call_main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
                 self.call_main(["pull", "energy", "--workspace-root", str(workspace_c), "--server-url", "http://loom.test"])
-                self.assertEqual((workspace_c / "loom" / "loom_explore" / "energy" / "README.md").read_text(encoding="utf-8"), "resolved change\n")
+                self.assertEqual((workspace_c / "loom" / "energy" / "README.md").read_text(encoding="utf-8"), "resolved change\n")

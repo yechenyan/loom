@@ -4,8 +4,8 @@
 
 Loom is designed for large local datasets:
 
-1. Keep raw source files under `loom/loom_raw`.
-2. Scan them into compact cards under `loom/loom_explore`.
+1. Keep raw source files under `raw_data/<workspace>` or any folder with `loom.md`.
+2. Scan them into compact cards under `loom/<workspace>`.
 3. Let agents search summaries first.
 4. Download raw files only when they are actually needed.
 
@@ -28,33 +28,35 @@ The package name is `loom-data`, but the Python import and CLI name are both `lo
 ## Initialize a project
 
 ```bash
-uv run loom install
+uv run loom init
 ```
 
 This creates and uses:
 
 ```text
 loom/
-  loom_raw/
-  loom_explore/
+  <workspace>/
   .loom/
+raw_data/
+  <workspace>/
 ```
 
-It also installs helper skill files for Codex, Claude, Cursor, and Copilot.
+`loom init` asks which assistant you use, which default workspace name you want, and whether to install the tutorial dataset.
+It installs the helper skill only for the assistant you choose.
 For Codex, Loom writes both `$CODEX_HOME/skills/loom-data` and the workspace-local `.agents/skills/loom-data`.
 
 ## Common commands
 
-Scan one workspace:
+Scan the default raw-data layout:
 
 ```bash
-uv run loom scan energy
+uv run loom scan raw_data/energy
 ```
 
-Scan all workspaces:
+Scan a source directory into an explicit workspace:
 
 ```bash
-uv run loom scan
+uv run loom scan raw_data/energy to energy
 ```
 
 Confirm one workspace:
@@ -106,13 +108,27 @@ print(local_path)
 
 ## Workflow recommendation
 
-- Put source data into `loom/loom_raw/<workspace>/`.
-- Run `loom scan` to generate cards.
-- Read `loom/loom_explore` first.
+- Put source data into any directory with `loom.md` and CSV files.
+- Run `loom scan <path> [to <workspace>]` to generate cards.
+- Read `loom/` first.
 - Search the generated cards and summaries.
 - Decide which exact raw file is needed.
 - Use `loom.get(...)` only for the raw files you really need.
 - Or fetch a single file on demand with `loom get energy/technology-data/costs.csv`.
+- If a user writes `loom ask <question>` or `loom <question>`, inspect `loom/` first before touching raw files.
+
+If you omit `to <workspace>`, Loom reuses the most recently scanned or created workspace. If there is no history yet, it creates `temporary`. One workspace can track multiple source directories, but dataset paths inside that workspace must stay unique.
+
+Scan state is incremental per workspace and per source directory. Generated cards and manifests store source-relative raw paths such as `technology-data` and `technology-data/costs.csv`, so moving or copying the project does not force a rebuild of unchanged datasets just because the absolute filesystem path changed.
+
+`loom ask <question>` now performs a real local lookup:
+
+```bash
+uv run loom ask OCGT cost
+uv run loom OCGT cost
+```
+
+Loom searches `loom/`, fetches the best matching raw file if needed, and prints matching rows plus a `Likely answer` when the best hit is unambiguous.
 
 ## Web app
 

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import io
+import json
 import sys
 from pathlib import Path
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-server" / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
@@ -11,47 +15,89 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom"
 from loom.cli import main
 
 
-class InstallCommandTest(unittest.TestCase):
-    def test_install_writes_skill_file_and_initializes_explore_repo(self) -> None:
+class InitCommandTest(unittest.TestCase):
+    def test_init_creates_selected_skill_default_workspace_and_tutorial_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            workspace_root = Path(temp_dir) / "workspace"
+            stdout = io.StringIO()
+
+            with patch("builtins.input", side_effect=["1", "max", "y", ""]), redirect_stdout(stdout):
+                exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
+
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("Initialized Loom workspace at:", output)
+            self.assertIn("loom scan raw_data/cost to cost", output)
+            self.assertIn("What is the capex for OCGT?", output)
+
+            skill_path = codex_home / "skills" / "loom-data" / "SKILL.md"
+            self.assertTrue(skill_path.exists())
+            self.assertIn("Loom installs as the `loom-data` package", skill_path.read_text(encoding="utf-8"))
+
+            self.assertTrue((workspace_root / ".agents" / "skills" / "loom-data" / "SKILL.md").exists())
+            self.assertFalse((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
+            self.assertFalse((workspace_root / ".cursor" / "skills" / "loom-data" / "SKILL.md").exists())
+            self.assertFalse((workspace_root / ".copilot" / "skills" / "loom-data" / "SKILL.md").exists())
+
+            explore_git_dir = workspace_root / "loom" / ".git"
+            self.assertTrue(explore_git_dir.exists())
+            self.assertTrue((workspace_root / "loom" / "max").exists())
+
+            recent_workspace_path = workspace_root / "loom" / ".loom" / "state" / "recent-workspace.json"
+            recent_workspace = json.loads(recent_workspace_path.read_text(encoding="utf-8"))
+            self.assertEqual(recent_workspace["workspace"], "max")
+
+            tutorial_dir = workspace_root / "raw_data" / "cost"
+            self.assertTrue((tutorial_dir / "loom.md").exists())
+            self.assertTrue((tutorial_dir / "costs_2040-modifications.csv").exists())
+
+    def test_init_menu_can_install_single_skill_when_loom_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            workspace_root = Path(temp_dir) / "workspace"
+            (workspace_root / "loom").mkdir(parents=True)
+            stdout = io.StringIO()
+
+            with patch("builtins.input", side_effect=["2", "2"]), redirect_stdout(stdout):
+                exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Skill installation finished.", stdout.getvalue())
+            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
+            self.assertFalse((codex_home / "skills" / "loom-data" / "SKILL.md").exists())
+            self.assertFalse((workspace_root / ".agents" / "skills" / "loom-data" / "SKILL.md").exists())
+
+    def test_init_menu_can_create_new_default_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            workspace_root = Path(temp_dir) / "workspace"
+            (workspace_root / "loom").mkdir(parents=True)
+            stdout = io.StringIO()
+
+            with patch("builtins.input", side_effect=["3", "delta"]), redirect_stdout(stdout):
+                exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Created a new default workspace: delta", stdout.getvalue())
+            self.assertTrue((workspace_root / "loom" / "delta").exists())
+
+            recent_workspace_path = workspace_root / "loom" / ".loom" / "state" / "recent-workspace.json"
+            recent_workspace = json.loads(recent_workspace_path.read_text(encoding="utf-8"))
+            self.assertEqual(recent_workspace["workspace"], "delta")
+
+    def test_init_respects_agent_flag_without_prompting_for_agent(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"
             workspace_root = Path(temp_dir) / "workspace"
 
-            exit_code = main(
-                [
-                    "install",
-                    "--codex-home",
-                    str(codex_home),
-                    "--workspace-root",
-                    str(workspace_root),
-                ]
-            )
+            with patch("builtins.input", side_effect=["delta", "n"]):
+                exit_code = main(
+                    ["init", "--agent", "claude", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)]
+                )
 
             self.assertEqual(exit_code, 0)
-            skill_path = codex_home / "skills" / "loom-data" / "SKILL.md"
-            self.assertTrue(skill_path.exists())
-            content = skill_path.read_text(encoding="utf-8")
-            self.assertIn("Loom installs as the `loom-data` package", content)
-            self.assertIn("Read `loom/loom_explore` first.", content)
-            self.assertIn("loom get energy/technology-data/costs.csv", content)
-            self.assertIn("Run `uv run loom get <workspace/path/to/file>` immediately, or use `loom.get(\"workspace/path/to/file\")` in Python.", content)
-            self.assertIn("Do not spend turns rediscovering how Loom fetch works", content)
-            self.assertIn('local_path = loom.get("energy/technology-data/costs.csv")', content)
-            self.assertIn("Push one workspace: `uv run loom push energy`", content)
-            self.assertIn("Pull raw files for one workspace: `uv run loom pull-raw energy`", content)
-            self.assertIn(str(workspace_root / "scripts" / "loom.py"), content)
-
-            explore_git_dir = workspace_root / "loom" / "loom_explore" / ".git"
-            self.assertTrue(explore_git_dir.exists())
-
-            agents_skill_path = workspace_root / ".agents" / "skills" / "loom-data" / "SKILL.md"
-            claude_skill_path = workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md"
-            cursor_skill_path = workspace_root / ".cursor" / "skills" / "loom-data" / "SKILL.md"
-            copilot_skill_path = workspace_root / ".copilot" / "skills" / "loom-data" / "SKILL.md"
-            self.assertTrue(agents_skill_path.exists())
-            self.assertTrue(claude_skill_path.exists())
-            self.assertTrue(cursor_skill_path.exists())
-            self.assertTrue(copilot_skill_path.exists())
+            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
 
 
 if __name__ == "__main__":

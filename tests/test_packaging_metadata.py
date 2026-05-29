@@ -5,10 +5,18 @@ import io
 import unittest
 from unittest import mock
 
+import loom
 from loom.cli import main
 
 
 class PackagingMetadataTest(unittest.TestCase):
+    def test_public_api_exports_new_scan_entrypoint_only(self) -> None:
+        self.assertTrue(hasattr(loom, "scan_path_to_explore"))
+        self.assertTrue(hasattr(loom, "scan_topic_from_chat"))
+        self.assertFalse(hasattr(loom, "scan_topic_to_explore"))
+        self.assertIn("scan_path_to_explore", loom.__all__)
+        self.assertNotIn("scan_topic_to_explore", loom.__all__)
+
     def test_server_commands_report_missing_server_package(self) -> None:
         stderr = io.StringIO()
 

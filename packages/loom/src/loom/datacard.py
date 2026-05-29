@@ -25,11 +25,12 @@ def write_dataset_card(
     if legacy_datacard.exists():
         legacy_datacard.unlink()
 
+    raw_dataset_path = _resolve_raw_dataset_path(raw_dataset_dir, scan_manifest)
     csv_entries = [build_csv_entry(profile) for profile in csv_profiles]
     source_info = extract_source_info(loom_text)
     source_info["key_sites"] = collect_source_sites(csv_profiles)
     profile_payload = {
-        "raw_dataset_dir": raw_dataset_dir.as_posix(),
+        "raw_dataset_dir": raw_dataset_path,
         "loom_md_present": bool(loom_text.strip()),
         "source": source_info,
         "csv_count": len(csv_profiles),
@@ -44,7 +45,7 @@ def write_dataset_card(
         encoding="utf-8",
     )
 
-    overview_markdown = build_dataset_overview(raw_dataset_dir, loom_text, csv_profiles)
+    overview_markdown = build_dataset_overview(raw_dataset_dir, raw_dataset_path, loom_text, csv_profiles)
     (dataset_dir / "overview.md").write_text(overview_markdown, encoding="utf-8")
 
     for profile in csv_profiles:
@@ -54,9 +55,35 @@ def write_dataset_card(
             encoding="utf-8",
         )
         (dataset_dir / f"{stem}.card.md").write_text(
-            build_csv_card(raw_dataset_dir, profile),
+            build_csv_card(raw_dataset_path, profile),
             encoding="utf-8",
         )
+
+
+def refresh_dataset_card(
+    dataset_dir: Path,
+    raw_dataset_dir: Path,
+    loom_text: str,
+    scan_manifest: dict[str, Any] | None,
+) -> bool:
+    profile_path = dataset_dir / "profile.json"
+    overview_path = dataset_dir / "overview.md"
+    if not profile_path.exists() or not overview_path.exists():
+        return False
+
+    payload = json.loads(profile_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        return False
+    csv_profiles = payload.get("csv_profiles")
+    if not isinstance(csv_profiles, list):
+        return False
+
+    expected_raw_dataset_path = _resolve_raw_dataset_path(raw_dataset_dir, scan_manifest)
+    if payload.get("raw_dataset_dir") == expected_raw_dataset_path:
+        return False
+
+    write_dataset_card(dataset_dir, raw_dataset_dir, loom_text, csv_profiles, scan_manifest=scan_manifest)
+    return True
 
 
 def write_topic_index(
@@ -90,6 +117,13 @@ def write_topic_index(
 
     lines.append("")
     (explore_topic_dir / "README.md").write_text("\n".join(lines), encoding="utf-8")
+
+
+def _resolve_raw_dataset_path(raw_dataset_dir: Path, scan_manifest: dict[str, Any] | None) -> str:
+    relative_dir = scan_manifest.get("topic_relative_dir") if isinstance(scan_manifest, dict) else None
+    if isinstance(relative_dir, str) and relative_dir:
+        return relative_dir
+    return raw_dataset_dir.as_posix()
 def _render_csv_profile(profile: dict[str, Any]) -> list[str]:
     lines = [
         "## Profiling Details",

@@ -7,10 +7,10 @@ from typing import Any
 from .source import collect_source_sites, describe_row_layout, extract_source_info, render_column_list, summarize_csv
 
 
-def build_dataset_overview(raw_dataset_dir: Path, loom_text: str, csv_profiles: list[dict[str, Any]]) -> str:
+def build_dataset_overview(raw_dataset_dir: Path, raw_dataset_path: str, loom_text: str, csv_profiles: list[dict[str, Any]]) -> str:
     source_info = extract_source_info(loom_text)
     source_sites = source_info["key_sites"] = collect_source_sites(csv_profiles)
-    lines = [f"# Dataset Overview: {raw_dataset_dir.name}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_dir.as_posix()}`", f"- CSV files profiled: {len(csv_profiles)}", f"- Total rows across profiled CSV files: {sum(profile['row_count'] for profile in csv_profiles)}", ""]
+    lines = [f"# Dataset Overview: {raw_dataset_dir.name}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_path}`", f"- CSV files profiled: {len(csv_profiles)}", f"- Total rows across profiled CSV files: {sum(profile['row_count'] for profile in csv_profiles)}", ""]
     if source_info["url"] or source_info["summary"] or loom_text.strip():
         lines.extend(["## Source", ""])
         for label, value in (("Primary source", source_info["url"]), ("Description", source_info["summary"]), ("License", source_info["license"]), ("Notes", source_info["notes"])):
@@ -28,8 +28,8 @@ def build_dataset_overview(raw_dataset_dir: Path, loom_text: str, csv_profiles: 
     return "\n".join(lines)
 
 
-def build_csv_card(raw_dataset_dir: Path, profile: dict[str, Any]) -> str:
-    lines = [f"# CSV Data Card: {profile['file_name']}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_dir.as_posix()}`", f"- CSV file: `{profile['file_name']}`", f"- Rows: {profile['row_count']}", f"- File size: {profile['file_size_bytes']} bytes", f"- Delimiter: `{profile['dialect']['delimiter']}`", f"- Summary: {summarize_csv(profile)}", f"- Row layout: {describe_row_layout(profile)}", "", "## Structure", ""]
+def build_csv_card(raw_dataset_path: str, profile: dict[str, Any]) -> str:
+    lines = [f"# CSV Data Card: {profile['file_name']}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_path}`", f"- CSV file: `{profile['file_name']}`", f"- Rows: {profile['row_count']}", f"- File size: {profile['file_size_bytes']} bytes", f"- Delimiter: `{profile['dialect']['delimiter']}`", f"- Summary: {summarize_csv(profile)}", f"- Row layout: {describe_row_layout(profile)}", "", "## Structure", ""]
     lines.extend([f"- Columns: {render_column_list(profile)}", f"- Row layout pattern: {describe_row_layout(profile)}", ""] if profile["columns"] else ["No columns were detected.", ""])
     return "\n".join(lines + _render_csv_profile(profile))
 

@@ -3,17 +3,38 @@ from __future__ import annotations
 import importlib
 import sys
 
-from .handlers import run_confirm, run_get, run_install, run_pull, run_pull_raw, run_push, run_scan, run_set_api, run_status
+from .handlers import run_ask, run_confirm, run_get, run_init, run_pull, run_pull_raw, run_push, run_scan, run_set_api, run_status
 from .parser import build_parser
 from .routing import run_route
 
 
+KNOWN_COMMANDS = {
+    "ask",
+    "confirm",
+    "get",
+    "init",
+    "install",
+    "pull",
+    "pull-raw",
+    "push",
+    "route",
+    "scan",
+    "server-init-db",
+    "server-run",
+    "set-api",
+    "status",
+}
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    normalized_argv = _normalize_argv(sys.argv[1:] if argv is None else argv)
+    args = build_parser().parse_args(normalized_argv)
     handlers = {
-        "install": run_install,
+        "init": run_init,
+        "install": run_init,
         "scan": run_scan,
         "route": run_route,
+        "ask": run_ask,
         "set-api": run_set_api,
         "get": run_get,
         "status": run_status,
@@ -47,3 +68,12 @@ def _run_server_command(function_name: str, *args: object) -> int:
 
     command = getattr(module, function_name)
     return int(command(*args))
+
+
+def _normalize_argv(argv: list[str]) -> list[str]:
+    if not argv:
+        return argv
+    first = argv[0].strip().lower()
+    if first and not first.startswith("-") and first not in KNOWN_COMMANDS:
+        return ["ask", *argv]
+    return argv

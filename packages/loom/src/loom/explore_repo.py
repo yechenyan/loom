@@ -18,8 +18,12 @@ class RepoStatus:
     repo_dir: Path
     scope: str | None
     entries: tuple[RepoStatusEntry, ...]
+
+
 def get_explore_repo_dir(workspace_root: Path | str) -> Path:
-    return resolve_loom_root(workspace_root) / "loom_explore"
+    return resolve_loom_root(workspace_root)
+
+
 def ensure_explore_repo(workspace_root: Path | str) -> Path:
     repo_dir = get_explore_repo_dir(workspace_root)
     repo_dir.mkdir(parents=True, exist_ok=True)
@@ -31,6 +35,8 @@ def ensure_explore_repo(workspace_root: Path | str) -> Path:
 
     _run_git(repo_dir, ["init"])
     return repo_dir
+
+
 def get_repo_status(workspace_root: Path | str, scope: str | None = None) -> RepoStatus:
     repo_dir = ensure_explore_repo(workspace_root)
     command = ["status", "--short", "--untracked-files=all"]
@@ -47,6 +53,8 @@ def get_repo_status(workspace_root: Path | str, scope: str | None = None) -> Rep
         entries.append(RepoStatusEntry(code=code, path=path))
 
     return RepoStatus(repo_dir=repo_dir, scope=scope, entries=tuple(entries))
+
+
 def confirm_changes(workspace_root: Path | str, scope: str | None = None, message: str | None = None) -> str | None:
     repo_dir = ensure_explore_repo(workspace_root)
     status = get_repo_status(workspace_root, scope)
@@ -59,7 +67,7 @@ def confirm_changes(workspace_root: Path | str, scope: str | None = None, messag
     _run_git(repo_dir, add_command)
 
     commit_message = message or _default_commit_message(scope)
-    result = _run_git(
+    _run_git(
         repo_dir,
         [
             "-c",
@@ -75,6 +83,8 @@ def confirm_changes(workspace_root: Path | str, scope: str | None = None, messag
     )
 
     return get_repo_head_commit(workspace_root)
+
+
 def get_repo_head_commit(workspace_root: Path | str) -> str | None:
     repo_dir = ensure_explore_repo(workspace_root)
     result = subprocess.run(
@@ -87,6 +97,8 @@ def get_repo_head_commit(workspace_root: Path | str) -> str | None:
     if result.returncode != 0:
         return None
     return result.stdout.strip() or None
+
+
 def list_scope_commits_since(workspace_root: Path | str, scope: str, since_commit: str | None) -> tuple[str, ...]:
     repo_dir = ensure_explore_repo(workspace_root)
     command = ["rev-list", "--reverse"]
@@ -98,6 +110,8 @@ def list_scope_commits_since(workspace_root: Path | str, scope: str, since_commi
     result = _run_git(repo_dir, command)
     commits = [line.strip() for line in result.stdout.splitlines() if line.strip()]
     return tuple(commits)
+
+
 def get_commit_file_map(workspace_root: Path | str, scope: str, commit: str) -> dict[str, bytes]:
     repo_dir = ensure_explore_repo(workspace_root)
     list_result = _run_git(repo_dir, ["ls-tree", "-r", "--name-only", commit, "--", scope])
@@ -116,6 +130,8 @@ def get_commit_file_map(workspace_root: Path | str, scope: str, commit: str) -> 
         content = _run_git_bytes(repo_dir, ["show", f"{commit}:{normalized_path}"])
         file_map[relative_path] = content
     return file_map
+
+
 def list_workspaces(workspace_root: Path | str) -> tuple[str, ...]:
     repo_dir = ensure_explore_repo(workspace_root)
     workspaces: list[str] = []
@@ -126,10 +142,14 @@ def list_workspaces(workspace_root: Path | str) -> tuple[str, ...]:
             continue
         workspaces.append(child.name)
     return tuple(workspaces)
+
+
 def _default_commit_message(scope: str | None) -> str:
     if scope:
         return f"Confirm workspace {scope}"
-    return "Confirm loom_explore changes"
+    return "Confirm loom changes"
+
+
 def _ensure_repo_gitignore(repo_dir: Path) -> None:
     gitignore_path = repo_dir / ".gitignore"
     required_lines = [".DS_Store"]
@@ -145,6 +165,8 @@ def _ensure_repo_gitignore(repo_dir: Path) -> None:
 
     if updated_lines != existing_lines:
         gitignore_path.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
+
+
 def _run_git(repo_dir: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(
         ["git", *args],
@@ -157,6 +179,8 @@ def _run_git(repo_dir: Path, args: list[str]) -> subprocess.CompletedProcess[str
         message = result.stderr.strip() or result.stdout.strip() or "Unknown git error"
         raise RuntimeError(message)
     return result
+
+
 def _run_git_bytes(repo_dir: Path, args: list[str]) -> bytes:
     result = subprocess.run(
         ["git", *args],

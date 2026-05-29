@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 
 from ..chat import parse_loom_command
-from ..scanner import scan_all_topics_to_explore, scan_topic_from_chat
+from ..scanner import DuplicateDatasetPathError, scan_topic_from_chat
+from .ask_flow import run_ask_query
 from .config import DEFAULT_SERVER_URL
 from .handlers import run_confirm, run_pull, run_push, run_status
 from .output import print_status_summary
@@ -15,22 +16,25 @@ def run_route(args: argparse.Namespace) -> int:
         print("No loom command detected.")
         return 1
     if request.command == "scan":
-        if request.workspace is None:
-            results = scan_all_topics_to_explore(args.workspace_root)
-            if not results:
-                print("No loom workspaces found to scan.")
-                return 0
-            print("Detected loom scan chat command for all workspaces.")
-            for result in results:
-                print_status_summary(args.workspace_root, result.topic)
-            return 0
-        result = scan_topic_from_chat(args.message, args.workspace_root)
+        if request.source_path is None:
+            print("Missing scan path. Use `loom scan <path> [to <workspace>]`.")
+            return 1
+        try:
+            result = scan_topic_from_chat(args.message, args.workspace_root)
+        except DuplicateDatasetPathError as exc:
+            print(str(exc))
+            return 1
         if result is None:
             print("No loom scan command detected.")
             return 1
-        print(f"Detected loom scan chat command for topic: {request.workspace}")
-        print_status_summary(args.workspace_root, request.workspace)
+        print(f"Detected loom scan chat command for workspace: {result.topic}")
+        print_status_summary(args.workspace_root, result.topic)
         return 0
+    if request.command == "ask":
+        if not request.query:
+            print("Missing ask query. Use `loom ask <question>` or `loom <question>`.")
+            return 1
+        return run_ask_query(request.query, args.workspace_root, DEFAULT_SERVER_URL)
     route_args = argparse.Namespace(
         workspace=request.workspace,
         workspace_root=args.workspace_root,

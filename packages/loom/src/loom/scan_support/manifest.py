@@ -8,9 +8,10 @@ from ..scan_state import hash_file, hash_text
 
 
 def build_dataset_scan_manifest(raw_topic_dir: Path, dataset_root: Path, loom_text: str, csv_files: list[Path]) -> dict[str, Any]:
+    topic_relative_dir = dataset_root.relative_to(raw_topic_dir).as_posix() or "."
     csv_entries = [
         {
-            "raw_path": csv_path.as_posix(),
+            "raw_path": csv_path.relative_to(raw_topic_dir).as_posix(),
             "topic_relative_path": csv_path.relative_to(raw_topic_dir).as_posix(),
             "dataset_relative_path": csv_path.relative_to(dataset_root).as_posix(),
             "sha256": hash_file(csv_path),
@@ -19,14 +20,14 @@ def build_dataset_scan_manifest(raw_topic_dir: Path, dataset_root: Path, loom_te
         for csv_path in csv_files
     ]
     dataset_hash_source = {
-        "raw_dataset_dir": dataset_root.as_posix(),
+        "raw_dataset_dir": topic_relative_dir,
         "loom_md_sha256": hash_text(loom_text),
         "csv_files": [{"topic_relative_path": entry["topic_relative_path"], "sha256": entry["sha256"]} for entry in csv_entries],
     }
     return {
-        "raw_dataset_dir": dataset_root.as_posix(),
-        "topic_relative_dir": dataset_root.relative_to(raw_topic_dir).as_posix() or ".",
-        "loom_md_path": (dataset_root / "loom.md").as_posix(),
+        "raw_dataset_dir": topic_relative_dir,
+        "topic_relative_dir": topic_relative_dir,
+        "loom_md_path": f"{topic_relative_dir}/loom.md" if topic_relative_dir != "." else "loom.md",
         "loom_md_sha256": hash_text(loom_text),
         "csv_files": csv_entries,
         "dataset_sha256": hash_text(json.dumps(dataset_hash_source, sort_keys=True, ensure_ascii=False)),

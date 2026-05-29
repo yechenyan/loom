@@ -17,8 +17,66 @@ const defaultState = {
 };
 
 const NAV_ITEMS = [
-  { key: "home", label: "Start" },
-  { key: "explore", label: "Erkunden" },
+  { key: "home", label: "首页" },
+  { key: "explore", label: "探索数据" },
+];
+
+const AGENT_INSTALL_PROMPTS = [
+  {
+    key: "chatgpt",
+    label: "ChatGPT",
+    assistant: "ChatGPT",
+  },
+  {
+    key: "claude",
+    label: "Claude",
+    assistant: "Claude",
+  },
+  {
+    key: "cursor",
+    label: "Cursor",
+    assistant: "Cursor",
+  },
+];
+
+const HOME_FLOW = [
+  {
+    step: "01",
+    title: "整理原始数据",
+    body: "把 CSV、目录说明和原始资料放进 `raw_data/<workspace>/...`，Loom 识别带 `loom.md` 的数据集根目录。",
+  },
+  {
+    step: "02",
+    title: "生成轻量数据卡",
+    body: "`loom scan` 会生成 overview、CSV 摘要、字段画像和统计信息，让 AI 先看结构再决定下一步。",
+  },
+  {
+    step: "03",
+    title: "按需取回原始文件",
+    body: "`loom ask` 和 `loom get` 会先检索卡片，再精确定位真正需要打开的原始数据文件。",
+  },
+];
+
+const HOME_OUTPUTS = [
+  {
+    title: "给 AI 的入口更轻",
+    body: "从直接打开大 CSV，变成先读 `overview.md` 和每个 CSV 卡片，减少无效上下文。",
+  },
+  {
+    title: "问题定位更快",
+    body: "AI 先知道哪个 workspace、哪个 dataset、哪张表更相关，再决定要不要继续取 raw file。",
+  },
+  {
+    title: "团队可复用",
+    body: "扫描结果写进 `loom/`，后来的同事或 agent 可以复用同一套摘要，而不是重新读一遍大文件。",
+  },
+];
+
+const HOME_USE_CASES = [
+  "分析师先问问题，再下钻到准确的原始表",
+  "工程师写脚本前先确认字段和分布",
+  "报告生成时避免把大文件整份塞给 AI",
+  "多数据源项目里，为每个 workspace 留下可搜索的数据说明",
 ];
 
 export default function App() {
@@ -283,7 +341,7 @@ export default function App() {
         />
       )}
 
-      {state.loading ? <StatusPanel title="Katalog wird geladen" body="Lese Zusammenfassungen aus `loom_explore`..." /> : null}
+      {state.loading ? <StatusPanel title="Katalog wird geladen" body="Lese Zusammenfassungen aus `loom`..." /> : null}
       {state.error ? <StatusPanel title="Daten konnten nicht geladen werden" body={state.error} variant="error" /> : null}
 
       {!state.loading && !state.error && view === "explore" ? (
@@ -499,7 +557,7 @@ function TopNav({ view, onNavigate }) {
     <header className="top-nav">
       <div className="brand">
         <span className="brand-mark">loom</span>
-        <span className="brand-sub">Datenkarten für große Datensätze</span>
+        <span className="brand-sub">让 AI 先读数据卡，再按需读取原始文件</span>
       </div>
       <nav className="nav-tabs" aria-label="Hauptnavigation">
         {NAV_ITEMS.map((item) => (
@@ -517,259 +575,369 @@ function TopNav({ view, onNavigate }) {
 }
 
 function HomePage({ workspaceCount, datasetCount, csvProfileCount, onOpenExplore }) {
-  const topSteps = [
-    {
-      number: "1",
-      title: "Installieren",
-      detail: "Installiere Loom im aktuellen Projekt. Dafür brauchst du nur zwei Befehle.",
-      lines: ["uv add loom-data", "uv run loom install"],
-    },
-    {
-      number: "2",
-      title: "Dateien ablegen",
-      detail: "Lege echte Dateien in `loom/loom_raw/<workspace>/` ab. Im Beispiel unten verwenden wir nur eine `costs.csv`.",
-      lines: ["mkdir -p loom/loom_raw/energy", "cp costs.csv loom/loom_raw/energy/"],
-    },
-    {
-      number: "3",
-      title: "scan + find",
-      detail: "Nach dem Scan schreibst du keine Pfade von Hand, sondern fragst direkt im Chat – zum Beispiel nach den CAPEX von OCGT.",
-      lines: ["loom scan energy", "loom find OCGT CAPEX"],
-    },
-  ];
+  const [selectedAgent, setSelectedAgent] = useState(AGENT_INSTALL_PROMPTS[0].key);
+  const [copiedAgent, setCopiedAgent] = useState(null);
+  const [includeTutorial, setIncludeTutorial] = useState(true);
+  const [selectedFile, setSelectedFile] = useState("overview.md");
+  const activePrompt = AGENT_INSTALL_PROMPTS.find((item) => item.key === selectedAgent) ?? AGENT_INSTALL_PROMPTS[0];
+  const installPrompt = buildInstallPrompt(activePrompt.assistant, includeTutorial);
+  const handleCopy = async () => {
+    if (!navigator?.clipboard?.writeText) {
+      return;
+    }
+    await navigator.clipboard.writeText(installPrompt);
+    setCopiedAgent(activePrompt.key);
+    window.setTimeout(() => {
+      setCopiedAgent((current) => (current === activePrompt.key ? null : current));
+    }, 1800);
+  };
 
-  const bashSteps = [
-    {
-      command: "uv add loom-data",
-      explanation: "Installiert Loom. Danach kannst du im aktuellen Projekt den Befehl `loom` verwenden.",
-    },
-    {
-      command: "uv run loom install",
-      explanation: "Initialisiert Loom. Im Projektverzeichnis wird ein Ordner `loom/` mit `loom_raw`, `loom_explore` und `.loom` angelegt.",
-    },
-    {
-      command: "mkdir -p loom/loom_raw/energy",
-      explanation: "Erstellt einen Arbeitsbereich namens `energy`. Hier kannst du alle Rohdateien zu einem Thema sammeln.",
-    },
-    {
-      command: "cp costs.csv loom/loom_raw/energy/",
-      explanation: "`costs.csv` ist ein echtes Beispiel. Du kannst sie dir als Kostentabelle mit Spalten wie `technology`, `year`, `region` und `capex_usd_per_kw` vorstellen.",
-    },
-  ];
-
-  const chatMessages = [
-    {
-      role: "user",
-      text: "Scanne bitte zuerst `energy` und schau nach, welche Daten etwas mit Stromerzeugungskosten zu tun haben.",
-    },
-    {
-      role: "assistant",
-      text: "Gern. Ich führe zuerst `loom scan energy` aus und schaue mir danach die erzeugten Zusammenfassungen und CSV-Karten an.",
-    },
-    {
-      role: "assistant",
-      text: "Ich habe eine Karte zur Datei `costs.csv` gefunden. Sie beschreibt Technologiekosten und enthält Felder wie `technology`, `year`, `region` und `capex_usd_per_kw`.",
-    },
-    {
-      role: "user",
-      text: "Dann such mir bitte die CAPEX für OCGT heraus.",
-    },
-    {
-      role: "assistant",
-      text: "Klar. Ich nutze zuerst Karten und Zusammenfassungen, um die richtige Datei zu finden, und lese dann die passenden OCGT-CAPEX-Werte aus `costs.csv` aus.",
-    },
-  ];
+  const copyText = async (text) => {
+    if (!navigator?.clipboard?.writeText) {
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+  };
 
   return (
     <>
-      <header className="hero hero-home hero-home-light">
-        <div className="hero-copy-column">
-          <p className="eyebrow">So funktioniert es</p>
-          <h1>Ordne deine Daten zuerst – und nutze sie dann im Chat.</h1>
-          <p className="hero-copy">
-            Du legst deine Rohdateien ab, Loom erstellt Zusammenfassungen und einen Index. Danach kannst du im Chat direkt fragen, zum Beispiel: „Finde die CAPEX für OCGT“.
-          </p>
-          <p className="hero-copy hero-copy-compact">
-            Im Grunde sind es nur 3 Schritte: <strong>Installieren</strong> → <strong>Dateien ablegen</strong> → <strong>scan + find</strong>
-          </p>
-          <div className="hero-cta-row">
-            <button className="primary-cta" onClick={onOpenExplore}>Zur Übersicht</button>
-            <span className="cta-hint">Erst ordnen, dann fragen</span>
+      <section className="home-reboot">
+        <header className="home-hero-shell panel">
+          <div className="home-hero-copy">
+            <p className="eyebrow">AI Data Workflow</p>
+            <h1>把大数据集变成 AI 看得懂、找得到、按需再深入的工作流。</h1>
+            <p className="home-hero-lead">
+              Loom 会先把原始数据扫描成轻量数据卡，让 AI 优先理解数据结构、主题和关键文件，只有在真的需要时才读取原始 CSV。
+            </p>
+            <div className="hero-cta-row">
+              <button className="primary-cta" onClick={onOpenExplore}>查看真实数据卡</button>
+              <span className="cta-hint">适合先检索、后取数的 AI 数据分析流程</span>
+            </div>
+            <div className="home-stage-stats">
+              <MetricCard label="工作区" value={workspaceCount} />
+              <MetricCard label="数据集" value={datasetCount} />
+              <MetricCard label="CSV 卡片" value={csvProfileCount} />
+            </div>
+            <div className="home-command-strip">
+              <div className="home-command-card">
+                <span>1. 扫描</span>
+                <code>loom scan raw_data/energy to energy</code>
+              </div>
+              <div className="home-command-card">
+                <span>2. 提问</span>
+                <code>loom ask OCGT 的成本是多少</code>
+              </div>
+              <div className="home-command-card">
+                <span>3. 深挖</span>
+                <code>loom get energy/technology-data/costs.csv</code>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="hero-summary panel">
-          <div className="hero-summary-steps">
-            {topSteps.map((step) => (
-              <article key={step.number} className="hero-step-card">
-                <span className="hero-step-number">{step.number}</span>
-                <div>
-                  <strong>{step.title}</strong>
-                  <p>{step.detail}</p>
-                  <pre>{step.lines.join("\n")}</pre>
+          <div className="home-chat-stage home-chat-stage-preserved">
+            <div className="home-chat-head">
+              <p className="eyebrow">轻松开始</p>
+              <h2>轻松开始</h2>
+            </div>
+            <div className="chat-toolbar">
+              <div className="agent-tabs" role="tablist" aria-label="AI Agent">
+                {AGENT_INSTALL_PROMPTS.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={item.key === activePrompt.key}
+                    className={item.key === activePrompt.key ? "agent-tab active" : "agent-tab"}
+                    onClick={() => setSelectedAgent(item.key)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <label className="tutorial-toggle">
+                <input
+                  type="checkbox"
+                  checked={includeTutorial}
+                  onChange={(event) => setIncludeTutorial(event.target.checked)}
+                />
+                <span>安装时启用教学</span>
+              </label>
+            </div>
+            <div className="chat-window home-chat-window" aria-label={`${activePrompt.assistant} onboarding chat`}>
+              <div className="chat-shell-top">
+                <div className="chat-shell-meta">
+                  <span className="chat-shell-dot" />
+                  <strong>{activePrompt.label}</strong>
+                  <span>tutorial workspace</span>
                 </div>
+                <div className="chat-shell-badge">Ready</div>
+              </div>
+              <div className="chat-thread">
+                <ChatStepLabel text="第一步-安装：把下面话直接粘贴给 AI Agent。" />
+                <ChatSnippet role="user" text={installPrompt} onCopy={() => handleCopy()} />
+                <ChatSnippet
+                  role="assistant"
+                  text={`我会先检查并安装 uv，然后安装 loom-data，运行 loom init，并按 ${activePrompt.assistant} 的方式完成初始化${includeTutorial ? "，同时安装 tutorial dataset" : ""}。`}
+                />
+                <ChatDivider />
+                <ChatStepLabel text="第 2 步：让 Agent 扫描 tutorial dataset 并创建数据卡片。" />
+                <ChatSnippet
+                  role="user"
+                  text="loom scan loom/loom_raw/tutorial to tutorial"
+                  onCopy={() => copyText("loom scan loom/loom_raw/tutorial to tutorial")}
+                />
+                <ChatSnippet
+                  role="assistant"
+                  text="我会扫描 tutorial dataset，生成 overview、CSV 字段画像和可供后续检索的数据卡片。"
+                />
+                <ChatDivider />
+                <ChatStepLabel text="第 3 步：直接基于 tutorial dataset 提问。" />
+                <ChatSnippet role="user" text="loom ask OCGT 的成本是多少" onCopy={() => copyText("loom ask OCGT 的成本是多少")} />
+                <ChatSnippet
+                  role="assistant"
+                  text="我会先读取 tutorial workspace 的卡片和摘要，再定位 OCGT 对应的成本数据。拿到目标文件后，你也可以直接在代码里继续处理它。"
+                  code={`import loom\n\ndata = loom.get("tutorial/costs.csv")\nprint(data)`}
+                />
+              </div>
+            </div>
+            <FileWorkbench selectedFile={selectedFile} onSelectFile={setSelectedFile} />
+          </div>
+        </header>
+
+        <section className="home-story-grid">
+          <article className="panel home-problem-card">
+            <p className="eyebrow">一眼看懂</p>
+            <h2>Loom 是什么</h2>
+            <p>
+              Loom 是给 AI 用的数据入口层。它不替代原始数据，也不做 BI；它做的是先把大体量原始资料整理成可搜索、可复用的数据卡，让 agent 少走弯路。
+            </p>
+          </article>
+          <article className="panel home-problem-card">
+            <p className="eyebrow">为什么需要</p>
+            <h2>大文件不该成为 AI 的默认起点</h2>
+            <p>
+              直接把几万行 CSV 丢给 AI，通常既慢又贵，也难复用。Loom 把“先理解数据，再打开原文”做成默认流程，让每次问答和分析都更稳。
+            </p>
+          </article>
+        </section>
+
+        <section className="panel home-flow-panel">
+          <div className="home-section-head">
+            <p className="eyebrow">工作方式</p>
+            <h2>先扫描，再检索，最后按需取数</h2>
+          </div>
+          <div className="home-flow-grid">
+            {HOME_FLOW.map((item) => (
+              <article key={item.step} className="home-flow-card">
+                <span className="home-flow-step">{item.step}</span>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
               </article>
             ))}
           </div>
-          <div className="hero-visual-stats">
-            <MetricCard label="Arbeitsbereiche" value={workspaceCount} />
-            <MetricCard label="Datensätze" value={datasetCount} />
-            <MetricCard label="CSV-Profile" value={csvProfileCount} />
-          </div>
-        </div>
-      </header>
-
-      <section className="home-stack">
-        <section className="panel home-section">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Beispiele</p>
-              <h2>Diese zwei Beispiele zeigen den typischen Ablauf</h2>
-            </div>
-          </div>
-          <p className="hero-copy">
-            Oben steht die Kurzfassung. Hier siehst du die Details: links die Befehle, rechts ein echtes Chat-Beispiel.
-          </p>
-
-          <div className="demo-grid">
-            <article className="demo-card bash-demo">
-              <div className="demo-header">
-                <p className="eyebrow">Demo 1</p>
-                <h3>Zuerst Bash: so legst du eine echte Datei Schritt für Schritt ab</h3>
-              </div>
-              <div className="terminal-window" aria-label="Bash-Demo">
-                <div className="terminal-bar">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="terminal-body">
-                  {bashSteps.map((step) => (
-                    <div key={step.command} className="terminal-step">
-                      <pre className="terminal-command">$ {step.command}</pre>
-                      <p className="terminal-explanation">{step.explanation}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </article>
-
-            <article className="demo-card chat-demo">
-              <div className="demo-header">
-                <p className="eyebrow">Demo 2</p>
-                <h3>Dann der Chat: du fragst direkt, statt Pfade von Hand zu schreiben</h3>
-              </div>
-              <div className="chat-window" aria-label="Chat-Demo">
-                {chatMessages.map((message, index) => (
-                  <div
-                    key={`${message.role}-${index}`}
-                    className={message.role === "user" ? "chat-bubble chat-user" : "chat-bubble chat-assistant"}
-                  >
-                    <span className="chat-role">{message.role === "user" ? "Du" : "Codex"}</span>
-                    <p>{message.text}</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </div>
-
-          <div className="folder-layout-card">
-            <div className="demo-header">
-              <p className="eyebrow">Ordner</p>
-              <h3>Nach der Installation sieht `loom/` ungefähr so aus</h3>
-            </div>
-            <div className="folder-layout-grid">
-              <CodeBlock
-                title="Projektstruktur"
-                lines={[
-                  "loom/",
-                  "├── loom_raw/        # Hier liegen die Rohdateien",
-                  "│   └── energy/",
-                  "│       └── costs.csv",
-                  "├── loom_explore/    # Hier landen Zusammenfassungen und Karten nach dem Scan",
-                  "│   └── energy/",
-                  "│       ├── overview.md",
-                  "│       └── costs.csv.md",
-                  "└── .loom/           # Interne Daten von Loom",
-                ]}
-              />
-            </div>
-          </div>
         </section>
 
-        <section className="panel home-section">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Ablauf</p>
-              <h2>Was Loom im Hintergrund macht</h2>
+        <section className="home-story-grid">
+          <article className="panel home-output-card">
+            <div className="home-section-head">
+              <p className="eyebrow">扫描后会得到什么</p>
+              <h2>不是一句摘要，而是一套可继续工作的上下文</h2>
             </div>
-          </div>
-          <FlowAnimation />
-          <div className="workflow-caption-grid">
-            <p><strong>1.</strong> Du legst Rohdateien in einen Arbeitsbereich.</p>
-            <p><strong>2.</strong> `loom scan` erzeugt Zusammenfassungen, Beschreibungen und CSV-Karten.</p>
-            <p><strong>3.</strong> Danach stellst du im Chat direkt eine Frage, zum Beispiel zu OCGT-CAPEX.</p>
-          </div>
+            <div className="home-output-list">
+              {HOME_OUTPUTS.map((item) => (
+                <div key={item.title} className="home-output-item">
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel home-use-case-card">
+            <div className="home-section-head">
+              <p className="eyebrow">适用场景</p>
+              <h2>什么时候最有价值</h2>
+            </div>
+            <div className="home-use-case-list">
+              {HOME_USE_CASES.map((item) => (
+                <div key={item} className="home-use-case-item">
+                  <span className="home-use-case-dot" />
+                  <p>{item}</p>
+                </div>
+              ))}
+            </div>
+          </article>
         </section>
       </section>
     </>
   );
 }
 
-function ExploreHero({ workspaceCount, datasetCount, csvProfileCount }) {
-  return (
-    <header className="hero">
-      <div>
-        <p className="eyebrow">Loom Erkunden</p>
-        <h1>Sieh dir erst die Übersicht an – und entscheide dann, welche Rohdatei du brauchst.</h1>
-        <p className="hero-copy">
-          Wähle links einen Arbeitsbereich und einen Datensatz, lies zuerst die Zusammenfassung und öffne dann die passenden Dateien.
-        </p>
-      </div>
-      <div className="hero-stats">
-        <MetricCard label="Arbeitsbereiche" value={workspaceCount} />
-        <MetricCard label="Datensätze" value={datasetCount} />
-        <MetricCard label="CSV-Profile" value={csvProfileCount} />
-      </div>
-    </header>
-  );
+function ChatStepLabel({ text }) {
+  return <div className="chat-step-label">{text}</div>;
 }
 
-function FlowAnimation() {
+function ChatDivider() {
+  return <div className="chat-divider" aria-hidden="true" />;
+}
+
+function ChatSnippet({ role, text, onCopy, code }) {
+  const isUser = role === "user";
   return (
-    <div className="flow-anim flow-anim-light" aria-label="Loom-Ablauf">
-      <div className="flow-node flow-raw">
-        <span className="flow-title">Rohdaten</span>
-        <span className="flow-sub">`loom/loom_raw`</span>
+    <div className={isUser ? "chat-row chat-row-user" : "chat-row chat-row-assistant"}>
+      <div className={isUser ? "chat-avatar chat-avatar-user" : "chat-avatar chat-avatar-assistant"}>
+        {isUser ? "U" : "A"}
       </div>
-      <div className="flow-arrow" />
-      <div className="flow-node flow-scan">
-        <span className="flow-title">loom scan</span>
-        <span className="flow-sub">profilieren + zusammenfassen</span>
+      <div className={isUser ? "chat-bubble chat-user" : "chat-bubble chat-assistant"}>
+        <div className="chat-bubble-top">
+          <span className="chat-role">{isUser ? "User" : "Agent"}</span>
+          {isUser && onCopy ? (
+            <button type="button" className="message-copy-button" onClick={onCopy}>
+              Copy
+            </button>
+          ) : null}
+        </div>
+        <p>{text}</p>
+        {code ? (
+          <pre className="chat-code-block">
+            <code>{code}</code>
+          </pre>
+        ) : null}
       </div>
-      <div className="flow-arrow" />
-      <div className="flow-node flow-cards">
-        <span className="flow-title">Karten</span>
-        <span className="flow-sub">`loom/loom_explore`</span>
-      </div>
-      <div className="flow-arrow" />
-      <div className="flow-node flow-get">
-        <span className="flow-title">loom get</span>
-        <span className="flow-sub">genaue Datei holen</span>
-      </div>
-      <div className="flow-spark" />
     </div>
   );
 }
 
-function CodeBlock({ title, lines }) {
+const TUTORIAL_FILES = [
+  {
+    id: "overview.md",
+    label: "overview.md",
+    group: "tutorial",
+    language: "md",
+    content: `# tutorial
+
+本工作区包含 tutorial dataset 的摘要卡片。
+
+- 主题：发电技术成本
+- 关键文件：costs.csv
+- 用途：先给 AI 一个轻量入口，再按需读取原始数据
+`,
+  },
+  {
+    id: "costs.csv.md",
+    label: "costs.csv.md",
+    group: "tutorial",
+    language: "md",
+    content: `# costs.csv
+
+## Summary
+- rows: 128
+- columns: technology, year, region, capex_usd_per_kw
+- focus: OCGT, CCGT, solar, wind
+
+## Quick read
+这个卡片告诉 AI：哪几列重要、值分布大概是什么、应先去哪里找成本数据。
+`,
+  },
+  {
+    id: "costs.csv",
+    label: "costs.csv",
+    group: "raw_data/tutorial",
+    language: "csv",
+    content: `technology,year,region,capex_usd_per_kw
+OCGT,2023,Global,850
+CCGT,2023,Global,1100
+Solar PV,2023,Global,700
+Wind Onshore,2023,Global,1350
+`,
+  },
+  {
+    id: "loom.md",
+    label: "loom.md",
+    group: "raw_data/tutorial",
+    language: "md",
+    content: `# tutorial dataset
+
+这个目录表示一个教学数据集根目录。
+其中的 CSV 会被 Loom 扫描，并在 loom_explore/tutorial 下生成数据卡片。
+`,
+  },
+];
+
+function FileWorkbench({ selectedFile, onSelectFile }) {
+  const activeFile = TUTORIAL_FILES.find((file) => file.id === selectedFile) ?? TUTORIAL_FILES[0];
+  const groups = [
+    { name: "loom/tutorial", files: TUTORIAL_FILES.filter((file) => file.group === "tutorial") },
+    { name: "raw_data/tutorial", files: TUTORIAL_FILES.filter((file) => file.group === "raw_data/tutorial") },
+  ];
+
   return (
-    <section className="code-block">
-      <div className="code-block-title">{title}</div>
-      <pre className="code-block-pre">
-        <code>{lines.join("\n")}</code>
-      </pre>
+    <section className="file-workbench">
+      <div className="file-workbench-head">
+        <div>
+          <p className="eyebrow">文件结构</p>
+          <h3>安装教学数据后会生成这些文件</h3>
+        </div>
+      </div>
+      <div className="file-workbench-shell">
+        <aside className="file-sidebar">
+          <div className="file-sidebar-title">EXPLORER</div>
+          {groups.map((group) => (
+            <div key={group.name} className="file-group">
+              <div className="file-group-name">
+                <span className="file-group-chevron">▾</span>
+                <span>{group.name}</span>
+              </div>
+              {group.files.map((file) => (
+                <button
+                  key={file.id}
+                  type="button"
+                  className={file.id === activeFile.id ? "file-item active" : "file-item"}
+                  onClick={() => onSelectFile(file.id)}
+                >
+                  <span className="file-item-icon">{file.language === "csv" ? "▦" : "◇"}</span>
+                  <span>{file.label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </aside>
+        <div className="file-preview">
+          <div className="file-preview-tabs">
+            <span className="file-tab active">{activeFile.label}</span>
+          </div>
+          <div className="file-preview-body">
+            <div className="file-preview-meta">{activeFile.group}</div>
+            <pre className="file-preview-code">
+              <code>{activeFile.content}</code>
+            </pre>
+          </div>
+        </div>
+      </div>
     </section>
+  );
+}
+
+function buildInstallPrompt(assistant, includeTutorial) {
+  return `请在当前项目里帮我安装 Loom：先确保 \`uv\` 可用，再运行 \`uv add loom-data\` 和 \`uv run loom init\`；初始化时请选择 \`${assistant}\`，workspace 用默认值，${includeTutorial ? "安装 tutorial dataset" : "不要安装 tutorial dataset"}，最后告诉我 \`loom/\` 是否创建成功。`;
+}
+
+function ExploreHero({ workspaceCount, datasetCount, csvProfileCount }) {
+  return (
+    <header className="hero">
+      <div>
+        <p className="eyebrow">探索数据</p>
+        <h1>先看摘要和卡片，再决定要打开哪份原始数据。</h1>
+        <p className="hero-copy">
+          左侧选择 workspace 和 dataset，先读 overview 与 CSV 卡片，再按需打开真正相关的 raw file。
+        </p>
+      </div>
+      <div className="hero-stats">
+        <MetricCard label="工作区" value={workspaceCount} />
+        <MetricCard label="数据集" value={datasetCount} />
+        <MetricCard label="CSV 卡片" value={csvProfileCount} />
+      </div>
+    </header>
   );
 }
 

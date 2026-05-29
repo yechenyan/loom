@@ -1,47 +1,35 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 
 from ..data import get as get_resource
-from ..explore_repo import confirm_changes, ensure_explore_repo
-from ..scanner import scan_all_topics_to_explore, scan_topic_to_explore
+from ..explore_repo import confirm_changes
+from ..scanner import DuplicateDatasetPathError, scan_path_to_explore
 from ..server_config import persist_base_url
 from ..sync_client import pull_raw_workspaces, pull_workspaces, push_workspaces
+from .ask_flow import run_ask_query
+from .init_flow import run_init_flow
 from .output import print_status_summary, print_workspace_status
-from .skill import install_skills
 
 
-def run_install(args: argparse.Namespace) -> int:
-    workspace_root = args.workspace_root.resolve()
-    installed_skills = install_skills(
-        args.codex_home.resolve(),
-        workspace_root,
-        tuple(args.agents) if args.agents else None,
-    )
-    repo_dir = ensure_explore_repo(workspace_root)
-    for skill in installed_skills:
-        print(f"Installed Loom skill for {skill.agent}: {skill.path}")
-    print(f"Initialized loom_explore git repo at: {repo_dir}")
-    print(f"Initialized Loom workspace root at: {repo_dir.parent}")
-    print("Agents can now use a fast path for commands like `loom scan energy`.")
-    return 0
+def run_init(args: argparse.Namespace) -> int:
+    selected_agents = tuple(args.agents) if args.agents else None
+    return run_init_flow(args.codex_home.resolve(), args.workspace_root.resolve(), selected_agents)
 
 
 def run_scan(args: argparse.Namespace) -> int:
-    if args.topic:
-        _print_scan_result(scan_topic_to_explore(args.topic, args.workspace_root))
-        print_status_summary(args.workspace_root, args.topic)
-        return 0
+    source_path, workspace = _parse_scan_args(args.scan_args)
+    if source_path is None:
+        print("Missing scan path. Use `loom scan <path> [to <workspace>]`.")
+        return 1
 
-    results = scan_all_topics_to_explore(args.workspace_root)
-    if not results:
-        loom_root = Path(args.workspace_root).resolve() / "loom" / "loom_raw"
-        print(f"No workspaces found under: {loom_root}")
-        return 0
-    for result in results:
-        _print_scan_result(result)
-        print_status_summary(args.workspace_root, result.topic)
+    try:
+        result = scan_path_to_explore(source_path, args.workspace_root, workspace=workspace)
+    except DuplicateDatasetPathError as exc:
+        print(str(exc))
+        return 1
+    _print_scan_result(result)
+    print_status_summary(args.workspace_root, result.topic)
     return 0
 
 
@@ -56,6 +44,10 @@ def run_get(args: argparse.Namespace) -> int:
     print(f"Cached resource: {args.resource}")
     print(f"Local path: {local_path}")
     return 0
+
+
+def run_ask(args: argparse.Namespace) -> int:
+    return run_ask_query(" ".join(args.query_parts).strip(), args.workspace_root, args.server_url)
 
 
 def run_status(args: argparse.Namespace) -> int:
@@ -98,8 +90,8 @@ def run_pull_raw(args: argparse.Namespace) -> int:
 
 
 def _print_scan_result(result) -> None:
-    print(f"Scanned topic: {result.topic}")
-    print(f"Raw directory: {result.raw_topic_dir}")
+    print(f"Scanned workspace: {result.topic}")
+    print(f"Source directory: {result.raw_topic_dir}")
     print(f"Explore directory: {result.explore_topic_dir}")
     print(f"Datasets discovered: {result.dataset_count}")
     print(f"Datasets rebuilt: {len(result.rebuilt_dataset_dirs)}")
@@ -164,3 +156,12 @@ def _print_pull_results(results: tuple[object, ...]) -> int:
         elif result.raw_conflict_notice_path:
             print(f"Raw conflict notice: {result.raw_conflict_notice_path}")
     return exit_code
+
+
+def _parse_scan_args(values: list[str]) -> tuple[str | None, str | None]:
+    if not values:
+        return None, None
+
+    if len(values) >= 3 and values[-2].lower() == "to":
+        return " ".join(values[:-2]).strip() or None, values[-1].strip() or None
+    return " ".join(values).strip() or None, None

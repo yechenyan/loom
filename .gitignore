@@ -7,6 +7,7 @@ __pycache__/
 .ruff_cache/
 dist/
 build/
+config/local.toml
 test-project/
 web/node_modules/
 .loom-server-storage/

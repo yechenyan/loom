@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def get_explore_repo_dir(workspace_root: Path | str) -> Path:
-    return Path(workspace_root) / "loom" / "loom_explore"
+    return Path(workspace_root) / "loom"
 
 
 @dataclass(frozen=True)

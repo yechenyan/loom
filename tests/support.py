@@ -20,6 +20,12 @@ import loom.sync_client as sync_client
 
 
 class LoomTestCase(unittest.TestCase):
+    def scan_command(self, source_path: str = "raw_data/energy", *, workspace: str | None = "energy") -> list[str]:
+        command = ["scan", source_path]
+        if workspace is not None:
+            command.extend(["to", workspace])
+        return command
+
     def call_main(self, argv: list[str]) -> tuple[int, str]:
         stdout = io.StringIO()
         with redirect_stdout(stdout):
@@ -41,7 +47,7 @@ class LoomTestCase(unittest.TestCase):
         return dict(response.json())
 
     def write_energy_dataset(self, workspace_root: Path, *, cost_value: str = "10", include_legacy_file: bool = False) -> Path:
-        dataset_dir = workspace_root / "loom" / "loom_raw" / "energy" / "technology-data"
+        dataset_dir = workspace_root / "raw_data" / "energy" / "technology-data"
         dataset_dir.mkdir(parents=True, exist_ok=True)
         (dataset_dir / "loom.md").write_text("source: https://example.com/energy\n\nEnergy dataset", encoding="utf-8")
         raw_file = dataset_dir / "costs.csv"
