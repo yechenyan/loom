@@ -33,6 +33,8 @@ raw_data/
 ```
 
 Fast init also installs the tutorial dataset under `raw_data/cost`.
+It installs three focused agent skills: `loom-local-data-lookup`,
+`loom-dataset-scan-review`, and `loom-workspace-ops`.
 
 ## Recommended workflow
 
@@ -52,6 +54,7 @@ loom OCGT 的成本是多少
 
 `loom scan` should lead the agent to run `loomcli scan-index` and then continue curating cards in chat.
 `loom ask` and bare `loom <问题>` should lead the agent to inspect `loom/` first rather than run a question-answering script.
+Agents may also inspect Loom without an explicit `loom` prefix when another task needs project-local, source-backed dataset facts.
 
 ## CLI examples
 

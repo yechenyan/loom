@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import getpass
 from pathlib import Path
 
 from ..raw_cache_support import resolve_raw_data_root
@@ -45,7 +44,7 @@ def _run_fresh_init(codex_home: Path, workspace_root: Path, agents: tuple[str, .
         print(f"Tutorial data installed at: {tutorial_dir}")
         _print_chat_and_terminal_guide()
         return 0
-    print("Agents can now use Loom with a focused skill and the default workspace you selected.")
+    print("Agents can now use Loom with focused skills and the default workspace you selected.")
     print("Remember: `loom` is chat and `loomcli` is the execution command for both users and agents.")
     return 0
 
@@ -66,18 +65,18 @@ def _run_existing_workspace_menu(codex_home: Path, workspace_root: Path, agents:
     print("A `loom` folder already exists in this directory.")
     print("Choose an option:")
     print("  1. Learn how to reset Loom")
-    print("  2. Install a skill for one agent")
+    print("  2. Install Loom skills for one agent")
     print("  3. Create a new default workspace")
     print("  4. Help")
 
     action = MENU_ACTIONS[_prompt_choice("Select an option [1-4]: ", tuple(MENU_ACTIONS))]
     if action == "delete":
-        print("To run `loom init` from scratch again, delete the existing `./loom` folder manually first.")
+        print("To run `loomcli init` from scratch again, delete the existing `./loom` folder manually first.")
         return 0
     if action == "install-skill":
         selected_agents = agents or (_prompt_agent(),)
         _print_installed_skills(install_skills(codex_home, workspace_root, selected_agents))
-        print("Skill installation finished.")
+        print("Loom skills installed.")
         return 0
     if action == "create-workspace":
         workspace_name = _prompt_workspace_name()
@@ -150,16 +149,12 @@ def _prompt_choice(prompt: str, allowed: tuple[str, ...]) -> str:
 
 
 def _default_workspace_name() -> str:
-    try:
-        user_name = getpass.getuser().strip()
-    except Exception:
-        user_name = ""
-    return _normalize_workspace_name(user_name or "temo")
+    return "tempo"
 
 
 def _normalize_workspace_name(value: str) -> str:
     normalized = value.strip().replace("\\", "-").replace("/", "-")
-    return normalized or "temo"
+    return normalized or "tempo"
 
 
 def _install_tutorial_files(workspace_root: Path) -> Path:
@@ -179,7 +174,7 @@ def _print_help() -> None:
     print("Loom quick help:")
     print("  `loom` is the chat prompt form, for example `loom scan raw_data/energy`.")
     print("  `loomcli init --agent codex` is the non-interactive fast path and installs the tutorial automatically.")
-    print("  `loomcli init` sets up `./loom`, `./raw_data`, your preferred agent skill, and the default workspace.")
+    print("  `loomcli init` sets up `./loom`, `./raw_data`, your preferred agent skills, and the default workspace.")
     print("  `loomcli scan-index <path> [to <workspace>]` builds Loom cards from the terminal when you want an explicit CLI scan.")
     print("  `loomcli confirm [workspace]` saves explore changes into the local git history.")
     print("  `loomcli push [workspace]` syncs workspaces to the default Loom API server.")

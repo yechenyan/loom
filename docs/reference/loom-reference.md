@@ -97,10 +97,10 @@ uv run loomcli init --agent codex
 Current `--agent` behavior from `packages/loom/src/loom/cli_app/init_flow.py`:
 
 - skips the interactive setup
-- installs the selected agent skill
+- installs the selected agent's Loom skills
 - creates or reuses `./loom` and `./raw_data`
 - creates `./loom/<default-workspace>`
-- saves a default workspace from the local username
+- saves the default workspace as `tempo`
 - installs tutorial data under `raw_data/cost`
 - prints chat examples and terminal examples separately
 
@@ -110,6 +110,12 @@ Supported agent values:
 - `claude`
 - `cursor`
 - `copilot`
+
+Installed agent skills:
+
+- `loom-local-data-lookup`: local dataset fact lookup from cards and exact raw files
+- `loom-dataset-scan-review`: scan local datasets, then review and curate generated cards
+- `loom-workspace-ops`: init, status, confirm, push, pull, pull-raw, set-api, and chat-vs-CLI help
 
 ## Scan Workflow
 
@@ -156,6 +162,8 @@ Expected agent behavior:
 2. Use cards and summaries to locate the likely dataset.
 3. Fetch only the exact raw file needed with `loomcli get <workspace/path/to/file>`.
 4. Answer from the fetched local raw file.
+
+Agents may also choose this workflow without an explicit `loom` prefix when another task requires project-local, source-backed dataset facts, such as model parameters, units, assumptions, costs, CSV contents, or provenance. Do not use Loom for ordinary data-processing code, general concept explanations, or external live data unless the user asks.
 
 `loomcli ask` does not exist and should not be documented.
 

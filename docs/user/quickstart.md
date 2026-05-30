@@ -21,6 +21,8 @@ Recommended fast path:
 uv run loomcli init --agent codex
 ```
 
+This installs focused agent skills for local data lookup, dataset scan review, and workspace operations.
+
 Interactive setup:
 
 ```bash
@@ -57,3 +59,5 @@ uv run loomcli get energy/technology-data/costs.csv
 2. Ask the agent to scan with `loom scan ...`.
 3. Let the agent read `loom/` first.
 4. Fetch exact raw files only when needed.
+
+Agents can also choose Loom automatically during modeling, coding, documentation, or paper writing when they need project-local, source-backed dataset facts.

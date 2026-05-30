@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
 def _add_init_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     init_parser = subparsers.add_parser(
         "init",
-        help="Interactively initialize Loom, install one agent skill, and prepare the local Loom git workspace.",
+        help="Interactively initialize Loom, install agent skills, and prepare the local Loom git workspace.",
     )
     init_parser.add_argument("--codex-home", type=Path, default=Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")))
     init_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())

@@ -34,7 +34,7 @@ class RawAccessCacheTest(LoomTestCase):
             raw_file = dataset_dir / "costs_2040-modifications.csv"
             raw_file.write_text("technology,parameter,value\nOCGT,investment,696\n", encoding="utf-8")
             self.assertEqual(
-                self.call_main(["scan", "raw_data/cost", "to", "maxiao", "--workspace-root", str(workspace_root)])[0],
+                self.call_main(["scan-index", "raw_data/cost", "to", "maxiao", "--workspace-root", str(workspace_root)])[0],
                 0,
             )
 
@@ -52,7 +52,7 @@ class RawAccessCacheTest(LoomTestCase):
             raw_file = dataset_dir / "costs_2040-modifications.csv"
             raw_file.write_text("technology,parameter,value\nOCGT,investment,696\n", encoding="utf-8")
             self.assertEqual(
-                self.call_main(["scan", "raw_data/cost", "to", "maxiao", "--workspace-root", str(workspace_root)])[0],
+                self.call_main(["scan-index", "raw_data/cost", "to", "maxiao", "--workspace-root", str(workspace_root)])[0],
                 0,
             )
 

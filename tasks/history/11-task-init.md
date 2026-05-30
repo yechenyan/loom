@@ -28,6 +28,7 @@ loom install 更新为 loom init。
 - Renamed the onboarding command from `loom install` to `loom init`, while keeping `install` as a compatibility alias.
 - Switched the local workspace layout to `./loom` for generated cards and `./raw_data` for source data.
 - Added interactive `init` behavior for both fresh setup and existing `loom/` directories, including single-agent skill installation, default workspace selection, and help/reset actions.
+- Current code defaults the workspace name to `tempo` when the user accepts the default or enters an empty value.
 - Embedded tutorial seed data directly in the package and updated the tutorial flow to use `loom scan raw_data/cost to cost`, `loom ask ...`, and `loom push`.
 - Updated skill content, CLI parsing, routing, and docs so `loom ask <question>` and bare `loom <question>` now trigger a real local lookup flow instead of a placeholder message.
 - Refreshed the root README, package README, manual, web examples, and tests to match the new command names and directory structure.

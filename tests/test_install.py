@@ -16,6 +16,13 @@ from loom.cli import main
 from loom.cli_app.parser import build_parser
 
 
+SKILL_NAMES = (
+    "loom-local-data-lookup",
+    "loom-dataset-scan-review",
+    "loom-workspace-ops",
+)
+
+
 class InitCommandTest(unittest.TestCase):
     def test_install_command_is_not_available(self) -> None:
         with self.assertRaises(SystemExit) as context:
@@ -29,7 +36,7 @@ class InitCommandTest(unittest.TestCase):
             workspace_root = Path(temp_dir) / "workspace"
             stdout = io.StringIO()
 
-            with patch("builtins.input", side_effect=["1", "max", "", ""]), redirect_stdout(stdout):
+            with patch("builtins.input", side_effect=["1", "", "", ""]), redirect_stdout(stdout):
                 exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
 
             self.assertEqual(exit_code, 0)
@@ -43,7 +50,7 @@ class InitCommandTest(unittest.TestCase):
             workspace_root = Path(temp_dir) / "workspace"
             stdout = io.StringIO()
 
-            with patch("builtins.input", side_effect=["1", "max", "y", ""]), redirect_stdout(stdout):
+            with patch("builtins.input", side_effect=["1", "", "y", ""]), redirect_stdout(stdout):
                 exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
 
             self.assertEqual(exit_code, 0)
@@ -59,33 +66,38 @@ class InitCommandTest(unittest.TestCase):
             self.assertIn("loomcli confirm cost", output)
             self.assertIn("loomcli push cost", output)
 
-            skill_path = codex_home / "skills" / "loom-data" / "SKILL.md"
-            self.assertTrue(skill_path.exists())
-            skill_text = skill_path.read_text(encoding="utf-8")
-            self.assertIn("`loom ...` means a user-facing chat instruction.", skill_text)
-            self.assertIn("`loomcli ...` means the executable command a human or agent may run.", skill_text)
-            self.assertIn("When the user writes `loom scan ...` in chat, treat it as a chat request", skill_text)
-            self.assertIn("If the user writes `loom ask <question>` or `loom <question>`, do not run a lookup script for them.", skill_text)
-            self.assertIn("`loom` is the chat trigger phrase.", skill_text)
+            for skill_name in SKILL_NAMES:
+                skill_path = codex_home / "skills" / skill_name / "SKILL.md"
+                self.assertTrue(skill_path.exists())
+                self.assertTrue((workspace_root / ".agents" / "skills" / skill_name / "SKILL.md").exists())
+                self.assertFalse((workspace_root / ".claude" / "skills" / skill_name / "SKILL.md").exists())
+                self.assertFalse((workspace_root / ".cursor" / "skills" / skill_name / "SKILL.md").exists())
+                self.assertFalse((workspace_root / ".copilot" / "skills" / skill_name / "SKILL.md").exists())
 
-            self.assertTrue((workspace_root / ".agents" / "skills" / "loom-data" / "SKILL.md").exists())
-            self.assertFalse((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
-            self.assertFalse((workspace_root / ".cursor" / "skills" / "loom-data" / "SKILL.md").exists())
-            self.assertFalse((workspace_root / ".copilot" / "skills" / "loom-data" / "SKILL.md").exists())
+            self.assertFalse((codex_home / "skills" / "loom-data" / "SKILL.md").exists())
+            lookup_text = (codex_home / "skills" / "loom-local-data-lookup" / "SKILL.md").read_text(encoding="utf-8")
+            scan_text = (codex_home / "skills" / "loom-dataset-scan-review" / "SKILL.md").read_text(encoding="utf-8")
+            ops_text = (codex_home / "skills" / "loom-workspace-ops" / "SKILL.md").read_text(encoding="utf-8")
+            self.assertIn("The user writes `loom ask <question>`.", lookup_text)
+            self.assertIn("`loomcli ask` does not exist", lookup_text)
+            self.assertIn("After `loomcli scan-index` finishes, do a real review", scan_text)
+            self.assertIn("Do not suggest `loomcli confirm`", scan_text)
+            self.assertIn("`loom ...` is a user-facing chat instruction.", ops_text)
+            self.assertIn("Unsupported chat forms", ops_text)
 
             explore_git_dir = workspace_root / "loom" / ".git"
             self.assertTrue(explore_git_dir.exists())
-            self.assertTrue((workspace_root / "loom" / "max").exists())
+            self.assertTrue((workspace_root / "loom" / "tempo").exists())
 
             recent_workspace_path = workspace_root / "loom" / ".loom" / "state" / "recent-workspace.json"
             recent_workspace = json.loads(recent_workspace_path.read_text(encoding="utf-8"))
-            self.assertEqual(recent_workspace["workspace"], "max")
+            self.assertEqual(recent_workspace["workspace"], "tempo")
 
             tutorial_dir = workspace_root / "raw_data" / "cost"
             self.assertTrue((tutorial_dir / "loom.md").exists())
             self.assertTrue((tutorial_dir / "costs_2040-modifications.csv").exists())
 
-    def test_init_menu_can_install_single_skill_when_loom_exists(self) -> None:
+    def test_init_menu_can_install_skills_when_loom_exists(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"
             workspace_root = Path(temp_dir) / "workspace"
@@ -96,10 +108,27 @@ class InitCommandTest(unittest.TestCase):
                 exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
 
             self.assertEqual(exit_code, 0)
-            self.assertIn("Skill installation finished.", stdout.getvalue())
-            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
-            self.assertFalse((codex_home / "skills" / "loom-data" / "SKILL.md").exists())
-            self.assertFalse((workspace_root / ".agents" / "skills" / "loom-data" / "SKILL.md").exists())
+            self.assertIn("Loom skills installed.", stdout.getvalue())
+            for skill_name in SKILL_NAMES:
+                self.assertTrue((workspace_root / ".claude" / "skills" / skill_name / "SKILL.md").exists())
+                self.assertFalse((codex_home / "skills" / skill_name / "SKILL.md").exists())
+                self.assertFalse((workspace_root / ".agents" / "skills" / skill_name / "SKILL.md").exists())
+            self.assertFalse((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
+
+    def test_init_menu_reset_help_uses_cli_name(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            workspace_root = Path(temp_dir) / "workspace"
+            (workspace_root / "loom").mkdir(parents=True)
+            stdout = io.StringIO()
+
+            with patch("builtins.input", side_effect=["1"]), redirect_stdout(stdout):
+                exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
+
+            self.assertEqual(exit_code, 0)
+            output = stdout.getvalue()
+            self.assertIn("`loomcli init`", output)
+            self.assertNotIn("`loom init`", output)
 
     def test_init_menu_can_create_new_default_workspace(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -130,12 +159,15 @@ class InitCommandTest(unittest.TestCase):
                 )
 
             self.assertEqual(exit_code, 0)
-            skill_path = workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md"
+            skill_path = workspace_root / ".claude" / "skills" / "loom-local-data-lookup" / "SKILL.md"
             self.assertTrue(skill_path.exists())
             self.assertIn(
-                "Use this skill whenever the user's request is about data:",
+                "project-local, source-backed dataset facts",
                 skill_path.read_text(encoding="utf-8"),
             )
+            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-dataset-scan-review" / "SKILL.md").exists())
+            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-workspace-ops" / "SKILL.md").exists())
+            self.assertFalse((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
 
 
 if __name__ == "__main__":
