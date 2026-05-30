@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 import loom
+from loom.raw_snapshot import build_raw_workspace_snapshot
 from loom_server.sync_server import create_app
 from loom_server.service_parts.helpers import raw_blob_storage_path
 
@@ -19,9 +20,49 @@ class RawAccessCacheTest(LoomTestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir)
             raw_file = self.write_energy_dataset(workspace_root)
+            self.assertEqual(self.call_main([*self.scan_command(), "--workspace-root", str(workspace_root)])[0], 0)
             local_path = loom.get("energy/technology-data/costs.csv", workspace_root=workspace_root)
             self.assertEqual(local_path.read_text(encoding="utf-8"), raw_file.read_text(encoding="utf-8"))
             self.assertTrue(local_path.exists())
+
+    def test_get_links_local_raw_file_from_recorded_scan_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace_root = Path(temp_dir)
+            dataset_dir = workspace_root / "raw_data" / "cost"
+            dataset_dir.mkdir(parents=True, exist_ok=True)
+            (dataset_dir / "loom.md").write_text("source: https://example.com/cost\n\nCost dataset", encoding="utf-8")
+            raw_file = dataset_dir / "costs_2040-modifications.csv"
+            raw_file.write_text("technology,parameter,value\nOCGT,investment,696\n", encoding="utf-8")
+            self.assertEqual(
+                self.call_main(["scan", "raw_data/cost", "to", "maxiao", "--workspace-root", str(workspace_root)])[0],
+                0,
+            )
+
+            local_path = loom.get("maxiao/costs_2040-modifications.csv", workspace_root=workspace_root)
+
+            self.assertEqual(local_path.read_text(encoding="utf-8"), raw_file.read_text(encoding="utf-8"))
+            self.assertTrue(local_path.exists())
+
+    def test_raw_snapshot_uses_recorded_scan_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace_root = Path(temp_dir)
+            dataset_dir = workspace_root / "raw_data" / "cost"
+            dataset_dir.mkdir(parents=True, exist_ok=True)
+            (dataset_dir / "loom.md").write_text("source: https://example.com/cost\n\nCost dataset", encoding="utf-8")
+            raw_file = dataset_dir / "costs_2040-modifications.csv"
+            raw_file.write_text("technology,parameter,value\nOCGT,investment,696\n", encoding="utf-8")
+            self.assertEqual(
+                self.call_main(["scan", "raw_data/cost", "to", "maxiao", "--workspace-root", str(workspace_root)])[0],
+                0,
+            )
+
+            snapshot = build_raw_workspace_snapshot(workspace_root, "maxiao")
+
+            self.assertEqual({file.path for file in snapshot.files}, {"loom.md", "costs_2040-modifications.csv"})
+            self.assertEqual(
+                next(file.content for file in snapshot.files if file.path == "costs_2040-modifications.csv"),
+                raw_file.read_bytes(),
+            )
 
     def test_get_downloads_missing_remote_raw_file_and_reuses_cache(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -41,7 +41,7 @@ raw_data/
   <workspace>/
 ```
 
-`loom init` asks which assistant you use, which default workspace name you want, and whether to install the tutorial dataset.
+`loom init` asks which assistant you use, which default workspace name you want, and whether to install the tutorial dataset. Press Enter to install it; only `n` skips it.
 It installs the helper skill only for the assistant you choose.
 For Codex, Loom writes both `$CODEX_HOME/skills/loom-data` and the workspace-local `.agents/skills/loom-data`.
 
@@ -116,6 +116,7 @@ print(local_path)
 - Use `loom.get(...)` only for the raw files you really need.
 - Or fetch a single file on demand with `loom get energy/technology-data/costs.csv`.
 - If a user writes `loom ask <question>` or `loom <question>`, inspect `loom/` first before touching raw files.
+- More broadly, if a user is asking a data-related question, prefer the Loom workflow first even when they do not mention `loom` explicitly.
 
 If you omit `to <workspace>`, Loom reuses the most recently scanned or created workspace. If there is no history yet, it creates `temporary`. One workspace can track multiple source directories, but dataset paths inside that workspace must stay unique.
 

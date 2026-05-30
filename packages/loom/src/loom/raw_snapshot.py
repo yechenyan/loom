@@ -4,7 +4,7 @@ import base64
 from dataclasses import dataclass
 from pathlib import Path
 
-from .raw_cache_support import resolve_local_raw_workspace_dir
+from .raw_cache_support.local_sources import iter_local_scan_source_roots
 from .scan_state import hash_file
 
 
@@ -29,16 +29,22 @@ class RawWorkspaceDelta:
 
 
 def build_raw_workspace_snapshot(workspace_root: Path | str, workspace: str) -> RawWorkspaceSnapshot:
-    raw_dir = resolve_local_raw_workspace_dir(Path(workspace_root), workspace)
     files: list[RawFileSnapshot] = []
+    seen_paths: set[str] = set()
 
-    if raw_dir.exists():
-        for path in sorted(raw_dir.rglob("*")):
+    for source_root in iter_local_scan_source_roots(Path(workspace_root), workspace):
+        if not source_root.exists():
+            continue
+        for path in sorted(source_root.rglob("*")):
             if not path.is_file():
                 continue
+            relative_path = path.relative_to(source_root).as_posix()
+            if relative_path in seen_paths:
+                continue
+            seen_paths.add(relative_path)
             files.append(
                 RawFileSnapshot(
-                    path=path.relative_to(raw_dir).as_posix(),
+                    path=relative_path,
                     sha256=hash_file(path),
                     size_bytes=path.stat().st_size,
                     content=path.read_bytes(),

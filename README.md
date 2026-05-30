@@ -46,7 +46,7 @@ This initializes Loom in `./loom/` and asks a few short questions in English:
 
 - which assistant you use
 - the default workspace name
-- whether to install the tutorial dataset
+- whether to install the tutorial dataset. Press Enter to install it; only `n` skips it.
 
 `loom init` installs the helper skill only for the assistant you choose:
 
@@ -57,10 +57,12 @@ This initializes Loom in `./loom/` and asks a few short questions in English:
 
 If `./loom/` already exists, `loom init` shows a small menu instead of reinitializing everything. From there you can install another skill, choose a new default workspace, or read the reset/help text.
 
+If you install the tutorial dataset, `loom init` now prints the next step as agent-chat prompts. Those examples are meant to be sent in ChatGPT / Codex / Claude / Cursor chat, not pasted into `bash`, unless you explicitly want to drive Loom from the CLI yourself.
+
 If you prefer to let an AI agent handle setup end-to-end, you can paste a prompt like this into ChatGPT / Claude / Cursor:
 
 ```text
-Please set up Loom in this project for me: if `uv` is not installed, install it first and make sure the command is available; then run `uv add loom-data`; then run `uv run loom init` in the project root; during init choose the assistant I am using, keep the default workspace, skip the tutorial dataset, and tell me whether both `loom/` and `raw_data/` were created successfully.
+Please set up Loom in this project for me: if `uv` is not installed, install it first and make sure the command is available; then run `uv add loom-data`; then run `uv run loom init` in the project root; during init choose the assistant I am using, keep the default workspace, type `n` to skip the tutorial dataset, and tell me whether both `loom/` and `raw_data/` were created successfully.
 ```
 
 Installed workspace layout:
@@ -117,6 +119,7 @@ Rules:
 - Scan state is incremental per workspace and per source path.
 - Dataset cards and manifests store source-relative raw paths such as `technology-data` or `technology-data/costs.csv`, not machine-specific absolute paths.
 - If you copy the project or move the workspace root, Loom reuses the same relative scan sources and avoids rebuilding unchanged datasets just because the absolute filesystem path changed.
+- `loom get <workspace/path/to/file>` resolves local raw files from the scan source paths recorded for that workspace before it tries the remote raw manifest.
 
 For AI chat onboarding, the simplest path is:
 
@@ -157,6 +160,7 @@ Recommended workflow for agents:
 4. Fetch that file on demand, for example `loom get energy/technology-data/costs.csv`.
 
 If the user writes `loom ask <question>` or `loom <question>`, treat that as a request to inspect `loom/` first.
+More broadly, if the request is data-related, the installed Loom skill should make the agent think of Loom first even when the user asks in plain language.
 
 `loom ask <question>` now runs a local lookup flow:
 

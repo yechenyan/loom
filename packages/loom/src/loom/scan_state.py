@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .raw_cache import resolve_cache_root
+from .raw_cache_support.paths import resolve_cache_root
 
 
 def load_scan_state(workspace_root: Path | str, topic: str) -> dict[str, Any]:

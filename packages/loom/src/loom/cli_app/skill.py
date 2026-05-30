@@ -46,12 +46,14 @@ def get_skill_dirs(agent: str, codex_home: Path, workspace_root: Path) -> tuple[
 def render_skill_markdown(workspace_root: Path, launcher: Path) -> str:
     return f"""---
 name: loom-data
-description: Use the local Loom CLI and Python package to scan raw datasets into data cards, confirm explore changes, sync workspaces, and fetch raw files on demand.
+description: Use the local Loom CLI and Python package whenever the user is asking data-related questions, needs to inspect local datasets, or wants to scan raw data into searchable cards.
 ---
 
 # loom-data
 
-Use this skill when the user needs to work with data stored in the local Loom workspace.
+Use this skill whenever the user's request is about data: answering data questions, tracing a metric back to source files, scanning local datasets, checking CSV contents, or fetching raw files on demand.
+
+If the request sounds data-related, assume Loom should be the first tool you reach for.
 
 ## How to use
 
@@ -72,6 +74,12 @@ Loom is designed for large local datasets:
 
 ## Default lookup workflow
 
+For data questions, default to Loom even if the user did not explicitly mention `loom ask`.
+
+If the user has just finished `loom init`, guide them with agent-chat prompts first, not shell snippets.
+Prefer suggestions like `loom scan raw_data/cost to cost`, `loom ask "What is the capex for OCGT?"`, or even a plain-language data question in chat.
+Only suggest `uv run loom ...` commands when the user explicitly wants to run the CLI by hand.
+
 When the user asks for a value inside a dataset, use this path by default:
 
 1. Read `loom/` first.
@@ -80,6 +88,13 @@ When the user asks for a value inside a dataset, use this path by default:
 4. Search or parse the fetched local file to answer the question.
 
 If the user writes `loom ask <question>` or `loom <question>`, treat it as a request to inspect `./loom` first before touching raw files.
+
+If the user asks any plain-language data question in chat, you should still think in the same Loom-first workflow:
+
+1. Inspect `loom/` first.
+2. Use cards and summaries to locate the likely dataset.
+3. Fetch only the exact raw file you need.
+4. Answer from the raw data you retrieved.
 
 Do not spend turns rediscovering how Loom fetch works by reading `README.md`, `pyproject.toml`, or `scripts/loom.py` unless `loom get` actually fails.
 

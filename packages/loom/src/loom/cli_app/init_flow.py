@@ -35,7 +35,7 @@ def run_init_flow(codex_home: Path, workspace_root: Path, agents: tuple[str, ...
 def _run_fresh_init(codex_home: Path, workspace_root: Path, agents: tuple[str, ...] | None) -> int:
     selected_agents = agents or (_prompt_agent(),)
     workspace_name = _prompt_workspace_name()
-    tutorial_enabled = _prompt_yes_no("Would you like a short tutorial? [y/N]: ", default=False)
+    tutorial_enabled = _prompt_install_tutorial()
 
     installed_skills = install_skills(codex_home, workspace_root, selected_agents)
     repo_dir = ensure_explore_repo(workspace_root)
@@ -52,15 +52,20 @@ def _run_fresh_init(codex_home: Path, workspace_root: Path, agents: tuple[str, .
     if tutorial_enabled:
         tutorial_dir = _install_tutorial_files(workspace_root)
         print(f"Tutorial data installed at: {tutorial_dir}")
-        print("Try these prompts in your agent chat:")
-        print("  loom scan raw_data/cost to cost")
-        print("  loom ask What is the capex for OCGT?")
+        print("For anything data-related, ask your agent to use Loom first.")
+        print("Next, send one of these messages in your AI agent chat.")
+        print("Do not run them as shell commands unless you intentionally want to use the CLI yourself.")
+        print('  loom scan raw_data/cost to cost')
+        print('  loom ask "What is the capex for OCGT?"')
+        print('  What is the capex for OCGT?')
+        print("After you finish reviewing the generated cards, you can also say:")
         print("  loom push")
         print("Then visit https://loom-api-free.onrender.com to inspect the uploaded data.")
         input("Installation finished. Press Enter to exit.")
         return 0
 
     print("Agents can now use Loom with a focused skill and the default workspace you selected.")
+    print("When a request is data-related, the installed skill should prompt the agent to think of Loom first.")
     return 0
 
 
@@ -119,6 +124,11 @@ def _prompt_yes_no(prompt: str, *, default: bool) -> bool:
         if value in {"n", "no"}:
             return False
         print(f"Please answer yes or no. Press Enter for the default ({suffix.upper()}).")
+
+
+def _prompt_install_tutorial() -> bool:
+    value = input("Would you like a short tutorial? [Y/n]: ").strip().lower()
+    return value not in {"n", "no"}
 
 
 def _prompt_choice(prompt: str, allowed: tuple[str, ...]) -> str:

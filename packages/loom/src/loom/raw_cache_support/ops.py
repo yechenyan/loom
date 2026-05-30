@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from hashlib import sha256
-import os
 from pathlib import Path
 import shutil
 
-from .paths import resolve_raw_cache_dir, resolve_raw_data_root, resolve_workspace_root
+from .local_sources import find_local_scan_source_file
+from .paths import resolve_raw_cache_dir
 
 
 def get_cached_raw_path(workspace_root, workspace: str, relative_path: str) -> Path:
@@ -23,11 +23,10 @@ def is_cached_raw_path_current(path: Path, expected_sha256: str) -> bool:
 
 def populate_raw_cache_from_local_source(workspace_root, workspace: str, relative_path: str) -> Path | None:
     cache_path = get_cached_raw_path(workspace_root, workspace, relative_path)
-    for raw_root in _iter_local_raw_roots(workspace_root):
-        source_path = raw_root / workspace / relative_path
-        if source_path.is_file():
-            _materialize_cache_path(cache_path, source_path)
-            return cache_path
+    source_path = find_local_scan_source_file(workspace_root, workspace, relative_path)
+    if source_path is not None:
+        _materialize_cache_path(cache_path, source_path)
+        return cache_path
     return None
 
 
@@ -54,23 +53,6 @@ def remove_deleted_raw_cache_paths(workspace_root, workspace: str, deleted_paths
             _cleanup_empty_parents(cache_path.parent, workspace_dir)
 
 
-def _iter_local_raw_roots(workspace_root) -> tuple[Path, ...]:
-    root = resolve_workspace_root(workspace_root)
-    candidates = [
-        resolve_raw_data_root(root),
-        root / ".raw_data",
-        root / "loom" / "loom_raw",
-    ]
-    if os.environ.get("LOOM_RAW_ROOT"):
-        candidates.insert(0, Path(os.environ["LOOM_RAW_ROOT"]).resolve())
-    seen: set[Path] = set()
-    deduped: list[Path] = []
-    for candidate in candidates:
-        resolved = candidate.resolve()
-        if resolved not in seen:
-            seen.add(resolved)
-            deduped.append(resolved)
-    return tuple(deduped)
 
 
 def _materialize_cache_path(cache_path: Path, source_path: Path) -> None:

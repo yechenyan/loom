@@ -16,6 +16,20 @@ from loom.cli import main
 
 
 class InitCommandTest(unittest.TestCase):
+    def test_init_installs_tutorial_by_default_on_enter(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            workspace_root = Path(temp_dir) / "workspace"
+            stdout = io.StringIO()
+
+            with patch("builtins.input", side_effect=["1", "max", "", ""]), redirect_stdout(stdout):
+                exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Tutorial data installed at:", stdout.getvalue())
+            tutorial_dir = workspace_root / "raw_data" / "cost"
+            self.assertTrue((tutorial_dir / "loom.md").exists())
+
     def test_init_creates_selected_skill_default_workspace_and_tutorial_files(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"
@@ -28,12 +42,20 @@ class InitCommandTest(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             output = stdout.getvalue()
             self.assertIn("Initialized Loom workspace at:", output)
-            self.assertIn("loom scan raw_data/cost to cost", output)
+            self.assertIn("Next, send one of these messages in your AI agent chat.", output)
+            self.assertIn("Do not run them as shell commands unless you intentionally want to use the CLI yourself.", output)
+            self.assertIn('loom scan raw_data/cost to cost', output)
+            self.assertIn('loom ask "What is the capex for OCGT?"', output)
             self.assertIn("What is the capex for OCGT?", output)
+            self.assertIn("For anything data-related, ask your agent to use Loom first.", output)
 
             skill_path = codex_home / "skills" / "loom-data" / "SKILL.md"
             self.assertTrue(skill_path.exists())
-            self.assertIn("Loom installs as the `loom-data` package", skill_path.read_text(encoding="utf-8"))
+            skill_text = skill_path.read_text(encoding="utf-8")
+            self.assertIn("If the request sounds data-related, assume Loom should be the first tool you reach for.", skill_text)
+            self.assertIn("For data questions, default to Loom even if the user did not explicitly mention `loom ask`.", skill_text)
+            self.assertIn("If the user has just finished `loom init`, guide them with agent-chat prompts first, not shell snippets.", skill_text)
+            self.assertIn("Loom installs as the `loom-data` package", skill_text)
 
             self.assertTrue((workspace_root / ".agents" / "skills" / "loom-data" / "SKILL.md").exists())
             self.assertFalse((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
@@ -97,7 +119,12 @@ class InitCommandTest(unittest.TestCase):
                 )
 
             self.assertEqual(exit_code, 0)
-            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
+            skill_path = workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md"
+            self.assertTrue(skill_path.exists())
+            self.assertIn(
+                "Use this skill whenever the user's request is about data:",
+                skill_path.read_text(encoding="utf-8"),
+            )
 
 
 if __name__ == "__main__":

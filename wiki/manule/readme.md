@@ -87,6 +87,14 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py init
 请在当前项目里帮我安装 Loom：先确保 uv 可用，再运行 uv add loom-data 和 uv run loom init；选择合适的agent，启用教程，其余配置默认， 告诉用户下一步做什么
 ```
 
+如果 init 里安装了教程数据，结束时展示的下一步示例应该明确写成“发给 AI agent 的聊天消息”，而不是 bash 命令。推荐直接展示这类内容：
+
+```text
+loom scan raw_data/cost to cost
+loom ask "What is the capex for OCGT?"
+What is the capex for OCGT?
+```
+
 ## 用法
 
 ### 1. 在聊天里触发
@@ -200,7 +208,7 @@ loom get energy/technology-data/costs.csv
 处理规则：
 
 - 第一次读取时，先检查 `test-project/loom/.loom/raw/...` 是否已经有缓存。
-- 如果本地 `test-project/raw_data/...` 或 `.raw_data/...` 里已经有同路径文件，就直接在 `.loom/raw` 下建立 link。
+- 如果当前 workspace 的 scan state 里记录的某个本地 source_path 下存在同路径文件，就直接在 `.loom/raw` 下建立 link。
 - 如果本地 link 或缓存不存在，再从 Loom sync server 下载最新文件。
 - 第二次读取同一个文件时，直接复用本地缓存。
 
@@ -303,7 +311,7 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py pull-raw energy
 
 - 普通 `loom pull <workspace>` / `loom push <workspace>` 之后触发的 raw 刷新，只会更新 `.loom/raw` 里已经存在的文件，不会把远端所有 raw 全部下载下来。
 - 如果想主动把整个 workspace 的 raw 缓存补齐，继续使用 `loom.pull(...)` 或 `loom pull-raw <workspace>`。
-- 如果本地 `test-project/raw_data/<workspace>/...` 和远端 raw manifest 冲突，Loom 不会覆盖本地源文件，而是会在对应 `loom.md` 旁生成 `loom.raw-conflict.md` 提示文件。
+- 如果当前 workspace 的某个本地 scan source 和远端 raw manifest 冲突，Loom 不会覆盖本地源文件，而是会在对应 `loom.md` 旁生成 `loom.raw-conflict.md` 提示文件。
 
 ### 8. Web 查看数据
 
@@ -373,6 +381,7 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py route "loom OCG
 
 - 在聊天中优先使用 `loom scan <path> [to <workspace>]` 这种标准格式。
 - 提问时优先使用 `loom ask <问题>`；如果你在 CLI 或 agent chat 里直接写 `loom <问题>`，现在也会按 ask 语义执行。
+- 更广一点，只要是数据相关问题，安装后的 skill 都应该先让 agent 想到 Loom，而不是等用户必须先输入 `loom ask`。
 - 如果只想读原始数据，优先用 `loom.get(...)` 或 `loom pull-raw ...`，不要手动维护 `.loom/raw`。
 - 安装后，`loom/` 会由独立 git 仓库跟踪。
 - 扫描完成后，先看变更，再执行 `loom confirm <topic>`。
