@@ -84,7 +84,7 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py init
 如果你想在首页或聊天里直接引导用户给 AI Agent 发一句自然语言，可以使用这种方式：
 
 ```text
-请帮我在当前项目里完成 Loom 安装：如果系统里还没有 uv，请先按官方方式安装并确保命令可用；然后运行 `uv add loom-data` 安装 Loom；再在项目根目录运行 `uv run loom init`；初始化时请选择你当前使用的 assistant，workspace 用默认值，tutorial dataset 先不要安装；最后告诉我 `loom/` 和 `raw_data/` 是否已经创建成功。
+请在当前项目里帮我安装 Loom：先确保 `uv` 可用，再运行 `uv add loom-data` 和 `uv run loom init`；选择合适的agent，用默认配置， 告诉用户下一步做什么
 ```
 
 ## 用法

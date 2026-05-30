@@ -580,7 +580,7 @@ function HomePage({ workspaceCount, datasetCount, csvProfileCount, onOpenExplore
   const [includeTutorial, setIncludeTutorial] = useState(true);
   const [selectedFile, setSelectedFile] = useState("overview.md");
   const activePrompt = AGENT_INSTALL_PROMPTS.find((item) => item.key === selectedAgent) ?? AGENT_INSTALL_PROMPTS[0];
-  const installPrompt = buildInstallPrompt(activePrompt.assistant, includeTutorial);
+  const installPrompt = buildInstallPrompt();
   const handleCopy = async () => {
     if (!navigator?.clipboard?.writeText) {
       return;
@@ -918,8 +918,8 @@ function FileWorkbench({ selectedFile, onSelectFile }) {
   );
 }
 
-function buildInstallPrompt(assistant, includeTutorial) {
-  return `请在当前项目里帮我安装 Loom：先确保 \`uv\` 可用，再运行 \`uv add loom-data\` 和 \`uv run loom init\`；初始化时请选择 \`${assistant}\`，workspace 用默认值，${includeTutorial ? "安装 tutorial dataset" : "不要安装 tutorial dataset"}，最后告诉我 \`loom/\` 是否创建成功。`;
+function buildInstallPrompt() {
+  return "请在当前项目里帮我安装 Loom：先确保 `uv` 可用，再运行 `uv add loom-data` 和 `uv run loom init`；选择合适的agent，用默认配置， 告诉用户下一步做什么";
 }
 
 function ExploreHero({ workspaceCount, datasetCount, csvProfileCount }) {
