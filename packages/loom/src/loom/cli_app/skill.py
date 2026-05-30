@@ -17,8 +17,7 @@ def install_skills(codex_home: Path, workspace_root: Path, agents: tuple[str, ..
     selected_agents = agents or SUPPORTED_AGENTS
     installed: list[InstalledSkill] = []
     cli_launcher = workspace_root / "scripts" / "loomcli.py"
-    run_launcher = workspace_root / "scripts" / "loomrun.py"
-    skill_markdown = render_skill_markdown(workspace_root, cli_launcher, run_launcher)
+    skill_markdown = render_skill_markdown(workspace_root, cli_launcher)
 
     for agent in selected_agents:
         for skill_dir in get_skill_dirs(agent, codex_home, workspace_root):
@@ -44,7 +43,7 @@ def get_skill_dirs(agent: str, codex_home: Path, workspace_root: Path) -> tuple[
     raise ValueError(f"Unsupported agent: {agent}")
 
 
-def render_skill_markdown(workspace_root: Path, cli_launcher: Path, run_launcher: Path) -> str:
+def render_skill_markdown(workspace_root: Path, cli_launcher: Path) -> str:
     return f"""---
 name: loom-data
 description: Use the local Loom CLI and Python package whenever the user is asking data-related questions, needs to inspect local datasets, or wants to scan raw data into searchable cards.
@@ -59,8 +58,7 @@ If the request sounds data-related, assume Loom should be the first tool you rea
 ## Names
 
 - `loom ...` means a user-facing chat instruction.
-- `loomcli ...` means an explicit terminal command a human or agent may run.
-- `loomrun ...` means an internal helper script for agent execution.
+- `loomcli ...` means the executable command a human or agent may run.
 - `import loom` is still the Python package import.
 
 Loom is designed for large local datasets:
@@ -80,8 +78,26 @@ Loom is designed for large local datasets:
 
 For data questions, default to Loom even if the user did not explicitly mention `loom ask`.
 
+When helping a user install Loom in a project, prefer the fast init path:
+
+- `uv run loomcli init --agent codex`
+- `uv run loomcli init --agent claude`
+- `uv run loomcli init --agent cursor`
+
+When `--agent` is present, Loom skips the interactive setup and installs the tutorial dataset automatically.
+After init finishes, explicitly tell the user which `loom ...` examples belong in chat and which `uv run loomcli ...` examples belong in the terminal.
+
 When the user writes `loom scan ...` in chat, treat it as a chat request, not a shell command.
-Use `loomrun scan <path> [to <workspace>]` to generate the first pass of cards, then continue reading and improving the cards in chat before replying.
+Run `loomcli scan-index <path> [to <workspace>]` to generate the first pass of cards, then continue reading and improving the cards in chat before replying.
+
+After `loomcli scan-index` finishes, do a real review before saying the scan is ready:
+
+1. Read each scanned dataset's `loom.md`.
+2. Read the generated `overview.md` and review every CSV card for small datasets, or at least one representative card per CSV family for larger datasets.
+3. Check that the overview and cards explain the dataset purpose, key dimensions, scenario or year fields, units, and what each column is for.
+4. If the generated summary is generic or misses source context from `loom.md`, rewrite or supplement it before replying.
+5. Say explicitly whether you completed a full review or only a spot check.
+6. Do not suggest `loomcli confirm` unless the review is complete or the user explicitly accepts a draft scan.
 
 If the user writes `loom ask <question>` or `loom <question>`, do not run a lookup script for them.
 Treat that as a request to inspect `./loom` first, then fetch exact raw files with `loomcli get` only when needed.
@@ -140,21 +156,18 @@ local_path = loom.get("energy/technology-data/costs.csv")
 
 If you need workspace-root-aware launchers inside this repository, use:
 
-- `uv run python {run_launcher} scan raw_data/energy to energy --workspace-root {workspace_root}`
+- `uv run python {cli_launcher} scan-index raw_data/energy to energy --workspace-root {workspace_root}`
 - `uv run python {cli_launcher} confirm <workspace> --workspace-root {workspace_root}`
 - `uv run python {cli_launcher} status [workspace] --workspace-root {workspace_root}`
 - `uv run python {cli_launcher} get workspace/path/to/file --workspace-root {workspace_root}`
 - `uv run python {cli_launcher} push [workspace] --workspace-root {workspace_root}`
-
-Do not suggest `loomrun` to end users unless you are explaining internals or maintaining the repository.
 
 ## Notes
 
 - `loom-data` is the package name.
 - `loom` is the chat trigger phrase.
 - `loomcli` is the CLI command.
-- `loomrun` is the internal helper command.
 - `import loom` is the Python API.
-- `loom scan` in chat should lead the agent to run `loomrun scan`, then continue curating the results in chat.
-- `loom init` creates `./loom/` and `./raw_data/` at the current project root.
+- `loom scan` in chat should lead the agent to run `loomcli scan-index`, then continue curating the results in chat.
+- `loomcli init` creates `./loom/` and `./raw_data/` at the current project root.
 """

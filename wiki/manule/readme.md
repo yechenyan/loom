@@ -7,17 +7,46 @@
 - `loom ...`
   用户在 agent 聊天里发送的消息。
 - `loomcli ...`
-  用户或开发者在终端里显式运行的 CLI。
-- `loomrun ...`
-  agent 或仓库内部使用的辅助脚本入口。
+  用户、开发者或 agent 实际执行的命令入口。
 - `import loom`
   Python 包导入名，保持不变。
 
 这四层不要再混用。
 
+## 职责图
+
+```text
+用户
+  -> chat: `loom ...`
+     -> agent
+        -> `loomcli ...`
+           -> 生成/更新 `loom/<workspace>`
+
+用户
+  -> terminal: `loomcli ...`
+     -> 对 Loom workspace 或 raw cache 执行显式本地操作
+```
+
+推荐理解方式：
+
+- `loom`
+  用户在聊天里让 agent 帮自己做事。
+- `loomcli`
+  用户自己在终端执行明确命令，或 agent 在理解聊天意图后实际调用的执行入口。
+
+例子：
+
+1. 用户在 chat 里说 `loom scan raw_data/cost to cost`
+2. agent 把它识别成聊天扫描意图
+3. agent 内部执行 `loomcli scan-index raw_data/cost to cost`
+4. Loom 在 `loom/cost` 下生成 cards
+5. review 完成后，人或 agent 才考虑执行 `loomcli confirm cost`
+
 ## 目标
 
 Loom 的目标是把原始数据扫描成 `loom/` 下的轻量卡片和摘要，让 agent 先读卡片，再按需拉取 raw 文件。
+
+如果希望第一版卡片更像人工整理的结果，建议在原始数据目录的 `loom.md` 里写一段数据集说明，并补一个 `Columns:` 小节，例如 `- technology: ...`。扫描时这些列说明会被带进生成的 overview 和 CSV card。
 
 目录约定：
 
@@ -29,8 +58,6 @@ Loom 的目标是把原始数据扫描成 `loom/` 下的轻量卡片和摘要，
   原始数据本地缓存。
 - [scripts/loomcli.py](/Users/maxiao/Documents/code2/loom/scripts/loomcli.py)
   仓库内 CLI 启动脚本。
-- [scripts/loomrun.py](/Users/maxiao/Documents/code2/loom/scripts/loomrun.py)
-  仓库内内部脚本启动脚本。
 
 ## 什么时候用什么
 
@@ -49,7 +76,7 @@ loom push energy
 解释：
 
 - `loom scan ...`
-  表示一个聊天扫描意图。agent 应该调用 `loomrun scan ...` 生成第一版卡片，然后继续在聊天里补充和整理，最后给用户结果。
+  表示一个聊天扫描意图。agent 应该调用 `loomcli scan-index ...` 生成第一版卡片，然后继续在聊天里补充和整理，最后给用户结果。这个 review 不能只看文件是否生成，还要读对应的 `loom.md`、检查 `overview.md` 和 card 是否把数据集用途、关键维度、年份或场景字段、单位、每一列的作用讲清楚；没有完成这些时，不应把扫描说成已经 review 完，也不应急着建议 `loomcli confirm`。
 - `loom ask ...` / `loom <问题>`
   表示一个聊天查询意图。agent 不应该去跑 `ask` 脚本，而是应该先查 `loom/`，必要时再用 `loomcli get ...` 拉具体 raw 文件。
 - `loom confirm ...` / `loom push ...`
@@ -61,6 +88,7 @@ loom push energy
 
 ```bash
 uv run loomcli init
+uv run loomcli scan-index raw_data/energy to energy
 uv run loomcli status energy
 uv run loomcli confirm energy
 uv run loomcli push energy
@@ -72,37 +100,37 @@ uv run loomcli set-api https://loom-api-free.onrender.com
 
 约束：
 
-- `loomcli` 不再承担 `scan`。
+- `loomcli` 的显式扫描命令现在叫 `scan-index`。
 - `loomcli` 不再承担 `ask`。
-- `scan` 是 chat + `loomrun` 的组合流程。
+- `loom scan` 是 chat 扫描语义，agent 内部执行 `loomcli scan-index`。
+- 如果用户坚持要一个 terminal scan 命令，用 `loomcli scan-index ...`。
 - `ask` 是 chat + agent 自主查 `loom/` 的流程。
-
-### 3. 内部实现用 `loomrun`
-
-这些是 agent 或仓库维护时使用的内部脚本入口：
-
-```bash
-uv run loomrun scan raw_data/energy to energy
-uv run loomrun route "loom scan raw_data/energy to energy"
-```
-
-当前约定：
-
-- `loomrun scan ...`
-  负责扫描 source，生成初始 cards。
-- `loomrun route ...`
-  负责把标准 `loom ...` 聊天消息解析成可执行动作。
-- 对于 `loom ask ...`，`loomrun route` 只提示这是聊天查询，不执行脚本化问答。
 
 ## 推荐工作流
 
 ### 初始化
 
 ```bash
+uv run loomcli init --agent codex
+```
+
+推荐把这条当成 AI onboarding 的默认入口。
+当传入 `--agent` 时，`loomcli init` 会直接进入非交互快速流程：
+
+- 安装对应 agent 的 Loom skill
+- 创建 `./loom/` 和 `./raw_data/`
+- 用当前用户名作为默认 workspace
+- 自动安装 tutorial dataset
+- 结束时明确提示后续哪些该在聊天里用 `loom ...`，哪些该在终端里用 `uv run loomcli ...`
+
+如果需要手动选择 agent、workspace 或是否安装教程，再使用交互版：
+
+```bash
 uv run loomcli init
 ```
 
 `loomcli init` 会创建 `./loom/`、`./raw_data/`，并安装对应 agent 的 skill。
+`loomcli init --agent codex` 不再进入交互问题，而是直接完成 tutorial-ready 初始化。
 
 如果启用教程，结束时应该引导用户发这种聊天消息：
 
@@ -123,7 +151,7 @@ loom scan raw_data/energy to energy
 agent 内部执行：
 
 ```bash
-uv run loomrun scan raw_data/energy to energy
+uv run loomcli scan-index raw_data/energy to energy
 ```
 
 规则：
@@ -186,7 +214,7 @@ local_path = loom.get("energy/technology-data/costs.csv")
 ## 仓库维护说明
 
 - 行为变化后，要同步更新根目录 [README.md](/Users/maxiao/Documents/code2/loom/README.md) 和 [wiki/manule/readme.md](/Users/maxiao/Documents/code2/loom/wiki/manule/readme.md)。
-- 代码里不要再把 `loom`、`loomcli`、`loomrun` 混成同一层语义。
+- 代码里不要再把 `loom` 和 `loomcli` 混成同一层语义。
 - 如果用户说“在聊天里输入 `loom ...`”，那不是 shell 命令。
 
 ### CLI 发布 skill
@@ -200,3 +228,21 @@ local_path = loom.get("energy/technology-data/costs.csv")
 - 统一通过 `uv run python scripts/release_pypi.py ...` 发布
 - 如果 lint 或最小测试失败，先修阻塞问题再重跑
 - 上传成功后继续回查 PyPI；如果公开索引没及时刷新，要明确告诉用户是索引延迟，不要误报发布失败
+
+### Render 发布 skill
+
+仓库内现在约定用 [.agents/skills/loom-render-deploy/SKILL.md](/Users/maxiao/Documents/code2/loom/.agents/skills/loom-render-deploy/SKILL.md) 处理当前仓库的前后端上线。
+
+标准命令：
+
+```bash
+uv run python scripts/deploy_render.py
+```
+
+这个脚本默认会：
+
+- 要求当前工作区干净
+- 要求 `HEAD` 已经 push 到当前分支对应的 `origin/<branch>`
+- 先执行 `render blueprints validate`
+- 再依次部署 `loom-api-free` 和 `loom-web`
+- 最后验证线上 API 和 Web 地址

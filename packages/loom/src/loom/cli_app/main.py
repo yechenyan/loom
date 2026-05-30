@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 import sys
 
-from .handlers import run_confirm, run_get, run_init, run_pull, run_pull_raw, run_push, run_set_api, run_status
+from .handlers import run_confirm, run_get, run_init, run_pull, run_pull_raw, run_push, run_scan, run_set_api, run_status
 from .parser import build_parser
 
 
@@ -12,6 +12,7 @@ def main(argv: list[str] | None = None) -> int:
     handlers = {
         "init": run_init,
         "install": run_init,
+        "scan-index": run_scan,
         "set-api": run_set_api,
         "get": run_get,
         "status": run_status,

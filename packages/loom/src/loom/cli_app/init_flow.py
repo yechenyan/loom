@@ -26,6 +26,8 @@ MENU_ACTIONS = {
 
 
 def run_init_flow(codex_home: Path, workspace_root: Path, agents: tuple[str, ...] | None = None) -> int:
+    if agents:
+        return _run_fast_init(codex_home, workspace_root, agents)
     loom_root = workspace_root / "loom"
     if loom_root.exists():
         return _run_existing_workspace_menu(codex_home, workspace_root, agents)
@@ -36,37 +38,27 @@ def _run_fresh_init(codex_home: Path, workspace_root: Path, agents: tuple[str, .
     selected_agents = agents or (_prompt_agent(),)
     workspace_name = _prompt_workspace_name()
     tutorial_enabled = _prompt_install_tutorial()
-
-    installed_skills = install_skills(codex_home, workspace_root, selected_agents)
-    repo_dir = ensure_explore_repo(workspace_root)
-    resolve_raw_data_root(workspace_root).mkdir(parents=True, exist_ok=True)
-    save_recent_workspace(workspace_root, workspace_name)
-    (repo_dir / workspace_name).mkdir(parents=True, exist_ok=True)
-
-    print(f"Initialized Loom workspace at: {repo_dir.parent}")
-    print(f"Initialized Loom git repo at: {repo_dir}")
-    print(f"Initialized raw data root at: {resolve_raw_data_root(workspace_root)}")
-    print(f"Default workspace: {workspace_name}")
-    _print_installed_skills(installed_skills)
-
+    repo_dir, installed_skills = _initialize_workspace(codex_home, workspace_root, selected_agents, workspace_name)
+    _print_init_summary(workspace_root, repo_dir, workspace_name, installed_skills, reused=False)
     if tutorial_enabled:
         tutorial_dir = _install_tutorial_files(workspace_root)
         print(f"Tutorial data installed at: {tutorial_dir}")
-        print("Loom now uses three names: `loom` for chat, `loomcli` for terminal commands, and `loomrun` for internal agent execution.")
-        print("Next, send one of these messages in your AI agent chat.")
-        print("Do not run the `loom ...` lines as shell commands.")
-        print('  loom scan raw_data/cost to cost')
-        print('  loom ask "What is the capex for OCGT?"')
-        print('  What is the capex for OCGT?')
-        print("After you finish reviewing the generated cards, use the CLI when you want an explicit terminal command:")
-        print("  loomcli confirm cost")
-        print("  loomcli push cost")
-        print("Then visit https://loom-api-free.onrender.com to inspect the uploaded data.")
-        input("Installation finished. Press Enter to exit.")
+        _print_chat_and_terminal_guide()
         return 0
-
     print("Agents can now use Loom with a focused skill and the default workspace you selected.")
-    print("Remember: `loom` is chat, `loomcli` is terminal, and `loomrun` is the internal helper entrypoint.")
+    print("Remember: `loom` is chat and `loomcli` is the execution command for both users and agents.")
+    return 0
+
+
+def _run_fast_init(codex_home: Path, workspace_root: Path, agents: tuple[str, ...]) -> int:
+    workspace_name = _default_workspace_name()
+    reused = (workspace_root / "loom").exists()
+    repo_dir, installed_skills = _initialize_workspace(codex_home, workspace_root, agents, workspace_name)
+    tutorial_dir = _install_tutorial_files(workspace_root)
+    _print_init_summary(workspace_root, repo_dir, workspace_name, installed_skills, reused=reused)
+    print(f"Tutorial data installed at: {tutorial_dir}")
+    print("Fast init mode is active because `--agent` was provided, so Loom skipped the interactive setup.")
+    _print_chat_and_terminal_guide()
     return 0
 
 
@@ -100,6 +92,36 @@ def _run_existing_workspace_menu(codex_home: Path, workspace_root: Path, agents:
     return 0
 
 
+def _initialize_workspace(
+    codex_home: Path,
+    workspace_root: Path,
+    selected_agents: tuple[str, ...],
+    workspace_name: str,
+) -> tuple[Path, tuple[object, ...]]:
+    installed_skills = install_skills(codex_home, workspace_root, selected_agents)
+    repo_dir = ensure_explore_repo(workspace_root)
+    resolve_raw_data_root(workspace_root).mkdir(parents=True, exist_ok=True)
+    save_recent_workspace(workspace_root, workspace_name)
+    (repo_dir / workspace_name).mkdir(parents=True, exist_ok=True)
+    return repo_dir, installed_skills
+
+
+def _print_init_summary(
+    workspace_root: Path,
+    repo_dir: Path,
+    workspace_name: str,
+    installed_skills: tuple[object, ...],
+    *,
+    reused: bool,
+) -> None:
+    status = "Reused existing Loom workspace at" if reused else "Initialized Loom workspace at"
+    print(f"{status}: {workspace_root / 'loom'}")
+    print(f"Initialized Loom git repo at: {repo_dir}")
+    print(f"Initialized raw data root at: {resolve_raw_data_root(workspace_root)}")
+    print(f"Default workspace: {workspace_name}")
+    _print_installed_skills(installed_skills)
+
+
 def _prompt_agent() -> str:
     print("Which assistant do you use?")
     for index, agent in enumerate(AGENT_LABELS, start=1):
@@ -112,19 +134,6 @@ def _prompt_workspace_name() -> str:
     default_name = _default_workspace_name()
     raw_value = input(f"Default workspace name [{default_name}]: ").strip()
     return _normalize_workspace_name(raw_value or default_name)
-
-
-def _prompt_yes_no(prompt: str, *, default: bool) -> bool:
-    suffix = "y" if default else "n"
-    while True:
-        value = input(prompt).strip().lower()
-        if not value:
-            return default
-        if value in {"y", "yes"}:
-            return True
-        if value in {"n", "no"}:
-            return False
-        print(f"Please answer yes or no. Press Enter for the default ({suffix.upper()}).")
 
 
 def _prompt_install_tutorial() -> bool:
@@ -169,7 +178,22 @@ def _print_installed_skills(installed_skills: tuple[object, ...]) -> None:
 def _print_help() -> None:
     print("Loom quick help:")
     print("  `loom` is the chat prompt form, for example `loom scan raw_data/energy`.")
+    print("  `loomcli init --agent codex` is the non-interactive fast path and installs the tutorial automatically.")
     print("  `loomcli init` sets up `./loom`, `./raw_data`, your preferred agent skill, and the default workspace.")
+    print("  `loomcli scan-index <path> [to <workspace>]` builds Loom cards from the terminal when you want an explicit CLI scan.")
     print("  `loomcli confirm [workspace]` saves explore changes into the local git history.")
     print("  `loomcli push [workspace]` syncs workspaces to the default Loom API server.")
-    print("  `loomrun scan <path> [to <workspace>]` is the internal scan script used by agents.")
+
+
+def _print_chat_and_terminal_guide() -> None:
+    print("Loom now uses two names: `loom` for chat and `loomcli` for execution.")
+    print("Do not run the `loom ...` lines in your shell.")
+    print("Tell the user to keep these in AI chat:")
+    print("  loom scan raw_data/cost to cost")
+    print('  loom ask "What is the capex for OCGT?"')
+    print("  loom OCGT 的成本是多少")
+    print("Tell the user to keep these in the terminal:")
+    print("  uv run loomcli scan-index raw_data/cost to cost")
+    print("  uv run loomcli confirm cost")
+    print("  uv run loomcli push cost")
+    print("  uv run loomcli get cost/costs_2040-modifications.csv")

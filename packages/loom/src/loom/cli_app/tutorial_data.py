@@ -2,7 +2,18 @@ from __future__ import annotations
 
 
 TUTORIAL_FILES = {
-    "loom.md": "source: github.com/pysa\n",
+    "loom.md": """source: https://github.com/PyPSA/technology-data
+
+Tutorial cost modifications for selected technologies in 2040, 2045, and 2050. Each row records one parameter update for one technology together with its value, unit, provenance, and any extra qualification.
+
+Columns:
+- technology: technology or asset whose assumption is being updated
+- parameter: cost or technical parameter being modified
+- value: numeric value assigned to that parameter
+- unit: unit for `value`
+- source: provenance of the assumption
+- further description: extra qualifier, conversion note, or explanatory comment
+""",
     "costs_2040-modifications.csv": """technology,parameter,value,unit,source,further description
 gas,fuel,22.6,EUR/MWh_th,Ariadne,
 oil,fuel,38.3564,EUR2020/MWh,Ariadne,"$2020 = 0.8775 EUR2020, 1bbl = 1.6998MWh"

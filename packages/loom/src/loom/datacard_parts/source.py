@@ -4,8 +4,44 @@ import re
 from typing import Any
 
 
+_COLUMN_HINTS = {
+    "technology": "Technology, asset, or entity that the row is describing.",
+    "parameter": "Metric or parameter name recorded for the technology in this row.",
+    "value": "Primary numeric value recorded for the row.",
+    "unit": "Measurement unit for the associated value.",
+    "source": "Source or provenance for the value in this row.",
+    "further description": "Free-form qualifier, assumption note, or explanatory context for the row.",
+    "currency year": "Currency basis year used for money-denominated values.",
+    "financial case": "Financial assumption case applied to the row, such as market or R&D.",
+    "scenario": "Scenario or pathway label that distinguishes row variants.",
+    "date": "Date or timestamp associated with the observation.",
+    "year": "Year associated with the observation or assumption.",
+    "id": "Identifier for the entity represented by the row.",
+    "name": "Human-readable name for the entity represented by the row.",
+}
+
+
 def render_column_list(profile: dict[str, Any]) -> str:
     return "none" if not profile["columns"] else ", ".join(f"`{column['name']}`" for column in profile["columns"])
+
+
+def render_column_role_list(profile: dict[str, Any], loom_text: str) -> list[str]:
+    descriptions = extract_column_descriptions(loom_text)
+    return [f"- `{column['name']}`: {describe_column_role(column, descriptions)}" for column in profile["columns"]]
+
+
+def render_column_role_summary(profile: dict[str, Any], loom_text: str, limit: int = 4) -> str:
+    if not profile["columns"]:
+        return "No columns were detected."
+    descriptions = extract_column_descriptions(loom_text)
+    parts = [
+        f"`{column['name']}` = {describe_column_role(column, descriptions)}"
+        for column in profile["columns"][:limit]
+    ]
+    remaining = len(profile["columns"]) - limit
+    if remaining > 0:
+        parts.append(f"{remaining} more columns are explained in the card")
+    return "; ".join(parts) + "."
 
 
 def summarize_csv(profile: dict[str, Any]) -> str:
@@ -51,6 +87,38 @@ def extract_source_info(loom_text: str) -> dict[str, str]:
     return {"url": source_url, "summary": summary, "license": license_text, "notes": notes}
 
 
+def extract_column_descriptions(loom_text: str) -> dict[str, str]:
+    descriptions: dict[str, str] = {}
+    in_columns = False
+    for raw_line in loom_text.splitlines():
+        stripped = raw_line.strip()
+        lowered = stripped.lower()
+        if not stripped:
+            continue
+        if lowered in {"columns:", "## columns", "# columns"}:
+            in_columns = True
+            continue
+        if not in_columns:
+            continue
+        if stripped.startswith("#"):
+            break
+        candidate = stripped[1:].strip() if stripped.startswith("-") else stripped
+        match = re.match(r"`?(?P<name>[^`:]+?)`?\s*:\s*(?P<desc>.+)", candidate)
+        if match is None:
+            if stripped.startswith("-"):
+                continue
+            break
+        descriptions[_normalize_column_key(match.group("name"))] = match.group("desc").strip()
+    return descriptions
+
+
+def describe_column_role(column: dict[str, Any], descriptions: dict[str, str]) -> str:
+    explicit = descriptions.get(_normalize_column_key(column["name"]))
+    if explicit:
+        return explicit
+    return _fallback_column_role(column)
+
+
 def collect_source_sites(csv_profiles: list[dict[str, Any]]) -> list[str]:
     counts: dict[str, int] = {}
     for profile in csv_profiles:
@@ -70,3 +138,28 @@ def _extract_urls(text: str) -> list[str]:
         if cleaned not in seen:
             seen.append(cleaned)
     return seen
+
+
+def _fallback_column_role(column: dict[str, Any]) -> str:
+    key = _normalize_column_key(column["name"])
+    if key in _COLUMN_HINTS:
+        return _COLUMN_HINTS[key]
+    if "description" in key or "note" in key:
+        return "Free-form descriptive text or qualifier for the row."
+    if "source" in key or "reference" in key:
+        return "Source or reference attached to the row."
+    if "unit" in key:
+        return "Measurement unit associated with another value field."
+    if "cost" in key or "price" in key:
+        return "Numeric cost or price field recorded for the row."
+    if "year" in key:
+        return "Year field used to qualify the row or its values."
+    if column.get("numeric_stats"):
+        return "Numeric measure recorded for each row."
+    if column["type_counts"].get("string"):
+        return "Categorical text field used to label, group, or filter rows."
+    return "Field carried through directly from the raw CSV."
+
+
+def _normalize_column_key(name: str) -> str:
+    return " ".join(name.lower().replace("_", " ").replace("-", " ").split())

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .source import collect_source_sites, describe_row_layout, extract_source_info, render_column_list, summarize_csv
+from .source import collect_source_sites, describe_column_role, describe_row_layout, extract_column_descriptions, extract_source_info, render_column_list, render_column_role_list, render_column_role_summary, summarize_csv
 
 
 def build_dataset_overview(raw_dataset_dir: Path, raw_dataset_path: str, loom_text: str, csv_profiles: list[dict[str, Any]]) -> str:
@@ -24,19 +24,48 @@ def build_dataset_overview(raw_dataset_dir: Path, raw_dataset_path: str, loom_te
         return "\n".join(lines + ["No CSV files were found inside this dataset.", ""])
     for profile in csv_profiles:
         stem = Path(profile["file_name"]).stem
-        lines.extend([f"### `{profile['file_name']}`", "", f"- Rows: {profile['row_count']}", f"- File size: {profile['file_size_bytes']} bytes", f"- Columns: {render_column_list(profile)}", f"- Summary: {summarize_csv(profile)}", f"- Card: `{stem}.card.md`", f"- Machine-readable profile: `{stem}.profile.json`", ""])
+        lines.extend(
+            [
+                f"### `{profile['file_name']}`",
+                "",
+                f"- Rows: {profile['row_count']}",
+                f"- File size: {profile['file_size_bytes']} bytes",
+                f"- Columns: {render_column_list(profile)}",
+                f"- Column roles: {render_column_role_summary(profile, loom_text)}",
+                f"- Summary: {summarize_csv(profile)}",
+                f"- Card: `{stem}.card.md`",
+                f"- Machine-readable profile: `{stem}.profile.json`",
+                "",
+            ]
+        )
     return "\n".join(lines)
 
 
-def build_csv_card(raw_dataset_path: str, profile: dict[str, Any]) -> str:
+def build_csv_card(raw_dataset_path: str, profile: dict[str, Any], loom_text: str) -> str:
     lines = [f"# CSV Data Card: {profile['file_name']}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_path}`", f"- CSV file: `{profile['file_name']}`", f"- Rows: {profile['row_count']}", f"- File size: {profile['file_size_bytes']} bytes", f"- Delimiter: `{profile['dialect']['delimiter']}`", f"- Summary: {summarize_csv(profile)}", f"- Row layout: {describe_row_layout(profile)}", "", "## Structure", ""]
     lines.extend([f"- Columns: {render_column_list(profile)}", f"- Row layout pattern: {describe_row_layout(profile)}", ""] if profile["columns"] else ["No columns were detected.", ""])
+    if profile["columns"]:
+        lines.extend(["## Column Roles", "", *render_column_role_list(profile, loom_text), ""])
     return "\n".join(lines + _render_csv_profile(profile))
 
 
-def build_csv_entry(profile: dict[str, Any]) -> dict[str, Any]:
+def build_csv_entry(profile: dict[str, Any], loom_text: str) -> dict[str, Any]:
     stem = Path(profile["file_name"]).stem
-    return {"file_name": profile["file_name"], "row_count": profile["row_count"], "file_size_bytes": profile["file_size_bytes"], "column_count": len(profile["columns"]), "columns": [column["name"] for column in profile["columns"]], "summary": summarize_csv(profile), "card_file": f"{stem}.card.md", "profile_file": f"{stem}.profile.json"}
+    descriptions = extract_column_descriptions(loom_text)
+    return {
+        "file_name": profile["file_name"],
+        "row_count": profile["row_count"],
+        "file_size_bytes": profile["file_size_bytes"],
+        "column_count": len(profile["columns"]),
+        "columns": [column["name"] for column in profile["columns"]],
+        "summary": summarize_csv(profile),
+        "card_file": f"{stem}.card.md",
+        "profile_file": f"{stem}.profile.json",
+        "column_roles": {
+            column["name"]: describe_column_role(column, descriptions)
+            for column in profile["columns"]
+        },
+    }
 
 
 def _render_csv_profile(profile: dict[str, Any]) -> list[str]:

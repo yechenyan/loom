@@ -26,7 +26,7 @@ def write_dataset_card(
         legacy_datacard.unlink()
 
     raw_dataset_path = _resolve_raw_dataset_path(raw_dataset_dir, scan_manifest)
-    csv_entries = [build_csv_entry(profile) for profile in csv_profiles]
+    csv_entries = [build_csv_entry(profile, loom_text) for profile in csv_profiles]
     source_info = extract_source_info(loom_text)
     source_info["key_sites"] = collect_source_sites(csv_profiles)
     profile_payload = {
@@ -55,7 +55,7 @@ def write_dataset_card(
             encoding="utf-8",
         )
         (dataset_dir / f"{stem}.card.md").write_text(
-            build_csv_card(raw_dataset_path, profile),
+            build_csv_card(raw_dataset_path, profile, loom_text),
             encoding="utf-8",
         )
 
@@ -124,62 +124,3 @@ def _resolve_raw_dataset_path(raw_dataset_dir: Path, scan_manifest: dict[str, An
     if isinstance(relative_dir, str) and relative_dir:
         return relative_dir
     return raw_dataset_dir.as_posix()
-def _render_csv_profile(profile: dict[str, Any]) -> list[str]:
-    lines = [
-        "## Profiling Details",
-        "",
-    ]
-
-    if profile["notes"]:
-        lines.append("Notes:")
-        for note in profile["notes"]:
-            lines.append(f"- {note}")
-        lines.append("")
-
-    if profile["columns"]:
-        lines.append("Columns:")
-        for column in profile["columns"]:
-            type_counts = ", ".join(
-                f"{name}={count}" for name, count in sorted(column["type_counts"].items())
-            ) or "none"
-            lines.append(
-                f"- `{column['name']}`: non-empty={column['non_empty_count']}, "
-                f"empty={column['empty_count']}, inferred={type_counts}"
-            )
-            numeric_stats = column.get("numeric_stats")
-            if numeric_stats:
-                lines.append(
-                    f"  numeric stats: min={numeric_stats['min']}, "
-                    f"max={numeric_stats['max']}, mean={numeric_stats['mean']}"
-                )
-            top_values = column.get("top_values")
-            if top_values:
-                rendered_values = ", ".join(
-                    f"{item['value']} ({item['count']})" for item in top_values
-                )
-                lines.append(f"  top values: {rendered_values}")
-        lines.append("")
-
-    if profile["head"]:
-        lines.extend(
-            [
-                "Head sample (first 5 rows):",
-                "```json",
-                json.dumps(profile["head"][:5], indent=2, ensure_ascii=False),
-                "```",
-                "",
-            ]
-        )
-
-    if profile["tail"]:
-        lines.extend(
-            [
-                "Tail sample (last 5 rows):",
-                "```json",
-                json.dumps(profile["tail"][-5:], indent=2, ensure_ascii=False),
-                "```",
-                "",
-            ]
-        )
-
-    return lines

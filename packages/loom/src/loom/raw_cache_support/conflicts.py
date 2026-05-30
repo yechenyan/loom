@@ -37,7 +37,7 @@ def write_raw_conflict_notice(workspace_root, workspace: str, conflicts):
             "",
             "1. Review the local raw file and the synced explore output.",
             "2. Decide whether to keep the local raw file or align it with the server version.",
-            "3. Re-run `loomrun scan`, then `loomcli confirm` if you intentionally keep the local version.",
+            "3. Re-run `loomcli scan-index`, then `loomcli confirm` if you intentionally keep the local version.",
             "",
         ]
     )

@@ -26,16 +26,22 @@ const AGENT_INSTALL_PROMPTS = [
     key: "chatgpt",
     label: "ChatGPT",
     assistant: "ChatGPT",
+    cliAgent: "codex",
+    skillLabel: "Codex",
   },
   {
     key: "claude",
     label: "Claude",
     assistant: "Claude",
+    cliAgent: "claude",
+    skillLabel: "Claude",
   },
   {
     key: "cursor",
     label: "Cursor",
     assistant: "Cursor",
+    cliAgent: "cursor",
+    skillLabel: "Cursor",
   },
 ];
 
@@ -577,10 +583,9 @@ function TopNav({ view, onNavigate }) {
 function HomePage({ workspaceCount, datasetCount, csvProfileCount, onOpenExplore }) {
   const [selectedAgent, setSelectedAgent] = useState(AGENT_INSTALL_PROMPTS[0].key);
   const [copiedAgent, setCopiedAgent] = useState(null);
-  const [includeTutorial, setIncludeTutorial] = useState(true);
   const [selectedFile, setSelectedFile] = useState("overview.md");
   const activePrompt = AGENT_INSTALL_PROMPTS.find((item) => item.key === selectedAgent) ?? AGENT_INSTALL_PROMPTS[0];
-  const installPrompt = buildInstallPrompt();
+  const installPrompt = buildInstallPrompt(activePrompt);
   const handleCopy = async () => {
     if (!navigator?.clipboard?.writeText) {
       return;
@@ -654,21 +659,14 @@ function HomePage({ workspaceCount, datasetCount, csvProfileCount, onOpenExplore
                   </button>
                 ))}
               </div>
-              <label className="tutorial-toggle">
-                <input
-                  type="checkbox"
-                  checked={includeTutorial}
-                  onChange={(event) => setIncludeTutorial(event.target.checked)}
-                />
-                <span>安装时启用教学</span>
-              </label>
+              <span className="tutorial-toggle">快速初始化会自动安装 tutorial</span>
             </div>
             <div className="chat-window home-chat-window" aria-label={`${activePrompt.assistant} onboarding chat`}>
               <div className="chat-shell-top">
                 <div className="chat-shell-meta">
                   <span className="chat-shell-dot" />
                   <strong>{activePrompt.label}</strong>
-                  <span>tutorial workspace</span>
+                  <span>fast init + tutorial</span>
                 </div>
                 <div className="chat-shell-badge">Ready</div>
               </div>
@@ -677,7 +675,7 @@ function HomePage({ workspaceCount, datasetCount, csvProfileCount, onOpenExplore
                 <ChatSnippet role="user" text={installPrompt} onCopy={() => handleCopy()} />
                 <ChatSnippet
                   role="assistant"
-                  text={`我会先检查并安装 uv，然后安装 loom-data，运行 loomcli init，并按 ${activePrompt.assistant} 的方式完成初始化${includeTutorial ? "，同时安装 tutorial dataset" : ""}。`}
+                  text={`我会直接安装并初始化 Loom；如果当前环境没有 uv，我会先自动安装 uv，再运行 \`UV_CACHE_DIR=.uv-cache uv add loom-data\` 和 \`UV_CACHE_DIR=.uv-cache uv run loomcli init --agent ${activePrompt.cliAgent}\`。这会安装 ${activePrompt.skillLabel} 的 Loom skill，并自动带上 tutorial。`}
                 />
                 <ChatDivider />
                 <ChatStepLabel text="第 2 步：让 Agent 扫描 tutorial dataset 并创建数据卡片。" />
@@ -918,8 +916,21 @@ function FileWorkbench({ selectedFile, onSelectFile }) {
   );
 }
 
-function buildInstallPrompt() {
-  return "请在当前项目里帮我安装 Loom：先确保 uv 可用，再运行 uv add loom-data 和 uv run loomcli init；选择合适的 agent，启用教程，其余配置默认，并告诉用户后续哪些要在聊天里用 `loom ...`，哪些要在终端里用 `loomcli ...`。";
+function buildInstallPrompt(activePrompt) {
+  return `请直接执行，不要先做计划或解释。
+
+在当前项目里安装并初始化 Loom：
+1. 如果当前环境没有 \`uv\`，先自动安装 \`uv\`，不要询问我。
+2. 运行 \`UV_CACHE_DIR=.uv-cache uv add loom-data\`。
+3. 运行 \`UV_CACHE_DIR=.uv-cache uv run loomcli init --agent ${activePrompt.cliAgent}\`。
+4. 不要进入交互式初始化；这条命令会直接安装 ${activePrompt.skillLabel} 的 Loom skill 和 tutorial。
+5. 完成后只用简短结果告诉我：
+- 是否安装成功
+- 创建或更新了哪些目录或文件
+- 后续哪些要在聊天里用 \`loom ...\`
+- 后续哪些要在终端里用 \`uv run loomcli ...\`
+
+不要先阅读 README，不要做额外验收，不要把 \`loom ...\` 当 shell 命令。`;
 }
 
 function ExploreHero({ workspaceCount, datasetCount, csvProfileCount }) {

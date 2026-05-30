@@ -5,10 +5,9 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "packages" / "loom-server" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "loom" / "src"))
 
-from loom.run import main
+from loom.render_deploy import main
 
 
 if __name__ == "__main__":

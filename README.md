@@ -9,14 +9,44 @@ The workflow is:
 3. Let the agent read `loom/` first.
 4. Fetch only the exact raw files that are needed.
 
+If you want better first-pass cards, put a short dataset description in `loom.md` and add a `Columns:` section with bullet points such as `- technology: ...`. Loom now carries those column notes into generated overviews and CSV cards.
+
 ## Naming
 
 Loom now uses fixed names for each layer:
 
 - `loom ...` is a chat instruction for the agent.
-- `loomcli ...` is the public terminal CLI.
-- `loomrun ...` is the internal helper command used by the agent.
+- `loomcli ...` is the execution command used by both humans and agents.
 - `import loom` is the Python package import.
+
+## Responsibility Map
+
+```text
+user
+  -> chat: `loom ...`
+     -> agent
+        -> `loomcli ...`
+           -> generate/update `loom/<workspace>`
+
+user
+  -> terminal: `loomcli ...`
+     -> explicit local operation on Loom workspaces or raw cache
+```
+
+Recommended mental model:
+
+- `loom`
+  Ask the agent to do something in chat.
+- `loomcli`
+  Run an explicit terminal command yourself, or let the agent execute the underlying Loom action.
+
+Example:
+
+1. User says `loom scan raw_data/cost to cost` in chat.
+2. The agent interprets that as a chat intent.
+3. The agent runs `loomcli scan-index raw_data/cost to cost` internally.
+4. Loom generates cards under `loom/cost`.
+5. After review, a human or agent may run `loomcli confirm cost`.
 
 ## Install
 
@@ -37,6 +67,14 @@ uv run loomcli --help
 Run this in the project root:
 
 ```bash
+uv run loomcli init --agent codex
+```
+
+This is the recommended fast path for AI-assisted onboarding. When `--agent` is present, Loom skips the interactive setup, installs the selected agent skill, creates the default workspace from your local username, and installs the tutorial dataset automatically.
+
+You can still use the interactive flow when you want to choose everything manually:
+
+```bash
 uv run loomcli init
 ```
 
@@ -51,7 +89,7 @@ raw_data/
 ```
 
 `loomcli init` asks which assistant you use, which default workspace name you want, and whether to install the tutorial dataset.
-It installs the Loom skill only for the assistant you choose.
+`loomcli init --agent codex` skips those prompts and goes straight to the tutorial-ready setup.
 
 ## Chat workflow
 
@@ -66,7 +104,7 @@ loom OCGT 的成本是多少
 Expected behavior:
 
 1. `loom scan ...`
-   The agent runs `loomrun scan ...` to generate the first pass of cards, then continues refining the cards in chat.
+   The agent runs `loomcli scan-index ...` to generate the first pass of cards, then continues refining the cards in chat. A complete scan review should read each dataset `loom.md`, check the generated `overview.md` and cards, make sure the dataset purpose and each column meaning are explained clearly, and only then suggest `loomcli confirm`.
 2. `loom ask ...` or `loom <问题>`
    The agent inspects `loom/` first, then uses `loomcli get` only if it needs a specific raw file.
 
@@ -77,6 +115,7 @@ If the request is data-related but does not mention Loom explicitly, the install
 Use explicit terminal commands when you want to operate Loom by hand:
 
 ```bash
+uv run loomcli scan-index raw_data/energy to energy
 uv run loomcli confirm energy
 uv run loomcli push energy
 uv run loomcli pull energy
@@ -87,20 +126,11 @@ uv run loomcli set-api https://loom-api-free.onrender.com
 
 Notes:
 
-- `loomcli scan` does not exist anymore. Scanning belongs to chat plus `loomrun`.
+- `loomcli scan-index` is the explicit scan command. Agents can also use it as the execution step behind chat `loom scan ...`.
+- `loomcli scan` is not used; use chat `loom scan ...` or `loomcli scan-index ...` instead.
 - `loomcli ask` does not exist anymore. Questions belong to the agent's Loom-first lookup workflow.
+- After `loomcli init --agent ...`, the agent should tell the user that `loom ...` belongs in chat and `uv run loomcli ...` belongs in the terminal.
 - If you omit `to <workspace>` in a scan request, Loom reuses the most recent workspace or falls back to `temporary`.
-
-## Internal helper
-
-Agents and repository maintainers can use:
-
-```bash
-uv run loomrun scan raw_data/energy to energy
-uv run loomrun route "loom scan raw_data/energy to energy"
-```
-
-`loomrun` is an implementation detail. It is useful for automation, testing, and repository maintenance, but it is not the primary user-facing interface.
 
 ## Python API
 
@@ -126,4 +156,7 @@ Explore data online at [https://loom-web.onrender.com](https://loom-web.onrender
 
 ## Maintainers
 
-This repo also includes the workspace skill `.agents/skills/loom-cli-release` for publishing new `loom-data` CLI releases with the repository release script.
+This repo also includes workspace skills for maintainer workflows:
+
+- `.agents/skills/loom-cli-release` publishes new `loom-data` PyPI releases.
+- `.agents/skills/loom-render-deploy` deploys the current pushed commit to the Render API and web services.

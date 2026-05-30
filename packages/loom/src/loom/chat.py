@@ -33,7 +33,6 @@ _RESERVED_NON_ASK_WORDS = {
     "pull",
     "pull-raw",
     "push",
-    "route",
     "scan",
     "server-init-db",
     "server-run",

@@ -16,13 +16,12 @@ sys.path.insert(0, str(ROOT / "packages" / "loom" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "loom-server" / "src"))
 
 from loom.cli import main
-from loom.run import main as run_main
 import loom.sync_client as sync_client
 
 
 class LoomTestCase(unittest.TestCase):
     def scan_command(self, source_path: str = "raw_data/energy", *, workspace: str | None = "energy") -> list[str]:
-        command = ["scan", source_path]
+        command = ["scan-index", source_path]
         if workspace is not None:
             command.extend(["to", workspace])
         return command
@@ -30,8 +29,7 @@ class LoomTestCase(unittest.TestCase):
     def call_main(self, argv: list[str]) -> tuple[int, str]:
         stdout = io.StringIO()
         with redirect_stdout(stdout):
-            runner = run_main if argv and argv[0] in {"route", "scan"} else main
-            exit_code = runner(argv)
+            exit_code = main(argv)
         return exit_code, stdout.getvalue()
 
     def patch_server(self, client: TestClient):

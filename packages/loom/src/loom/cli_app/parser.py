@@ -17,15 +17,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="loomcli")
     subparsers = parser.add_subparsers(dest="command")
     _add_init_parser(subparsers)
+    _add_public_scan_parser(subparsers)
     _add_data_parsers(subparsers)
     _add_sync_parsers(subparsers)
-    return parser
-
-
-def build_run_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="loomrun")
-    subparsers = parser.add_subparsers(dest="command")
-    _add_scan_parsers(subparsers)
     return parser
 
 
@@ -42,18 +36,15 @@ def _add_init_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
         dest="agents",
         action="append",
         choices=("codex", "claude", "cursor", "copilot"),
-        help="Compatibility flag. `loom init` now prompts for one assistant instead of installing all agents at once.",
+        help="Run `loomcli init` in a non-interactive fast path for the selected assistant and install the tutorial dataset.",
     )
-
-
-def _add_scan_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    scan_parser = subparsers.add_parser("scan", help="Internal helper: scan a source directory into a Loom workspace.")
+def _add_public_scan_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    scan_parser = subparsers.add_parser(
+        "scan-index",
+        help="Scan a source directory and build Loom cards/index files under a workspace.",
+    )
     scan_parser.add_argument("scan_args", nargs="*")
     scan_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
-
-    route_parser = subparsers.add_parser("route", help="Internal helper: parse a chat message and execute supported Loom actions.")
-    route_parser.add_argument("message")
-    route_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
 
 def _add_data_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:

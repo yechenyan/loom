@@ -192,6 +192,38 @@ Render 里需要填写：
 
 如果用的是 Blueprint，优先继续维护 [render.yaml](/Users/maxiao/Documents/code2/loom/render.yaml)，不要只在 Dashboard 里手改。
 
+## 脚本化发布
+
+仓库里现在提供了统一脚本：
+
+```bash
+uv run python scripts/deploy_render.py
+```
+
+默认行为：
+
+- 检查当前 worktree 是否干净
+- 检查 `HEAD` 是否已经 push 到 `origin/<current-branch>`
+- 执行 `render blueprints validate`
+- 读取 Render 服务列表并找到：
+  - `loom-api-free`
+  - `loom-web`
+- 触发两个服务的 deploy，并等待它们变成 `live`
+- 验证：
+  - `https://loom-api-free.onrender.com/health`
+  - `https://loom-web.onrender.com`
+
+常用变体：
+
+```bash
+uv run python scripts/deploy_render.py --api-only
+uv run python scripts/deploy_render.py --web-only
+uv run python scripts/deploy_render.py --skip-validate
+uv run python scripts/deploy_render.py --commit <sha>
+```
+
+如果你只是要把当前已 push 的改动上线，优先用这个脚本，不要手工敲一串 `render deploys create ...`。
+
 ## 变更 API 地址时要一起改的地方
 
 如果你换了 API 域名，不要只改 Render 服务本身，还要一起检查这些位置：

@@ -1,12 +1,11 @@
 # loom-data
 
-`loom-data` publishes the `loom` Python package together with the `loomcli` and `loomrun` console commands.
+`loom-data` publishes the `loom` Python package together with the `loomcli` console command.
 
 ## Naming
 
 - `loom ...` is the chat form used with an AI agent.
-- `loomcli ...` is the public terminal CLI.
-- `loomrun ...` is the internal helper command used by agents and repository tooling.
+- `loomcli ...` is the executable command used by both humans and agents.
 - `import loom` remains the Python import path.
 
 ## Install
@@ -48,25 +47,19 @@ loom ask OCGT 的成本是多少
 loom OCGT 的成本是多少
 ```
 
-`loom scan` should lead the agent to run `loomrun scan` and then continue curating cards in chat.
+`loom scan` should lead the agent to run `loomcli scan-index` and then continue curating cards in chat.
 `loom ask` and bare `loom <问题>` should lead the agent to inspect `loom/` first rather than run a question-answering script.
 
 ## CLI examples
 
 ```bash
+uv run loomcli scan-index raw_data/energy to energy
 uv run loomcli confirm energy
 uv run loomcli push energy
 uv run loomcli pull energy
 uv run loomcli pull-raw energy
 uv run loomcli get energy/technology-data/costs.csv
 uv run loomcli set-api https://loom-api-free.onrender.com
-```
-
-## Internal helper examples
-
-```bash
-uv run loomrun scan raw_data/energy to energy
-uv run loomrun route "loom scan raw_data/energy to energy"
 ```
 
 ## Python API
@@ -84,5 +77,5 @@ print(local_path)
 
 - `loom-data` is the package name.
 - `loomcli` is the public CLI command.
-- `loomrun` is the internal helper command.
 - `import loom` is the Python API.
+- Use `loomcli scan-index` both for explicit terminal scans and for the agent's internal scan path.
