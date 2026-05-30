@@ -50,7 +50,7 @@ This initializes Loom in `./loom/` and asks a few short questions in English:
 
 `loom init` installs the helper skill only for the assistant you choose:
 
-- OpenAI Codex (`$CODEX_HOME/skills/loom-data` and workspace `.agents/skills/loom-data`)
+- Codex(ChatGpt) (`$CODEX_HOME/skills/loom-data` and workspace `.agents/skills/loom-data`)
 - Claude (`.claude/skills/loom-data`)
 - Cursor (`.cursor/skills/loom-data`)
 - Copilot (`.copilot/skills/loom-data`)

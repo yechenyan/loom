@@ -11,7 +11,7 @@ from .tutorial_data import TUTORIAL_FILES
 
 
 AGENT_LABELS = {
-    "codex": "OpenAI Codex",
+    "codex": "Codex(ChatGpt)",
     "claude": "Claude",
     "cursor": "Cursor",
     "copilot": "Copilot",

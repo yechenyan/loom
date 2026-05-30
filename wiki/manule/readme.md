@@ -62,7 +62,7 @@ uv run python /Users/maxiao/Documents/code2/loom/scripts/loom.py init
 
 交互内容包括：
 
-- 你当前使用哪个 assistant（OpenAI Codex / Claude / Cursor / Copilot）
+- 你当前使用哪个 assistant（Codex(ChatGpt) / Claude / Cursor / Copilot）
 - 默认 workspace 名字，默认值是当前用户名，取不到时用 `temo`
 - 是否安装教学用示例数据
 
