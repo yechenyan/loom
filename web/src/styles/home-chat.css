@@ -37,8 +37,17 @@
 .tutorial-toggle,
 .chat-send-button {
   padding: 0.6rem 0.85rem;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.82);
   color: #344054;
+  transition: all 0.2s ease;
+}
+
+.agent-tab:hover,
+.message-copy-button:hover,
+.tutorial-toggle:hover,
+.chat-send-button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 12px rgba(20, 28, 45, 0.1);
 }
 
 .agent-tab {
@@ -123,10 +132,18 @@
   border-radius: 1.15rem;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 8px rgba(20, 28, 45, 0.06);
+  transition: all 0.2s ease;
+}
+
+.chat-user {
+  background: linear-gradient(135deg, rgba(255, 240, 216, 0.95), rgba(230, 239, 255, 0.90));
+  border-color: rgba(232, 118, 48, 0.15);
 }
 
 .chat-assistant {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 249, 252, 0.94));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 249, 252, 0.96));
+  border-color: rgba(68, 118, 223, 0.1);
 }
 
 .chat-body,
@@ -204,7 +221,10 @@
 
 .chat-send-button {
   min-width: 4.9rem;
-  background: linear-gradient(135deg, #fff0d9, #dbeafe);
+  background: linear-gradient(135deg, #e8a55f, #4476df);
+  color: #ffffff;
+  font-weight: 500;
+  border: none;
 }
 
 .tutorial-toggle {

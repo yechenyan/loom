@@ -87,11 +87,20 @@
   border-radius: 999px;
   padding: 0.65rem 0.95rem;
   color: #475467;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.nav-tab:hover {
+  color: #111827;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .nav-tab.active {
-  background: linear-gradient(135deg, rgba(255, 239, 210, 0.94), rgba(230, 239, 255, 0.96));
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(135deg, rgba(232, 165, 95, 0.12), rgba(68, 118, 223, 0.12));
+  border: 1px solid rgba(232, 118, 48, 0.2);
+  color: #111827;
+  font-weight: 500;
 }
 
 .hero,

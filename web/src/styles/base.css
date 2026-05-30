@@ -59,10 +59,21 @@ a {
 .subpanel,
 .info-card,
 .metric-card {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 24px 48px rgba(20, 28, 45, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 40px rgba(20, 28, 45, 0.12), 0 0 1px rgba(20, 28, 45, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.panel:hover,
+.sidebar-card:hover,
+.status-panel:hover,
+.csv-card:hover,
+.subpanel:hover,
+.info-card:hover,
+.metric-card:hover {
+  box-shadow: 0 24px 48px rgba(20, 28, 45, 0.15), 0 0 1px rgba(20, 28, 45, 0.12);
 }
 
 .panel,
@@ -127,10 +138,14 @@ a {
   font-family: "Instrument Serif", Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.03em;
-  color: #111827;
+  color: #000000;
 }
 
 .hero h1 {
   font-size: clamp(2.6rem, 4vw, 4.6rem);
   line-height: 0.96;
+  background: linear-gradient(135deg, #e8a55f, #4476df);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
