@@ -12,6 +12,7 @@ Use this skill when the user asks to deploy, publish, or release the current rep
 - Deploys the current pushed commit to:
   - `loom-api-free`
   - `loom-web`
+- Treats the frontend as the `packages/loom-web` static site build, not the old `web/` directory.
 - Validates `render.yaml` before triggering deploys.
 - Verifies the live API and web URLs after Render finishes.
 
@@ -20,6 +21,7 @@ Use this skill when the user asks to deploy, publish, or release the current rep
 1. Read `git status --short` and `git branch --show-current`.
 2. Make sure the commit to deploy has already been pushed to `origin/<current-branch>`.
 3. If the worktree is dirty, either commit first or deliberately run the script with `--allow-dirty`.
+4. Make sure the Render CLI session is valid. If commands fail with an expired token, run `render login` before retrying.
 
 ## Standard command
 
@@ -36,6 +38,7 @@ Default behavior:
 - runs `render blueprints validate`
 - deploys API first, then web
 - waits for both deploys to finish
+- uses the `packages/loom-web` build settings from `render.yaml` for the frontend
 - checks:
   - `https://loom-api-free.onrender.com/health`
   - `https://loom-web.onrender.com`
@@ -46,6 +49,7 @@ Default behavior:
   - `uv run python scripts/deploy_render.py --api-only`
 - Deploy only web:
   - `uv run python scripts/deploy_render.py --web-only`
+- Prefer `--web-only` when only `packages/loom-web` or web deploy settings changed.
 - Skip Blueprint validation:
   - `uv run python scripts/deploy_render.py --skip-validate`
 - Skip remote branch check:

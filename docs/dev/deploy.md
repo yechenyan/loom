@@ -13,6 +13,9 @@ If this document and `render.yaml` ever disagree, trust `render.yaml`.
 - `loom-postgres`
   Render Postgres database
 
+The frontend no longer builds from the repository root `web/` directory.
+Render must build and publish from `packages/loom-web`.
+
 ## Current Blueprint
 
 `render.yaml` currently defines:
@@ -30,7 +33,7 @@ If this document and `render.yaml` ever disagree, trust `render.yaml`.
   - type: `web`
   - runtime: `static`
   - name: `loom-web`
-  - build command: `cd packages/loom-web && npm ci && npm run build`
+  - build command: `cd packages/loom-web && corepack enable && pnpm install --frozen-lockfile && pnpm run build`
   - publish path: `./packages/loom-web/dist`
   - env: `VITE_API_BASE_URL=https://loom-api-free.onrender.com`
 - Database
@@ -53,6 +56,14 @@ Default behavior:
 - deploys API and web
 - verifies the live API and web endpoints
 
+For frontend-only changes, deploy only the static site:
+
+```bash
+uv run python scripts/deploy_render.py --web-only
+```
+
+This still validates `render.yaml` first unless you pass `--skip-validate`.
+
 ## Useful Flags
 
 ```bash
@@ -69,6 +80,12 @@ uv run python scripts/deploy_render.py --commit <sha>
 
 ```bash
 render blueprints validate
+```
+
+If the Render CLI says your token is expired, refresh it before deploying:
+
+```bash
+render login
 ```
 
 ## Documentation Follow-up

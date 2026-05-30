@@ -1,0 +1,212 @@
+.explore-shell {
+  --page-content-width: 1320px;
+  min-height: 100vh;
+  padding: 22px clamp(18px, 4vw, 64px) 54px;
+}
+
+.explore-shell .topbar {
+  width: min(var(--page-content-width), 100%);
+}
+
+.explore-hero,
+.explore-grid {
+  width: min(var(--page-content-width), 100%);
+  margin: 0 auto;
+}
+
+.explore-hero {
+  padding: 62px 0 34px;
+}
+
+.explore-hero h1 {
+  max-width: 960px;
+  font-size: clamp(2.6rem, 5.2vw, 5rem);
+}
+
+.explore-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: clamp(22px, 3.2vw, 46px);
+  align-items: stretch;
+}
+
+.explore-tree,
+.explore-detail {
+  min-width: 0;
+  min-height: 720px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 36px;
+  background: rgba(255, 250, 240, 0.72);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px);
+}
+
+.explore-tree {
+  overflow: auto;
+  padding: 20px 16px;
+}
+
+.tree-label {
+  margin-bottom: 24px;
+  color: #0f6f75;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.tree-group,
+.tree-branch {
+  display: grid;
+  gap: 8px;
+}
+
+.tree-group + .tree-group {
+  margin-top: 18px;
+}
+
+.tree-branch {
+  margin-top: 8px;
+  margin-left: 12px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(0, 46, 79, 0.14);
+}
+
+.tree-button,
+.tree-file,
+.detail-tabs button {
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tree-button {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: 14px;
+  text-align: left;
+  background: rgba(232, 242, 244, 0.64);
+}
+
+.tree-button span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.tree-button strong,
+.tree-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-button strong,
+.tree-file {
+  font-size: 0.9rem;
+}
+
+.tree-button em {
+  grid-column: 2;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.tree-file {
+  width: 100%;
+  padding: 7px 8px 7px 34px;
+  border-radius: 12px;
+  text-align: left;
+  background: transparent;
+}
+
+.tree-file.active {
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.explore-detail {
+  overflow: visible;
+  max-width: 100%;
+  padding: clamp(18px, 3vw, 34px);
+}
+
+.detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-tabs button {
+  min-width: 150px;
+  min-height: 54px;
+  border: 1px solid rgba(0, 46, 79, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.8);
+  font-weight: 900;
+}
+
+.detail-tabs button.active {
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.detail-body {
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible;
+  padding-top: 26px;
+}
+
+.detail-body h2 {
+  margin-bottom: 14px;
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  overflow-wrap: anywhere;
+}
+
+.detail-body h3 {
+  margin: 26px 0 12px;
+  color: var(--ink);
+}
+
+.detail-path,
+.empty-state,
+.info-panel p,
+.info-panel a,
+.markdown-summary p {
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.metric-row,
+.column-chips,
+.metric-row span,
+.column-chips span {
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(139, 201, 192, 0.24);
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .explore-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .explore-tree,
+  .explore-detail {
+    min-height: auto;
+  }
+}
