@@ -13,3 +13,4 @@ web/node_modules/
 .loom-server-storage/
 node_modules/
 /web/node_modules/*
+.omc/
