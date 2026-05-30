@@ -140,6 +140,8 @@ def create_app(
             )
         except WorkspaceConflictError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
 
     return app
 

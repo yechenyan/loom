@@ -17,6 +17,7 @@
   - `docs/dev/release.md`
   - `docs/dev/deploy.md`
   - `docs/dev/documentation.md`
+  - `docs/dev/demo-data.md`
 - Package usage guide:
   - `packages/loom/README.md`
 - Agent repository rules:

@@ -7,9 +7,9 @@ Loom uses different names for chat and execution. Keep them separate.
 Use `loom ...` in an agent conversation:
 
 ```text
-loom scan raw_data/cost to cost
-loom ask "What is the capex for OCGT?"
-loom push cost
+loom scan raw_data/demo_germany_energy_data to germany_energy
+loom ask "What German wind and solar data is available?"
+loom push germany_energy
 ```
 
 Meaning:
@@ -22,9 +22,9 @@ Meaning:
 Use `loomcli ...` in the terminal:
 
 ```bash
-uv run loomcli scan-index raw_data/cost to cost
-uv run loomcli confirm cost
-uv run loomcli push cost
+uv run loomcli scan-index raw_data/demo_germany_energy_data to germany_energy
+uv run loomcli confirm germany_energy
+uv run loomcli push germany_energy
 ```
 
 Meaning:

@@ -100,8 +100,8 @@ Current `--agent` behavior from `packages/loom/src/loom/cli_app/init_flow.py`:
 - installs the selected agent's Loom skills
 - creates or reuses `./loom` and `./raw_data`
 - creates `./loom/<default-workspace>`
-- saves the default workspace as `tempo`
-- installs tutorial data under `raw_data/cost`
+- saves the default workspace as `demo`
+- installs tutorial data under `raw_data/demo_germany_energy_data`
 - prints chat examples and terminal examples separately
 
 Supported agent values:
@@ -135,9 +135,18 @@ Rules from the current implementation:
 
 - the source path is required
 - `to <workspace>` is optional
-- if no workspace is provided, Loom reuses the recent workspace or falls back to `temporary`
+- if no workspace is provided, Loom reuses the recent workspace or falls back to `demo`
+- any directory containing `loom.md` is a dataset root
+- each dataset writes an `overview.md` and `profile.json`
+- each CSV file writes its own `.card.md` and `.profile.json`
+- parent datasets keep their nested dataset directory layout in `loom/<workspace>/`
+- a parent dataset excludes CSV files that belong to a nested child dataset
+- a parent dataset overview lists direct child dataset overviews
+- each dataset currently processes `loom.md` and `*.csv` files only
+- rescans reuse unchanged CSV hashes and profiles, then rebuild only changed datasets
 - one workspace can track multiple source paths
 - duplicate dataset paths stop the scan with an error
+- if a source root is itself a dataset root, Loom writes that dataset under `loom/<workspace>/<source-dir-name>/` instead of flattening files into `loom/<workspace>/`
 
 Expected agent behavior:
 
@@ -152,8 +161,8 @@ Expected agent behavior:
 Chat forms:
 
 ```text
-loom ask OCGT 的成本是多少
-loom OCGT 的成本是多少
+loom ask "What German wind and solar data is available?"
+loom 德国 2015 年有哪些发电装机容量数据？
 ```
 
 Expected agent behavior:
@@ -163,7 +172,7 @@ Expected agent behavior:
 3. Fetch only the exact raw file needed with `loomcli get <workspace/path/to/file>`.
 4. Answer from the fetched local raw file.
 
-Agents may also choose this workflow without an explicit `loom` prefix when another task requires project-local, source-backed dataset facts, such as model parameters, units, assumptions, costs, CSV contents, or provenance. Do not use Loom for ordinary data-processing code, general concept explanations, or external live data unless the user asks.
+Agents should also choose this workflow without an explicit `loom` prefix when data analysis, modeling, visualization, reporting, coding, documentation, or paper writing depends on project-local, source-backed dataset facts, such as model parameters, units, assumptions, costs, CSV contents, or provenance. Inspect `loom/` cards and summaries before reading `raw_data` directly, then fetch only exact raw files with `loomcli get` or `loom.get(...)`. Do not use Loom for ordinary data-processing code with no local source-data lookup, general concept explanations, or external live data unless the user asks.
 
 `loomcli ask` does not exist and should not be documented.
 
@@ -186,7 +195,7 @@ Chat intents such as `loom confirm energy` and `loom push energy` may be interpr
 ```python
 import loom
 
-local_path = loom.get("energy/technology-data/costs.csv")
+local_path = loom.get("energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv")
 ```
 
 Current exports in `packages/loom/src/loom/__init__.py` include `get`, `pull`, `scan_path_to_explore`, `scan_topic_from_chat`, chat parsing helpers, and base URL helpers.

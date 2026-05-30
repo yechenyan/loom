@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from hashlib import sha256
 from urllib import parse
 
 from ..explore_repo import confirm_changes, get_repo_head_commit, get_repo_status
 from ..raw_snapshot import build_raw_manifest, build_raw_workspace_delta, build_raw_workspace_snapshot, encode_raw_files
 from ..sync_state import WorkspaceSyncState, load_workspace_sync_state, save_workspace_sync_state
 from ..workspace_merge import merge_workspace_snapshots
-from ..workspace_snapshot import WorkspaceSnapshot, apply_workspace_delta, build_snapshot_manifest, build_workspace_delta, build_workspace_snapshot, build_workspace_snapshot_from_commit, decode_snapshot_files, encode_workspace_files
+from ..workspace_snapshot import WorkspaceDelta, WorkspaceSnapshot, apply_workspace_delta, build_snapshot_manifest, build_workspace_delta, build_workspace_snapshot, build_workspace_snapshot_from_commit, decode_snapshot_files, encode_workspace_files
 from .models import WorkspacePullResult, WorkspacePushResult
 from .raw import pull_single_raw_workspace, raw_hash_manifest
 from .state import effective_base_revision, effective_file_manifest, effective_raw_manifest, has_local_commits
@@ -65,7 +66,10 @@ def build_pull_url(server_url: str, workspace: str, base_revision: str | None) -
 def _push_snapshot(workspace_root, server_url, workspace, message, state, request_json):
     snapshot = build_workspace_snapshot(workspace_root, workspace)
     raw_snapshot = build_raw_workspace_snapshot(workspace_root, workspace)
-    delta = build_workspace_delta(snapshot, effective_file_manifest(state))
+    file_manifest = effective_file_manifest(state)
+    delta = build_workspace_delta(snapshot, file_manifest)
+    if _manifest_tree_hash(file_manifest) != _effective_tree_hash(state):
+        delta = WorkspaceDelta(changed_files=snapshot.files, deleted_paths=delta.deleted_paths)
     raw_delta = build_raw_workspace_delta(raw_snapshot, effective_raw_manifest(state))
     uploaded = upload_missing_raw_objects(server_url, raw_delta.changed_files, request_json)
     response = request_json("POST", f"{server_url.rstrip('/')}/api/workspaces/{parse.quote(workspace)}/push", {"base_revision": effective_base_revision(state), "local_commit": get_repo_head_commit(workspace_root), "tree_hash": snapshot.tree_hash, "message": message or f"Push workspace {workspace}", "files": encode_workspace_files(delta.changed_files), "deleted_paths": list(delta.deleted_paths), "raw_files": [{"path": file.path, "sha256": file.sha256, "size_bytes": file.size_bytes, "content_base64": ""} for file in raw_delta.changed_files], "raw_deleted_paths": list(raw_delta.deleted_paths)})
@@ -107,3 +111,19 @@ def build_remote_snapshot(workspace: str, base_snapshot: WorkspaceSnapshot, resp
     for file_snapshot in decode_snapshot_files(list(response["files"])):
         file_map[file_snapshot.path] = file_snapshot
     return WorkspaceSnapshot(workspace=workspace, files=tuple(file_map[path] for path in sorted(file_map)), tree_hash=str(response["tree_hash"]))
+
+
+def _effective_tree_hash(state) -> str | None:
+    return state.pending_rebase_tree_hash or state.last_synced_tree_hash
+
+
+def _manifest_tree_hash(manifest: dict[str, str] | None) -> str | None:
+    if manifest is None:
+        return None
+    digest = sha256()
+    for path, file_sha256 in sorted(manifest.items()):
+        digest.update(path.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(file_sha256.encode("ascii"))
+        digest.update(b"\0")
+    return digest.hexdigest()

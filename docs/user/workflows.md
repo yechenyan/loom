@@ -19,7 +19,7 @@ loom scan raw_data/energy to energy
 1. Ask in chat:
 
 ```text
-loom ask OCGT 的成本是多少
+loom ask "What German wind and solar data is available?"
 ```
 
 2. The agent should inspect `loom/` first.

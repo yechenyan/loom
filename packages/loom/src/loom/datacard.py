@@ -9,6 +9,8 @@ from .datacard_parts import (
     build_csv_entry,
     build_dataset_overview,
     collect_source_sites,
+    csv_card_file,
+    csv_profile_file,
     extract_source_info,
 )
 
@@ -19,6 +21,7 @@ def write_dataset_card(
     loom_text: str,
     csv_profiles: list[dict[str, Any]],
     scan_manifest: dict[str, Any] | None = None,
+    child_datasets: list[dict[str, Any]] | None = None,
 ) -> None:
     dataset_dir.mkdir(parents=True, exist_ok=True)
     legacy_datacard = dataset_dir / "datacard.md"
@@ -29,10 +32,12 @@ def write_dataset_card(
     csv_entries = [build_csv_entry(profile, loom_text) for profile in csv_profiles]
     source_info = extract_source_info(loom_text)
     source_info["key_sites"] = collect_source_sites(csv_profiles)
+    child_datasets = child_datasets or []
     profile_payload = {
         "raw_dataset_dir": raw_dataset_path,
         "loom_md_present": bool(loom_text.strip()),
         "source": source_info,
+        "child_datasets": child_datasets,
         "csv_count": len(csv_profiles),
         "total_row_count": sum(profile["row_count"] for profile in csv_profiles),
         "csv_files": csv_entries,
@@ -45,19 +50,55 @@ def write_dataset_card(
         encoding="utf-8",
     )
 
-    overview_markdown = build_dataset_overview(raw_dataset_dir, raw_dataset_path, loom_text, csv_profiles)
+    overview_markdown = build_dataset_overview(raw_dataset_dir, raw_dataset_path, loom_text, csv_profiles, child_datasets)
     (dataset_dir / "overview.md").write_text(overview_markdown, encoding="utf-8")
 
     for profile in csv_profiles:
-        stem = Path(profile["file_name"]).stem
-        (dataset_dir / f"{stem}.profile.json").write_text(
+        profile_path = dataset_dir / csv_profile_file(profile)
+        card_path = dataset_dir / csv_card_file(profile)
+        profile_path.parent.mkdir(parents=True, exist_ok=True)
+        card_path.parent.mkdir(parents=True, exist_ok=True)
+        profile_path.write_text(
             json.dumps(profile, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
-        (dataset_dir / f"{stem}.card.md").write_text(
+        card_path.write_text(
             build_csv_card(raw_dataset_path, profile, loom_text),
             encoding="utf-8",
         )
+
+
+def expected_dataset_generated_files(dataset_dir: Path, explore_topic_dir: Path, csv_profiles: list[dict[str, Any]]) -> list[str]:
+    expected = [dataset_dir / "profile.json", dataset_dir / "overview.md"]
+    for profile in csv_profiles:
+        expected.extend([dataset_dir / csv_profile_file(profile), dataset_dir / csv_card_file(profile)])
+    return [path.relative_to(explore_topic_dir).as_posix() for path in expected]
+
+
+def remove_stale_generated_files(explore_topic_dir: Path, previous_files: list[str], expected_files: list[str]) -> None:
+    stale_files = sorted(set(previous_files) - set(expected_files), reverse=True)
+    stale_parents: set[Path] = set()
+    for relative_path in stale_files:
+        if not _is_generated_dataset_file(relative_path):
+            continue
+        path = explore_topic_dir / relative_path
+        if path.is_file():
+            path.unlink()
+            stale_parents.add(path.parent)
+    _remove_empty_generated_dirs(explore_topic_dir, stale_parents)
+
+
+def _remove_empty_generated_dirs(explore_topic_dir: Path, stale_parents: set[Path]) -> None:
+    for parent in sorted(stale_parents, key=lambda path: len(path.parts), reverse=True):
+        current = parent
+        while current != explore_topic_dir and current.is_dir() and not any(current.iterdir()):
+            current.rmdir()
+            current = current.parent
+
+
+def _is_generated_dataset_file(relative_path: str) -> bool:
+    name = Path(relative_path).name
+    return name in {"profile.json", "overview.md"} or name.endswith((".card.md", ".profile.json"))
 
 
 def refresh_dataset_card(
@@ -65,6 +106,7 @@ def refresh_dataset_card(
     raw_dataset_dir: Path,
     loom_text: str,
     scan_manifest: dict[str, Any] | None,
+    child_datasets: list[dict[str, Any]] | None = None,
 ) -> bool:
     profile_path = dataset_dir / "profile.json"
     overview_path = dataset_dir / "overview.md"
@@ -78,11 +120,19 @@ def refresh_dataset_card(
     if not isinstance(csv_profiles, list):
         return False
 
+    expected_child_datasets = child_datasets or []
     expected_raw_dataset_path = _resolve_raw_dataset_path(raw_dataset_dir, scan_manifest)
-    if payload.get("raw_dataset_dir") == expected_raw_dataset_path:
+    if payload.get("raw_dataset_dir") == expected_raw_dataset_path and payload.get("child_datasets", []) == expected_child_datasets:
         return False
 
-    write_dataset_card(dataset_dir, raw_dataset_dir, loom_text, csv_profiles, scan_manifest=scan_manifest)
+    write_dataset_card(
+        dataset_dir,
+        raw_dataset_dir,
+        loom_text,
+        csv_profiles,
+        scan_manifest=scan_manifest,
+        child_datasets=expected_child_datasets,
+    )
     return True
 
 
@@ -120,7 +170,10 @@ def write_topic_index(
 
 
 def _resolve_raw_dataset_path(raw_dataset_dir: Path, scan_manifest: dict[str, Any] | None) -> str:
-    relative_dir = scan_manifest.get("topic_relative_dir") if isinstance(scan_manifest, dict) else None
-    if isinstance(relative_dir, str) and relative_dir:
+    relative_dir = scan_manifest.get("workspace_relative_dir") if isinstance(scan_manifest, dict) else None
+    if isinstance(relative_dir, str) and relative_dir and relative_dir != ".":
         return relative_dir
+    topic_relative_dir = scan_manifest.get("topic_relative_dir") if isinstance(scan_manifest, dict) else None
+    if isinstance(topic_relative_dir, str) and topic_relative_dir and topic_relative_dir != ".":
+        return topic_relative_dir
     return raw_dataset_dir.as_posix()

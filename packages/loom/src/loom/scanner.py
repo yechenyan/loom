@@ -5,17 +5,27 @@ from pathlib import Path
 from typing import Any
 
 from .chat import parse_chat_request
-from .csv_profile import profile_csv
-from .datacard import refresh_dataset_card, write_dataset_card, write_topic_index
+from .datacard import (
+    expected_dataset_generated_files,
+    refresh_dataset_card,
+    remove_stale_generated_files,
+    write_dataset_card,
+    write_topic_index,
+)
 from .explore_repo import ensure_explore_repo
 from .raw_cache_support import resolve_raw_data_root
 from .scan_state import load_recent_workspace, load_scan_state, save_recent_workspace, save_scan_state
 from .scan_support import (
-    build_dataset_scan_manifest,
-    collect_generated_files,
-    is_nested_under_other_root,
+    build_child_dataset_summaries,
+    build_direct_child_dataset_map,
+    build_dataset_scan_artifacts,
+    build_incremental_csv_profiles,
+    cleanup_legacy_root_dataset_outputs,
+    find_dataset_conflicts,
     iter_dataset_csv_files,
+    normalize_previous_datasets,
     normalize_scan_sources,
+    resolve_workspace_relative_dir,
     should_rebuild_dataset,
     write_topic_manifest,
 )
@@ -39,12 +49,8 @@ class DuplicateDatasetPathError(RuntimeError):
 
 def scan_topic_from_chat(message: str, workspace_root: Path | str) -> ScanResult | None:
     request = parse_chat_request(message)
-    if request is None:
+    if request is None or request.source_path is None:
         return None
-
-    if request.source_path is None:
-        return None
-
     return scan_path_to_explore(request.source_path, workspace_root, workspace=request.workspace)
 
 
@@ -57,8 +63,7 @@ def scan_path_to_explore(source_path: str | Path, workspace_root: Path | str, *,
 
 def scan_topic_to_explore(topic: str, workspace_root: Path | str) -> ScanResult:
     root = Path(workspace_root)
-    raw_topic_dir = resolve_raw_data_root(root) / topic
-    return _scan_resolved_source(raw_topic_dir, topic, root)
+    return _scan_resolved_source(resolve_raw_data_root(root) / topic, topic, root)
 
 
 def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: Path) -> ScanResult:
@@ -72,9 +77,15 @@ def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: P
 
     source_key = _build_source_key(raw_topic_dir, workspace_root)
     all_dataset_roots = sorted(loom_file.parent for loom_file in raw_topic_dir.rglob("loom.md"))
-    dataset_roots = [root for root in all_dataset_roots if not is_nested_under_other_root(root, all_dataset_roots)]
+    dataset_roots = all_dataset_roots
+    source_root_is_dataset = raw_topic_dir in dataset_roots
+    child_dataset_roots = build_direct_child_dataset_map(dataset_roots)
+    root_relative_dirs: dict[Path, str] = {}
     previous_sources = _normalize_loaded_sources(normalize_scan_sources(load_scan_state(workspace_root, workspace)), workspace_root)
-    previous_datasets = previous_sources.get(source_key, {}).get("datasets", {})
+    previous_datasets, legacy_root_entry = normalize_previous_datasets(
+        previous_sources.get(source_key, {}).get("datasets", {}),
+        raw_topic_dir,
+    )
     next_datasets: dict[str, dict[str, Any]] = {}
     dataset_summaries: list[dict[str, Any]] = []
     pending_rebuilds: list[dict[str, Any]] = []
@@ -83,12 +94,21 @@ def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: P
 
     for dataset_root in dataset_roots:
         loom_text = (dataset_root / "loom.md").read_text(encoding="utf-8")
-        relative_dir = dataset_root.relative_to(raw_topic_dir)
-        relative_dir_text = "." if str(relative_dir) == "." else relative_dir.as_posix()
-        target_dir = explore_topic_dir / relative_dir
+        relative_dir_text = resolve_workspace_relative_dir(raw_topic_dir, dataset_root, source_root_is_dataset=source_root_is_dataset)
+        root_relative_dirs[dataset_root] = relative_dir_text
+        target_dir = explore_topic_dir / relative_dir_text
         csv_files = sorted(iter_dataset_csv_files(dataset_root, all_dataset_roots))
-        scan_manifest = build_dataset_scan_manifest(raw_topic_dir, dataset_root, loom_text, csv_files)
         previous_entry = previous_datasets.get(relative_dir_text)
+        previous_manifest = previous_entry.get("scan_manifest") if previous_entry is not None else None
+        previous_file_cache = previous_entry.get("file_cache") if previous_entry is not None else None
+        scan_manifest, file_cache = build_dataset_scan_artifacts(
+            raw_topic_dir,
+            dataset_root,
+            loom_text,
+            csv_files,
+            previous_file_cache if isinstance(previous_file_cache, dict) else previous_manifest,
+        )
+        scan_manifest["workspace_relative_dir"] = relative_dir_text
 
         if should_rebuild_dataset(target_dir, scan_manifest, previous_entry):
             summary = {
@@ -105,23 +125,24 @@ def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: P
                     "loom_text": loom_text,
                     "csv_files": csv_files,
                     "scan_manifest": scan_manifest,
+                    "previous_entry": previous_entry,
                 }
             )
         else:
             summary = dict(previous_entry["summary"])
             summary["status"] = "current"
-            refresh_dataset_card(target_dir, dataset_root, loom_text, scan_manifest)
             skipped_dirs.append(target_dir)
 
         next_datasets[relative_dir_text] = {
             "status": "current",
             "scan_manifest": scan_manifest,
+            "file_cache": file_cache,
             "summary": summary,
             "generated_files": list(previous_entry.get("generated_files", [])) if previous_entry is not None else [],
         }
         dataset_summaries.append(summary)
 
-    conflicts = _find_dataset_conflicts(next_datasets, previous_sources, source_key)
+    conflicts = find_dataset_conflicts(next_datasets, previous_sources, source_key)
     if conflicts:
         lines = [f"Workspace `{workspace}` already tracks conflicting dataset paths from other scan sources:"]
         lines.extend(f"- `{relative_dir}` from `{source_path}`" for relative_dir, source_path in conflicts)
@@ -129,7 +150,13 @@ def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: P
         raise DuplicateDatasetPathError("\n".join(lines))
 
     for pending in pending_rebuilds:
-        csv_profiles = [profile_csv(path) for path in pending["csv_files"]]
+        csv_profiles = build_incremental_csv_profiles(
+            pending["dataset_root"],
+            pending["target_dir"],
+            pending["csv_files"],
+            pending["scan_manifest"],
+            pending["previous_entry"],
+        )
         write_dataset_card(
             pending["target_dir"],
             pending["dataset_root"],
@@ -137,13 +164,32 @@ def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: P
             csv_profiles,
             scan_manifest=pending["scan_manifest"],
         )
+        expected_files = expected_dataset_generated_files(pending["target_dir"], explore_topic_dir, csv_profiles)
+        previous_files = list(pending["previous_entry"].get("generated_files", [])) if pending["previous_entry"] else []
+        remove_stale_generated_files(explore_topic_dir, previous_files, expected_files)
         summary = next_datasets[pending["relative_dir_text"]]["summary"]
         summary["row_count"] = sum(profile["row_count"] for profile in csv_profiles)
-        next_datasets[pending["relative_dir_text"]]["generated_files"] = collect_generated_files(
-            pending["target_dir"],
-            explore_topic_dir,
-        )
+        next_datasets[pending["relative_dir_text"]]["generated_files"] = expected_files
         rebuilt_dirs.append(pending["target_dir"])
+
+    for dataset_root in dataset_roots:
+        relative_dir_text = root_relative_dirs[dataset_root]
+        entry = next_datasets[relative_dir_text]
+        if entry["status"] != "current":
+            continue
+        child_datasets = build_child_dataset_summaries(dataset_root, child_dataset_roots, root_relative_dirs, next_datasets)
+        refreshed = refresh_dataset_card(
+            explore_topic_dir / relative_dir_text,
+            dataset_root,
+            (dataset_root / "loom.md").read_text(encoding="utf-8"),
+            entry["scan_manifest"],
+            child_datasets,
+        )
+        refreshed_dir = explore_topic_dir / relative_dir_text
+        if refreshed and refreshed_dir not in rebuilt_dirs:
+            if refreshed_dir in skipped_dirs:
+                skipped_dirs.remove(refreshed_dir)
+            rebuilt_dirs.append(refreshed_dir)
 
     missing_dataset_dirs: list[str] = []
     for relative_dir_text, previous_entry in previous_datasets.items():
@@ -161,6 +207,8 @@ def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: P
     next_sources = dict(previous_sources)
     next_sources[source_key] = {"source_path": source_key, "datasets": next_datasets}
     merged_datasets = _merge_source_datasets(next_sources)
+    if legacy_root_entry is not None:
+        cleanup_legacy_root_dataset_outputs(explore_topic_dir)
     write_topic_index(explore_topic_dir, workspace, [dict(entry["summary"]) for entry in merged_datasets.values()])
     write_topic_manifest(explore_topic_dir, workspace, merged_datasets)
     save_scan_state(workspace_root, workspace, {"topic": workspace, "sources": next_sources})
@@ -180,15 +228,13 @@ def _scan_resolved_source(raw_topic_dir: Path, workspace: str, workspace_root: P
 
 def _resolve_scan_source_dir(source_path: str | Path, workspace_root: Path) -> Path:
     source = Path(source_path).expanduser()
-    candidate = source if source.is_absolute() else (workspace_root / source)
-    return candidate.resolve()
+    return (source if source.is_absolute() else (workspace_root / source)).resolve()
 
 
 def _resolve_scan_workspace(workspace_root: Path, _: Path, requested_workspace: str | None) -> str:
     if requested_workspace:
         return requested_workspace
-
-    return load_recent_workspace(workspace_root) or "temporary"
+    return load_recent_workspace(workspace_root) or "demo"
 
 
 def _build_source_key(raw_topic_dir: Path, workspace_root: Path) -> str:
@@ -242,21 +288,6 @@ def _infer_workspace_relative_source_key(source_path: Path, workspace_root: Path
         if candidate.exists() and candidate.is_dir():
             return suffix.as_posix()
     return None
-
-
-def _find_dataset_conflicts(
-    next_datasets: dict[str, dict[str, Any]],
-    previous_sources: dict[str, dict[str, Any]],
-    source_key: str,
-) -> list[tuple[str, str]]:
-    conflicts: list[tuple[str, str]] = []
-    for other_key, other_source in previous_sources.items():
-        if other_key == source_key:
-            continue
-        for relative_dir in next_datasets:
-            if relative_dir in other_source["datasets"]:
-                conflicts.append((relative_dir, other_source["source_path"]))
-    return sorted(conflicts)
 
 
 def _merge_source_datasets(sources: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:

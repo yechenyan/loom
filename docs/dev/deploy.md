@@ -9,7 +9,7 @@ If this document and `render.yaml` ever disagree, trust `render.yaml`.
 - `loom-api-free`
   Render web service for `packages/loom-server`
 - `loom-web`
-  Render static site for `web`
+  Render static site for `packages/loom-web`
 - `loom-postgres`
   Render Postgres database
 
@@ -30,8 +30,8 @@ If this document and `render.yaml` ever disagree, trust `render.yaml`.
   - type: `web`
   - runtime: `static`
   - name: `loom-web`
-  - build command: `cd web && npm ci && npm run build`
-  - publish path: `./web/dist`
+  - build command: `cd packages/loom-web && npm ci && npm run build`
+  - publish path: `./packages/loom-web/dist`
   - env: `VITE_API_BASE_URL=https://loom-api-free.onrender.com`
 - Database
   - name: `loom-postgres`

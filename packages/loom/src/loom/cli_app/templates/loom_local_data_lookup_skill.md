@@ -1,6 +1,6 @@
 ---
 name: loom-local-data-lookup
-description: Use when the user explicitly asks `loom ask ...` or `loom <question>`, or when modeling, coding, writing docs, or writing a paper requires project-local, source-backed dataset facts such as values, units, assumptions, parameters, CSV contents, or provenance.
+description: Use when the user explicitly asks `loom ask ...` or `loom <question>`, or when analysis, modeling, visualization, reporting, coding, docs, or paper writing depends on project-local, source-backed dataset facts such as values, units, assumptions, parameters, CSV contents, or provenance.
 ---
 
 # loom-local-data-lookup
@@ -14,7 +14,16 @@ Use this skill when:
 - The user writes `loom ask <question>`.
 - The user writes bare `loom <question>`.
 - The user asks you to use Loom to look up data.
-- The user is modeling, coding, writing docs, or writing a paper and needs project-local data facts: values, units, assumptions, parameters, costs, provenance, CSV contents, or dataset fields.
+- The user is doing data analysis, modeling, visualization, reporting, coding, writing docs, or writing a paper and needs project-local data facts: values, units, assumptions, parameters, costs, provenance, CSV contents, or dataset fields.
+- The task depends on project-local datasets, even if the user does not explicitly say `loom`.
+
+Automatic local-data rule:
+
+When a task involves data analysis, modeling, visualization, reports, or coding
+that depends on project-local datasets, use Loom before reading `raw_data` directly.
+Inspect `./loom` cards and summaries first, then fetch only the exact raw files
+needed with `loomcli get` or `loom.get(...)`. Apply this rule even when the user
+does not explicitly say `loom`.
 
 Do not use this skill when:
 
@@ -48,7 +57,7 @@ When this skill applies:
 Terminal form:
 
 ```bash
-uv run loomcli get energy/technology-data/costs.csv
+uv run loomcli get energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv
 ```
 
 Python form:
@@ -56,7 +65,7 @@ Python form:
 ```python
 import loom
 
-local_path = loom.get("energy/technology-data/costs.csv")
+local_path = loom.get("energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv")
 ```
 
 `loom.get(...)` prefers local cache and fetches only the requested file.

@@ -7,9 +7,17 @@ from typing import Any
 def should_rebuild_dataset(target_dir: Path, scan_manifest: dict[str, Any], previous_entry: dict[str, Any] | None) -> bool:
     if previous_entry is None or str(previous_entry.get("status")) != "current":
         return True
-    if previous_entry.get("scan_manifest") != scan_manifest:
+    previous_manifest = previous_entry.get("scan_manifest")
+    if _dataset_signature(previous_manifest) != _dataset_signature(scan_manifest):
         return True
     return not (target_dir / "profile.json").exists() or not (target_dir / "overview.md").exists()
+
+
+def _dataset_signature(scan_manifest: object) -> object:
+    if not isinstance(scan_manifest, dict):
+        return scan_manifest
+    signature = scan_manifest.get("dataset_sha256")
+    return signature if isinstance(signature, str) else scan_manifest
 
 
 def normalize_dataset_state(datasets: object) -> dict[str, dict[str, Any]]:

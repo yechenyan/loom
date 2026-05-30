@@ -142,7 +142,7 @@ class CliWorkflowTest(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertIn("Scanned workspace: energy", stdout.getvalue())
 
-    def test_scan_without_workspace_uses_temporary_when_no_history_exists(self) -> None:
+    def test_scan_without_workspace_uses_demo_when_no_history_exists(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
             alt_dir = workspace / "datasets" / "alt-source" / "technology-data"
@@ -156,7 +156,7 @@ class CliWorkflowTest(unittest.TestCase):
                 exit_code = main(["scan-index", "datasets/alt-source", "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 0)
-            self.assertIn("Scanned workspace: temporary", stdout.getvalue())
+            self.assertIn("Scanned workspace: demo", stdout.getvalue())
 
     def test_public_cli_rejects_scan_command(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

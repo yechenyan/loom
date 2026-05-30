@@ -7,9 +7,29 @@ from typing import Any
 from .source import collect_source_sites, describe_column_role, describe_row_layout, extract_column_descriptions, extract_source_info, render_column_list, render_column_role_list, render_column_role_summary, summarize_csv
 
 
-def build_dataset_overview(raw_dataset_dir: Path, raw_dataset_path: str, loom_text: str, csv_profiles: list[dict[str, Any]]) -> str:
+def csv_card_file(profile: dict[str, Any]) -> str:
+    return f"{_csv_output_stem(profile)}.card.md"
+
+
+def csv_profile_file(profile: dict[str, Any]) -> str:
+    return f"{_csv_output_stem(profile)}.profile.json"
+
+
+def csv_source_path(profile: dict[str, Any]) -> str:
+    relative_path = profile.get("dataset_relative_path")
+    return relative_path if isinstance(relative_path, str) and relative_path else profile["file_name"]
+
+
+def build_dataset_overview(
+    raw_dataset_dir: Path,
+    raw_dataset_path: str,
+    loom_text: str,
+    csv_profiles: list[dict[str, Any]],
+    child_datasets: list[dict[str, Any]] | None = None,
+) -> str:
     source_info = extract_source_info(loom_text)
     source_sites = source_info["key_sites"] = collect_source_sites(csv_profiles)
+    child_datasets = child_datasets or []
     lines = [f"# Dataset Overview: {raw_dataset_dir.name}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_path}`", f"- CSV files profiled: {len(csv_profiles)}", f"- Total rows across profiled CSV files: {sum(profile['row_count'] for profile in csv_profiles)}", ""]
     if source_info["url"] or source_info["summary"] or loom_text.strip():
         lines.extend(["## Source", ""])
@@ -19,22 +39,31 @@ def build_dataset_overview(raw_dataset_dir: Path, raw_dataset_path: str, loom_te
         if source_sites:
             lines.append("- Key source sites: " + ", ".join(f"`{site}`" for site in source_sites))
         lines.append("")
+    if child_datasets:
+        lines.extend(["## Child Datasets", ""])
+        for child in child_datasets:
+            status = str(child.get("status", "current"))
+            status_suffix = "" if status == "current" else f" [{status}]"
+            lines.append(
+                f"- `{child['relative_dir']}`{status_suffix}: {child['csv_file_count']} CSV files, "
+                f"{child['row_count']} total rows, overview `{child['overview_file']}`"
+            )
+        lines.append("")
     lines.extend(["## CSV Files", ""])
     if not csv_profiles:
         return "\n".join(lines + ["No CSV files were found inside this dataset.", ""])
     for profile in csv_profiles:
-        stem = Path(profile["file_name"]).stem
         lines.extend(
             [
-                f"### `{profile['file_name']}`",
+                f"### `{csv_source_path(profile)}`",
                 "",
                 f"- Rows: {profile['row_count']}",
                 f"- File size: {profile['file_size_bytes']} bytes",
                 f"- Columns: {render_column_list(profile)}",
                 f"- Column roles: {render_column_role_summary(profile, loom_text)}",
                 f"- Summary: {summarize_csv(profile)}",
-                f"- Card: `{stem}.card.md`",
-                f"- Machine-readable profile: `{stem}.profile.json`",
+                f"- Card: `{csv_card_file(profile)}`",
+                f"- Machine-readable profile: `{csv_profile_file(profile)}`",
                 "",
             ]
         )
@@ -42,7 +71,7 @@ def build_dataset_overview(raw_dataset_dir: Path, raw_dataset_path: str, loom_te
 
 
 def build_csv_card(raw_dataset_path: str, profile: dict[str, Any], loom_text: str) -> str:
-    lines = [f"# CSV Data Card: {profile['file_name']}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_path}`", f"- CSV file: `{profile['file_name']}`", f"- Rows: {profile['row_count']}", f"- File size: {profile['file_size_bytes']} bytes", f"- Delimiter: `{profile['dialect']['delimiter']}`", f"- Summary: {summarize_csv(profile)}", f"- Row layout: {describe_row_layout(profile)}", "", "## Structure", ""]
+    lines = [f"# CSV Data Card: {csv_source_path(profile)}", "", "## Overview", "", f"- Raw dataset path: `{raw_dataset_path}`", f"- CSV file: `{csv_source_path(profile)}`", f"- Rows: {profile['row_count']}", f"- File size: {profile['file_size_bytes']} bytes", f"- Delimiter: `{profile['dialect']['delimiter']}`", f"- Summary: {summarize_csv(profile)}", f"- Row layout: {describe_row_layout(profile)}", "", "## Structure", ""]
     lines.extend([f"- Columns: {render_column_list(profile)}", f"- Row layout pattern: {describe_row_layout(profile)}", ""] if profile["columns"] else ["No columns were detected.", ""])
     if profile["columns"]:
         lines.extend(["## Column Roles", "", *render_column_role_list(profile, loom_text), ""])
@@ -50,17 +79,17 @@ def build_csv_card(raw_dataset_path: str, profile: dict[str, Any], loom_text: st
 
 
 def build_csv_entry(profile: dict[str, Any], loom_text: str) -> dict[str, Any]:
-    stem = Path(profile["file_name"]).stem
     descriptions = extract_column_descriptions(loom_text)
     return {
         "file_name": profile["file_name"],
+        "dataset_relative_path": csv_source_path(profile),
         "row_count": profile["row_count"],
         "file_size_bytes": profile["file_size_bytes"],
         "column_count": len(profile["columns"]),
         "columns": [column["name"] for column in profile["columns"]],
         "summary": summarize_csv(profile),
-        "card_file": f"{stem}.card.md",
-        "profile_file": f"{stem}.profile.json",
+        "card_file": csv_card_file(profile),
+        "profile_file": csv_profile_file(profile),
         "column_roles": {
             column["name"]: describe_column_role(column, descriptions)
             for column in profile["columns"]
@@ -93,3 +122,9 @@ def _render_columns(columns: list[dict[str, Any]]) -> list[str]:
             rendered = ", ".join(f"{item['value']} ({item['count']})" for item in column["top_values"])
             lines.append(f"  top values: {rendered}")
     return lines
+
+
+def _csv_output_stem(profile: dict[str, Any]) -> str:
+    relative_path = profile.get("dataset_relative_path")
+    source = relative_path if isinstance(relative_path, str) and relative_path else profile["file_name"]
+    return Path(source).with_suffix("").as_posix()

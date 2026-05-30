@@ -32,7 +32,7 @@ loom/
 raw_data/
 ```
 
-Fast init also installs the tutorial dataset under `raw_data/cost`.
+Fast init also installs the tutorial dataset under `raw_data/demo_germany_energy_data`.
 It installs three focused agent skills: `loom-local-data-lookup`,
 `loom-dataset-scan-review`, and `loom-workspace-ops`.
 
@@ -48,11 +48,12 @@ It installs three focused agent skills: `loom-local-data-lookup`,
 
 ```text
 loom scan raw_data/energy to energy
-loom ask OCGT 的成本是多少
-loom OCGT 的成本是多少
+loom ask "What German wind and solar data is available?"
+loom 德国 2015 年有哪些发电装机容量数据？
 ```
 
 `loom scan` should lead the agent to run `loomcli scan-index` and then continue curating cards in chat.
+During a scan, any directory containing `loom.md` is treated as a dataset root. Each dataset gets an `overview.md` and `profile.json`, and each CSV gets its own `.card.md` and `.profile.json`. Parent datasets preserve nested child dataset directories, exclude child CSV files from their own cards, and list direct child overview links. Rescans reuse unchanged CSV hashes and profiles so only changed datasets are rebuilt.
 `loom ask` and bare `loom <问题>` should lead the agent to inspect `loom/` first rather than run a question-answering script.
 Agents may also inspect Loom without an explicit `loom` prefix when another task needs project-local, source-backed dataset facts.
 
@@ -64,7 +65,7 @@ uv run loomcli confirm energy
 uv run loomcli push energy
 uv run loomcli pull energy
 uv run loomcli pull-raw energy
-uv run loomcli get energy/technology-data/costs.csv
+uv run loomcli get energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv
 uv run loomcli set-api https://loom-api-free.onrender.com
 ```
 
@@ -73,7 +74,7 @@ uv run loomcli set-api https://loom-api-free.onrender.com
 ```python
 import loom
 
-local_path = loom.get("energy/technology-data/costs.csv")
+local_path = loom.get("energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv")
 print(local_path)
 ```
 

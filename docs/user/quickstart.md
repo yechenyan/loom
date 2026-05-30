@@ -35,8 +35,8 @@ These belong in agent chat, not the shell:
 
 ```text
 loom scan raw_data/energy to energy
-loom ask OCGT 的成本是多少
-loom OCGT 的成本是多少
+loom ask "What German wind and solar data is available?"
+loom 德国 2015 年有哪些发电装机容量数据？
 loom confirm energy
 ```
 
@@ -50,7 +50,7 @@ uv run loomcli status energy
 uv run loomcli confirm energy
 uv run loomcli push energy
 uv run loomcli pull energy
-uv run loomcli get energy/technology-data/costs.csv
+uv run loomcli get energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv
 ```
 
 ## Default Mental Model
@@ -60,4 +60,4 @@ uv run loomcli get energy/technology-data/costs.csv
 3. Let the agent read `loom/` first.
 4. Fetch exact raw files only when needed.
 
-Agents can also choose Loom automatically during modeling, coding, documentation, or paper writing when they need project-local, source-backed dataset facts.
+Agents can also choose Loom automatically during analysis, modeling, visualization, reporting, coding, documentation, or paper writing when they need project-local, source-backed dataset facts.

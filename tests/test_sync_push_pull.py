@@ -7,7 +7,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from loom.workspace_snapshot import build_workspace_snapshot
+from loom.sync_state import WorkspaceSyncState, save_workspace_sync_state
+from loom.workspace_snapshot import build_snapshot_manifest, build_workspace_snapshot
 from loom_server.sync_server import create_app
 from loom_server.service_parts.helpers import blob_storage_path
 
@@ -72,3 +73,61 @@ class SyncPushPullTest(LoomTestCase):
                 exit_code, output = self.call_main(["push", "energy", "--workspace-root", str(workspace_b), "--server-url", "http://loom.test"])
                 self.assertEqual(exit_code, 0)
                 self.assertIn("Pushed workspace: energy", output)
+
+    def test_push_recovers_from_inconsistent_synced_tree_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workspace_a = root / "workspace-a"
+            app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
+            with TestClient(app) as client, self.patch_server(client):
+                empty_push = self.call_app(
+                    client,
+                    "POST",
+                    "http://loom.test/api/workspaces/energy/push",
+                    {
+                        "base_revision": None,
+                        "local_commit": None,
+                        "tree_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                        "message": "Create empty remote base",
+                        "files": [],
+                        "deleted_paths": [],
+                        "raw_files": [],
+                        "raw_deleted_paths": [],
+                    },
+                )
+                self.write_energy_dataset(workspace_a)
+                self.call_main([*self.scan_command(), "--workspace-root", str(workspace_a)])
+                self.call_main(["confirm", "energy", "--workspace-root", str(workspace_a)])
+                snapshot = build_workspace_snapshot(workspace_a, "energy")
+                save_workspace_sync_state(
+                    workspace_a,
+                    WorkspaceSyncState(
+                        workspace="energy",
+                        last_pulled_revision=str(empty_push["revision_id"]),
+                        last_synced_tree_hash="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                        last_synced_files=build_snapshot_manifest(snapshot),
+                    ),
+                )
+                exit_code, output = self.call_main(["push", "energy", "--workspace-root", str(workspace_a), "--server-url", "http://loom.test"])
+                self.assertEqual(exit_code, 0)
+                self.assertIn(f"Changed files: {len(snapshot.files)}", output)
+
+    def test_bad_push_payload_returns_bad_request(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
+            with TestClient(app) as client:
+                response = client.post(
+                    "/api/workspaces/energy/push",
+                    json={
+                        "base_revision": None,
+                        "local_commit": None,
+                        "tree_hash": "not-the-computed-tree",
+                        "message": "Bad push",
+                        "files": [],
+                        "deleted_paths": [],
+                        "raw_files": [],
+                        "raw_deleted_paths": [],
+                    },
+                )
+                self.assertEqual(response.status_code, 400)

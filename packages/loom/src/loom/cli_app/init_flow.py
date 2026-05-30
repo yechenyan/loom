@@ -6,7 +6,7 @@ from ..raw_cache_support import resolve_raw_data_root
 from ..explore_repo import ensure_explore_repo
 from ..scan_state import save_recent_workspace
 from .skill import install_skills
-from .tutorial_data import TUTORIAL_FILES
+from .tutorial_data import TUTORIAL_DATASET_NAME, TUTORIAL_FILES
 
 
 AGENT_LABELS = {
@@ -149,19 +149,21 @@ def _prompt_choice(prompt: str, allowed: tuple[str, ...]) -> str:
 
 
 def _default_workspace_name() -> str:
-    return "tempo"
+    return "demo"
 
 
 def _normalize_workspace_name(value: str) -> str:
     normalized = value.strip().replace("\\", "-").replace("/", "-")
-    return normalized or "tempo"
+    return normalized or "demo"
 
 
 def _install_tutorial_files(workspace_root: Path) -> Path:
-    target_dir = resolve_raw_data_root(workspace_root) / "cost"
+    target_dir = resolve_raw_data_root(workspace_root) / TUTORIAL_DATASET_NAME
     target_dir.mkdir(parents=True, exist_ok=True)
     for name, content in TUTORIAL_FILES.items():
-        (target_dir / name).write_text(content, encoding="utf-8")
+        target_path = target_dir / name
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(content, encoding="utf-8")
     return target_dir
 
 
@@ -184,11 +186,11 @@ def _print_chat_and_terminal_guide() -> None:
     print("Loom now uses two names: `loom` for chat and `loomcli` for execution.")
     print("Do not run the `loom ...` lines in your shell.")
     print("Tell the user to keep these in AI chat:")
-    print("  loom scan raw_data/cost to cost")
-    print('  loom ask "What is the capex for OCGT?"')
-    print("  loom OCGT 的成本是多少")
+    print("  loom scan raw_data/demo_germany_energy_data to germany_energy")
+    print('  loom ask "What German wind and solar data is available?"')
+    print("  loom 德国 2015 年有哪些发电装机容量数据？")
     print("Tell the user to keep these in the terminal:")
-    print("  uv run loomcli scan-index raw_data/cost to cost")
-    print("  uv run loomcli confirm cost")
-    print("  uv run loomcli push cost")
-    print("  uv run loomcli get cost/costs_2040-modifications.csv")
+    print("  uv run loomcli scan-index raw_data/demo_germany_energy_data to germany_energy")
+    print("  uv run loomcli confirm germany_energy")
+    print("  uv run loomcli push germany_energy")
+    print("  uv run loomcli get germany_energy/demo_germany_energy_data/open_power_system_data/time_series/germany_2015_new_year_day_power.csv")

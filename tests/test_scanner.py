@@ -76,11 +76,10 @@ class ScannerTest(unittest.TestCase):
             self.assertIn("Head sample (first 5 rows):", csv_card_text)
             self.assertIn("Tail sample (last 5 rows):", csv_card_text)
 
-    def test_uses_top_level_loom_md_as_dataset_root(self) -> None:
+    def test_nested_datasets_keep_parent_and_child_cards(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            raw_energy = workspace / "datasets" / "energy-source"
-            parent = raw_energy / "parent"
+            parent = workspace / "datasets" / "energy-source"
             child = parent / "child"
             child.mkdir(parents=True)
 
@@ -91,14 +90,20 @@ class ScannerTest(unittest.TestCase):
 
             result = scan_path_to_explore("./datasets/energy-source", workspace, workspace="energy")
 
-            self.assertEqual(result.dataset_count, 1)
-            profile_path = workspace / "loom" / "energy" / "parent" / "profile.json"
-            profile = json.loads(profile_path.read_text(encoding="utf-8"))
-            self.assertEqual(len(profile["csv_profiles"]), 1)
-            self.assertEqual(profile["csv_profiles"][0]["file_name"], "parent.csv")
+            self.assertEqual(result.dataset_count, 2)
+            parent_dir = workspace / "loom" / "energy" / "energy-source"
+            child_dir = parent_dir / "child"
+            parent_profile = json.loads((parent_dir / "profile.json").read_text(encoding="utf-8"))
+            child_profile = json.loads((child_dir / "profile.json").read_text(encoding="utf-8"))
+            self.assertEqual([item["file_name"] for item in parent_profile["csv_profiles"]], ["parent.csv"])
+            self.assertEqual([item["file_name"] for item in child_profile["csv_profiles"]], ["child.csv"])
+            self.assertEqual(parent_profile["child_datasets"][0]["overview_file"], "child/overview.md")
 
-            overview_path = workspace / "loom" / "energy" / "parent" / "overview.md"
-            self.assertTrue(overview_path.exists())
+            parent_overview = (parent_dir / "overview.md").read_text(encoding="utf-8")
+            self.assertIn("## Child Datasets", parent_overview)
+            self.assertIn("child/overview.md", parent_overview)
+            self.assertFalse((parent_dir / "child.card.md").exists())
+            self.assertTrue((child_dir / "child.card.md").exists())
 
     def test_skips_unchanged_dataset_and_keeps_missing_dataset_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -173,7 +178,7 @@ class ScannerTest(unittest.TestCase):
             self.assertTrue((workspace / "loom" / "energy" / "technology-data" / "profile.json").exists())
             self.assertTrue((workspace / "loom" / "energy" / "new-technology-data" / "profile.json").exists())
 
-    def test_scan_without_workspace_uses_temporary_when_no_history_exists(self) -> None:
+    def test_scan_without_workspace_uses_demo_when_no_history_exists(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
             source_dir = workspace / "datasets" / "new-source" / "technology-data"
@@ -183,8 +188,8 @@ class ScannerTest(unittest.TestCase):
 
             result = scan_path_to_explore("./datasets/new-source", workspace)
 
-            self.assertEqual(result.topic, "temporary")
-            self.assertTrue((workspace / "loom" / "temporary" / "technology-data" / "profile.json").exists())
+            self.assertEqual(result.topic, "demo")
+            self.assertTrue((workspace / "loom" / "demo" / "technology-data" / "profile.json").exists())
 
     def test_workspace_tracks_multiple_source_paths(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

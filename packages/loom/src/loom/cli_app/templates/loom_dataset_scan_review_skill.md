@@ -48,7 +48,7 @@ Rules:
 - Do not substitute the tutorial path unless the user asked for it.
 - The source path is required.
 - `to <workspace>` is optional.
-- If no workspace is provided, Loom reuses the recent workspace or falls back to `temporary`.
+- If no workspace is provided, Loom reuses the recent workspace or falls back to `demo`.
 - One workspace can track multiple source paths.
 - Duplicate dataset paths stop the scan with an error; do not work around this by silently changing paths.
 

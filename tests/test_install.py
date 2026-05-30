@@ -41,7 +41,7 @@ class InitCommandTest(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             self.assertIn("Tutorial data installed at:", stdout.getvalue())
-            tutorial_dir = workspace_root / "raw_data" / "cost"
+            tutorial_dir = workspace_root / "raw_data" / "demo_germany_energy_data"
             self.assertTrue((tutorial_dir / "loom.md").exists())
 
     def test_init_creates_selected_skill_default_workspace_and_tutorial_files(self) -> None:
@@ -59,12 +59,12 @@ class InitCommandTest(unittest.TestCase):
             self.assertIn("Tell the user to keep these in AI chat:", output)
             self.assertIn("Loom now uses two names: `loom` for chat and `loomcli` for execution.", output)
             self.assertIn("Do not run the `loom ...` lines in your shell.", output)
-            self.assertIn('loom scan raw_data/cost to cost', output)
-            self.assertIn('loom ask "What is the capex for OCGT?"', output)
-            self.assertIn("loom OCGT 的成本是多少", output)
-            self.assertIn("loomcli scan-index raw_data/cost to cost", output)
-            self.assertIn("loomcli confirm cost", output)
-            self.assertIn("loomcli push cost", output)
+            self.assertIn("loom scan raw_data/demo_germany_energy_data to germany_energy", output)
+            self.assertIn('loom ask "What German wind and solar data is available?"', output)
+            self.assertIn("loom 德国 2015 年有哪些发电装机容量数据？", output)
+            self.assertIn("loomcli scan-index raw_data/demo_germany_energy_data to germany_energy", output)
+            self.assertIn("loomcli confirm germany_energy", output)
+            self.assertIn("loomcli push germany_energy", output)
 
             for skill_name in SKILL_NAMES:
                 skill_path = codex_home / "skills" / skill_name / "SKILL.md"
@@ -80,6 +80,8 @@ class InitCommandTest(unittest.TestCase):
             ops_text = (codex_home / "skills" / "loom-workspace-ops" / "SKILL.md").read_text(encoding="utf-8")
             self.assertIn("The user writes `loom ask <question>`.", lookup_text)
             self.assertIn("`loomcli ask` does not exist", lookup_text)
+            self.assertIn("Automatic local-data rule", lookup_text)
+            self.assertIn("even if the user does not explicitly say `loom`", lookup_text)
             self.assertIn("After `loomcli scan-index` finishes, do a real review", scan_text)
             self.assertIn("Do not suggest `loomcli confirm`", scan_text)
             self.assertIn("`loom ...` is a user-facing chat instruction.", ops_text)
@@ -87,15 +89,26 @@ class InitCommandTest(unittest.TestCase):
 
             explore_git_dir = workspace_root / "loom" / ".git"
             self.assertTrue(explore_git_dir.exists())
-            self.assertTrue((workspace_root / "loom" / "tempo").exists())
+            self.assertTrue((workspace_root / "loom" / "demo").exists())
 
             recent_workspace_path = workspace_root / "loom" / ".loom" / "state" / "recent-workspace.json"
             recent_workspace = json.loads(recent_workspace_path.read_text(encoding="utf-8"))
-            self.assertEqual(recent_workspace["workspace"], "tempo")
+            self.assertEqual(recent_workspace["workspace"], "demo")
 
-            tutorial_dir = workspace_root / "raw_data" / "cost"
+            tutorial_dir = workspace_root / "raw_data" / "demo_germany_energy_data"
             self.assertTrue((tutorial_dir / "loom.md").exists())
-            self.assertTrue((tutorial_dir / "costs_2040-modifications.csv").exists())
+            self.assertTrue(
+                (tutorial_dir / "open_power_system_data" / "time_series" / "germany_2015_new_year_day_power.csv").exists()
+            )
+            self.assertTrue(
+                (
+                    tutorial_dir
+                    / "open_power_system_data"
+                    / "generation_capacity"
+                    / "germany_2015_net_capacity.csv"
+                ).exists()
+            )
+            self.assertTrue((tutorial_dir / "german_climate_policy" / "climate_change_act_targets_2021.csv").exists())
 
     def test_init_menu_can_install_skills_when_loom_exists(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
