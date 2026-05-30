@@ -1,17 +1,54 @@
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { fetchRawManifest, fetchRawText } from "./exploreApi";
+import { useI18n } from "./i18n";
 import type { ResolvedSelection } from "./ExplorePage";
 import { RawCsvTable } from "./RawCsvTable";
 
 export function DataCardView({ selected }: { selected: ResolvedSelection }) {
+  const { locale } = useI18n();
+  const copy = {
+    en: {
+      fileSummary: "This CSV has been recognized by Loom as an explorable file.",
+      card: "Dataset Card",
+      dataset: "Dataset",
+      source: "Source",
+      columns: "Columns",
+      preview: "Preview",
+      noSource: "No source summary",
+      csvFiles: "CSV files",
+      profiledRows: "profiled rows",
+    },
+    de: {
+      fileSummary: "Diese CSV wurde von Loom als erkundbare Datei erkannt.",
+      card: "Datenkarte",
+      dataset: "Dataset",
+      source: "Quelle",
+      columns: "Spalten",
+      preview: "Vorschau",
+      noSource: "Keine Quellenzusammenfassung",
+      csvFiles: "CSV-Dateien",
+      profiledRows: "profilierte Zeilen",
+    },
+    zh: {
+      fileSummary: "这个 CSV 已经被 Loom 识别为可探索文件。",
+      card: "Dataset Card",
+      dataset: "Dataset",
+      source: "Source",
+      columns: "Columns",
+      preview: "Preview",
+      noSource: "No source summary",
+      csvFiles: "CSV files",
+      profiledRows: "profiled rows",
+    },
+  }[locale];
   const { dataset, file, profile } = selected;
+
   return (
     <section className="detail-body datacard-page">
       <div className="datacard-hero">
         <p className="detail-path">{selected.rawPath}</p>
         <h2>{file.file_name}</h2>
-        <p>{file.summary || "这个 CSV 已经被 Loom 识别为可探索文件。"}</p>
+        <p>{file.summary || copy.fileSummary}</p>
         <div className="metric-row">
           <span>{file.row_count} rows</span>
           <span>{file.column_count} columns</span>
@@ -20,20 +57,20 @@ export function DataCardView({ selected }: { selected: ResolvedSelection }) {
       </div>
       <div className="datacard-layout">
         <article className="card-sheet">
-          <h3>Dataset Card</h3>
+          <h3>{copy.card}</h3>
           <MarkdownSummary text={dataset.overview_markdown} />
         </article>
         <div className="card-sidebar">
-          <InfoPanel title="Dataset">
+          <InfoPanel title={copy.dataset}>
             <p>{dataset.name}</p>
-            <p>{dataset.csv_count} CSV files</p>
-            <p>{dataset.total_row_count} profiled rows</p>
+            <p>{dataset.csv_count} {copy.csvFiles}</p>
+            <p>{dataset.total_row_count} {copy.profiledRows}</p>
           </InfoPanel>
-          <InfoPanel title="Source">
-            <p>{dataset.source.summary || "No source summary"}</p>
+          <InfoPanel title={copy.source}>
+            <p>{dataset.source.summary || copy.noSource}</p>
             {dataset.source.url ? <a href={firstUrl(dataset.source.url)}>{firstUrl(dataset.source.url)}</a> : null}
           </InfoPanel>
-          <InfoPanel title="Columns">
+          <InfoPanel title={copy.columns}>
             <div className="column-chips">
               {file.columns.map((column) => (
                 <span title={file.column_roles?.[column]} key={column}>
@@ -43,7 +80,7 @@ export function DataCardView({ selected }: { selected: ResolvedSelection }) {
             </div>
           </InfoPanel>
           {profile?.head?.length ? (
-            <InfoPanel title="Preview">
+            <InfoPanel title={copy.preview}>
               <KeyValuePreview row={profile.head[0]} />
             </InfoPanel>
           ) : null}
@@ -54,9 +91,16 @@ export function DataCardView({ selected }: { selected: ResolvedSelection }) {
 }
 
 export function ProfileView({ selected }: { selected: ResolvedSelection }) {
+  const { locale } = useI18n();
+  const copy = {
+    en: { empty: "This file has no available profile.", body: "Loom-generated machine-readable field profiling expanded as JSON." },
+    de: { empty: "Fuer diese Datei ist kein Profil verfuegbar.", body: "Von Loom erzeugtes maschinenlesbares Feldprofil als JSON." },
+    zh: { empty: "这个文件没有可用 profile。", body: "Loom 生成的机器可读字段画像，按 JSON 层级展开为单列内容。" },
+  }[locale];
   const profile = selected.profile;
+
   if (!profile) {
-    return <p className="empty-state">这个文件没有可用 profile。</p>;
+    return <p className="empty-state">{copy.empty}</p>;
   }
 
   return (
@@ -64,7 +108,7 @@ export function ProfileView({ selected }: { selected: ResolvedSelection }) {
       <div className="datacard-hero">
         <p className="detail-path">{selected.rawPath}</p>
         <h2>profile.json</h2>
-        <p>Loom 生成的机器可读字段画像，按 JSON 层级展开为单列内容。</p>
+        <p>{copy.body}</p>
         <div className="metric-row">
           <span>{profile.row_count} rows</span>
           <span>{profile.columns.length} columns</span>
@@ -77,16 +121,22 @@ export function ProfileView({ selected }: { selected: ResolvedSelection }) {
 }
 
 export function RawDataView({ selected }: { selected: ResolvedSelection }) {
+  const { locale } = useI18n();
+  const copy = {
+    en: { loading: "Loading raw file...", missing: "raw manifest does not contain", body: "Raw CSV content loaded from the live raw object store." },
+    de: { loading: "Rohdatei wird geladen...", missing: "Raw-Manifest enthaelt nicht", body: "CSV-Rohinhalt aus dem Live-Raw-Object-Store." },
+    zh: { loading: "正在读取原始文件...", missing: "raw manifest 中找不到", body: "从线上 raw object 读取的原始 CSV 内容。" },
+  }[locale];
   const [rawText, setRawText] = useState("");
-  const [status, setStatus] = useState("正在读取原始文件...");
+  const [status, setStatus] = useState(copy.loading);
 
   useEffect(() => {
     setRawText("");
-    setStatus("正在读取原始文件...");
+    setStatus(copy.loading);
     fetchRawManifest(selected.workspace)
       .then((manifest) => {
         const entry = manifest[selected.rawPath];
-        if (!entry) throw new Error(`raw manifest 中找不到 ${selected.rawPath}`);
+        if (!entry) throw new Error(`${copy.missing} ${selected.rawPath}`);
         return fetchRawText(entry.sha256);
       })
       .then((text) => {
@@ -94,14 +144,14 @@ export function RawDataView({ selected }: { selected: ResolvedSelection }) {
         setStatus("");
       })
       .catch((error: Error) => setStatus(error.message));
-  }, [selected.rawPath, selected.workspace]);
+  }, [copy.loading, copy.missing, selected.rawPath, selected.workspace]);
 
   return (
     <section className="detail-body datacard-page">
       <div className="datacard-hero">
         <p className="detail-path">{selected.rawPath}</p>
         <h2>Raw Data</h2>
-        <p>从线上 raw object 读取的原始 CSV 内容。</p>
+        <p>{copy.body}</p>
       </div>
       {status ? <p className="empty-state">{status}</p> : <RawCsvTable csvText={rawText} />}
     </section>

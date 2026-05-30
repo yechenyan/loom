@@ -1,13 +1,16 @@
 import { useEffect } from "react";
-import { highlights, useCases } from "./content";
+import { getHighlights, getUseCases } from "./content";
+import { getSiteCopy } from "./copy";
 import { DocsPage } from "./DocsPage";
 import { ExplorePage } from "./ExplorePage";
 import { HeroStats } from "./HeroStats";
+import { useI18n } from "./i18n";
 import { MinuteGuide } from "./MinuteGuide";
 import { SiteHeader } from "./SiteHeader";
 
 export function App() {
   useHashScroll();
+  const { locale } = useI18n();
   const path = window.location.pathname.replace(/\/$/, "") || "/";
 
   if (path === "/explore") {
@@ -18,14 +21,16 @@ export function App() {
     return <DocsPage slug={path.slice("/docs/".length)} />;
   }
 
+  const copy = getSiteCopy(locale).home;
+
   return (
     <main className="site-shell">
       <SiteHeader />
-      <Hero />
-      <Intro />
+      <Hero copy={copy} />
+      <Intro copy={copy} />
       <MinuteGuide />
-      <UseCases />
-      <FinalCta />
+      <UseCases copy={copy} />
+      <FinalCta copy={copy} />
     </main>
   );
 }
@@ -38,7 +43,6 @@ function useHashScroll() {
 
     requestAnimationFrame(() => {
       const target = document.querySelector<HTMLElement>(window.location.hash);
-
       if (target) {
         window.scrollTo({ top: target.offsetTop - 110, behavior: "auto" });
       }
@@ -46,32 +50,29 @@ function useHashScroll() {
   }, []);
 }
 
-function Hero() {
+function Hero({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
   return (
     <section className="hero" id="top">
       <div className="hero-copy">
-        <p className="eyebrow">AI agents deserve a real data memory</p>
+        <p className="eyebrow">{copy.eyebrow}</p>
         <h1>
-          <span>少花时间找数据、</span>
-          <span>解释参数、</span>
-          <span>确认来源。</span>
+          {copy.heroTitle.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
         </h1>
-        <p className="hero-lede">
-          Loom 把项目数据整理成可搜索的数据卡，让人和 AI 快速找到可信数据，
-          并同步到云端共享复用。
-        </p>
+        <p className="hero-lede">{copy.heroLede}</p>
         <div className="hero-actions">
           <a className="primary-button" href="#minute">
-            看 1 分钟用法
+            {copy.minute}
           </a>
           <a className="text-link" href="#what">
-            Loom 是什么
+            {copy.what}
           </a>
           <a className="text-link" href="/explore">
-            数据探索
+            {copy.explore}
           </a>
           <a className="text-link" href="/docs">
-            阅读文档
+            {copy.docs}
           </a>
         </div>
       </div>
@@ -82,12 +83,15 @@ function Hero() {
   );
 }
 
-function Intro() {
+function Intro({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
+  const { locale } = useI18n();
+  const highlights = getHighlights(locale);
+
   return (
     <section className="intro-section" id="what">
       <div>
-        <p className="section-kicker">它解决什么问题</p>
-        <h2>给 AI 一个轻量、可追溯的数据地图。</h2>
+        <p className="section-kicker">{copy.introKicker}</p>
+        <h2>{copy.introTitle}</h2>
       </div>
       <div className="intro-list">
         {highlights.map((item) => (
@@ -98,11 +102,14 @@ function Intro() {
   );
 }
 
-function UseCases() {
+function UseCases({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
+  const { locale } = useI18n();
+  const useCases = getUseCases(locale);
+
   return (
     <section className="fit-section" id="fit">
-      <p className="section-kicker">什么时候该用</p>
-      <h2>当任务依赖本地数据事实时，让 Loom 先把路标立好。</h2>
+      <p className="section-kicker">{copy.fitKicker}</p>
+      <h2>{copy.fitTitle}</h2>
       <div className="use-case-ribbon">
         {useCases.map((item) => (
           <span key={item}>{item}</span>
@@ -112,12 +119,12 @@ function UseCases() {
   );
 }
 
-function FinalCta() {
+function FinalCta({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
   return (
     <section className="final-cta">
-      <p>从一个数据目录开始，把“读数据”变成可验证的 agent 工作流。</p>
+      <p>{copy.cta}</p>
       <a className="primary-button" href="#minute">
-        开始使用 Loom
+        {copy.ctaButton}
       </a>
     </section>
   );

@@ -20,8 +20,8 @@ export const siteCopy = {
     },
     docs: {
       title: "Loom guides generated directly from repository docs.",
-      description:
-        "This page reads Markdown from `docs/user` in the repository root. Update those source files and the docs page updates on the next dev refresh or build.",
+      descriptionPrefix: "This page reads Markdown from ",
+      descriptionSuffix: " in the repository root. Update those source files and the docs page updates on the next dev refresh or build.",
       toc: "Contents",
       pager: "Document pagination",
       previous: "Previous",
@@ -56,8 +56,8 @@ export const siteCopy = {
     },
     docs: {
       title: "Loom-Anleitungen direkt aus den Repository-Dokumenten.",
-      description:
-        "Diese Seite liest Markdown aus `docs/user` im Repository-Stamm. Wenn du diese Quelldateien änderst, wird die Dokumentationsseite beim nächsten Dev-Refresh oder Build aktualisiert.",
+      descriptionPrefix: "Diese Seite liest Markdown aus ",
+      descriptionSuffix: " im Repository-Stamm. Wenn du diese Quelldateien änderst, wird die Dokumentationsseite beim nächsten Dev-Refresh oder Build aktualisiert.",
       toc: "Inhalt",
       pager: "Dokumentnavigation",
       previous: "Zurück",
@@ -91,8 +91,8 @@ export const siteCopy = {
     },
     docs: {
       title: "从仓库文档直接生成的 Loom 使用指南。",
-      description:
-        "这里读取根目录 `docs/user` 下的 Markdown。更新这些源文件后，文档页会在开发服务器或下一次构建中同步更新。",
+      descriptionPrefix: "这里读取根目录 ",
+      descriptionSuffix: " 下的 Markdown。更新这些源文件后，文档页会在开发服务器或下一次构建中同步更新。",
       toc: "目录",
       pager: "文档翻页",
       previous: "上一篇",

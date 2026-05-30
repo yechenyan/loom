@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { getSiteCopy } from "./copy";
 import { fetchExploreWorkspaces } from "./exploreApi";
+import { useI18n } from "./i18n";
 import type { ExploreWorkspace } from "./exploreTypes";
 
 type HeroStatsState = {
@@ -15,6 +17,8 @@ const emptyStats: HeroStatsState = {
 };
 
 export function HeroStats() {
+  const { locale } = useI18n();
+  const copy = getSiteCopy(locale).heroStats;
   const [stats, setStats] = useState<HeroStatsState>(emptyStats);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
@@ -28,27 +32,19 @@ export function HeroStats() {
   }, []);
 
   return (
-    <div className="stats-panel" aria-label="Loom live dataset stats">
-      <StatItem label="工作区" loading={status === "loading"} value={stats.workspaceCount} />
-      <StatItem label="数据集" loading={status === "loading"} value={stats.datasetCount} />
-      <StatItem label="原始数据" loading={status === "loading"} value={stats.rawFileCount} />
+    <div className="stats-panel" aria-label={copy.label}>
+      <StatItem label={copy.workspaces} loading={status === "loading"} value={stats.workspaceCount} />
+      <StatItem label={copy.datasets} loading={status === "loading"} value={stats.datasetCount} />
+      <StatItem label={copy.rawFiles} loading={status === "loading"} value={stats.rawFileCount} />
       <button className="explore-button" onClick={() => window.location.assign("/explore")} type="button">
-        探索数据集
+        {copy.button}
       </button>
-      {status === "error" ? <p className="stats-note">线上数据暂时不可用</p> : null}
+      {status === "error" ? <p className="stats-note">{copy.error}</p> : null}
     </div>
   );
 }
 
-function StatItem({
-  label,
-  loading,
-  value,
-}: {
-  label: string;
-  loading: boolean;
-  value: number;
-}) {
+function StatItem({ label, loading, value }: { label: string; loading: boolean; value: number }) {
   return (
     <div className="stat-item">
       <strong>{loading ? "—" : value}</strong>

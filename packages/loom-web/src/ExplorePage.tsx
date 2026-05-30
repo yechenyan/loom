@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchExploreWorkspaces } from "./exploreApi";
+import { getExploreCopy } from "./exploreCopy";
 import { DataCardView, ProfileView, RawDataView } from "./ExploreViews";
+import { useI18n } from "./i18n";
 import type { ExploreCsvFile, ExploreCsvProfile, ExploreDataset, ExploreWorkspace } from "./exploreTypes";
 import { SiteHeader } from "./SiteHeader";
 
@@ -8,20 +10,23 @@ type Selection = { workspace: string; dataset: string; file: string };
 type Tab = "card" | "profile" | "raw";
 
 export function ExplorePage() {
+  const { locale } = useI18n();
+  const copy = getExploreCopy(locale);
   const [workspaces, setWorkspaces] = useState<ExploreWorkspace[]>([]);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<Tab>("card");
-  const [status, setStatus] = useState("正在加载线上数据...");
+  const [status, setStatus] = useState(copy.loading);
 
   useEffect(() => {
+    setStatus(copy.loading);
     fetchExploreWorkspaces()
       .then((items) => {
         setWorkspaces(items);
-        setStatus(items.length ? "" : "线上服务暂时没有可探索的工作区。");
+        setStatus(items.length ? "" : copy.empty);
       })
       .catch((error: Error) => setStatus(error.message));
-  }, []);
+  }, [copy.empty, copy.loading]);
 
   const selected = resolveSelection(workspaces, selection);
 
@@ -30,10 +35,11 @@ export function ExplorePage() {
       <SiteHeader />
       <section className="explore-hero">
         <p className="eyebrow">LIVE DATA EXPLORER</p>
-        <h1>数据探索</h1>
+        <h1>{copy.title}</h1>
       </section>
       <section className="explore-grid">
         <TreePanel
+          copy={copy}
           open={open}
           selection={selection}
           setOpen={setOpen}
@@ -45,63 +51,63 @@ export function ExplorePage() {
         />
         <article className="explore-detail">
           {status ? <p className="empty-state">{status}</p> : null}
-          {!status && selected ? (
-            <DetailTabs selected={selected} tab={tab} setTab={setTab} />
-          ) : null}
-          {!status && !selected ? <ExploreEmptyState workspaces={workspaces} /> : null}
+          {!status && selected ? <DetailTabs copy={copy} selected={selected} setTab={setTab} tab={tab} /> : null}
+          {!status && !selected ? <ExploreEmptyState copy={copy} workspaces={workspaces} /> : null}
         </article>
       </section>
     </main>
   );
 }
 
-function ExploreEmptyState({ workspaces }: { workspaces: ExploreWorkspace[] }) {
+function ExploreEmptyState({
+  copy,
+  workspaces,
+}: {
+  copy: ReturnType<typeof getExploreCopy>;
+  workspaces: ExploreWorkspace[];
+}) {
   const datasetCount = workspaces.reduce((total, workspace) => total + workspace.dataset_count, 0);
   const csvCount = workspaces.reduce(
-    (total, workspace) =>
-      total + workspace.datasets.reduce((datasetTotal, dataset) => datasetTotal + dataset.csv_count, 0),
+    (total, workspace) => total + workspace.datasets.reduce((datasetTotal, dataset) => datasetTotal + dataset.csv_count, 0),
     0,
   );
 
   return (
     <section className="explore-empty">
       <div className="empty-copy">
-        <p className="section-kicker">START HERE</p>
-        <h2>选择一个 CSV，Loom 会展示三层事实。</h2>
-        <p>
-          左侧目录默认收起。先展开工作区，再展开数据集，最后选择一个 CSV 文件查看数据卡、
-          profile.json 和线上原始表格。
-        </p>
+        <p className="section-kicker">{copy.start}</p>
+        <h2>{copy.startTitle}</h2>
+        <p>{copy.startBody}</p>
       </div>
-      <div className="empty-stats" aria-label="当前线上数据概览">
+      <div className="empty-stats" aria-label={copy.statsLabel}>
         <span>
           <strong>{workspaces.length}</strong>
-          工作区
+          {copy.workspaces}
         </span>
         <span>
           <strong>{datasetCount}</strong>
-          数据集
+          {copy.datasets}
         </span>
         <span>
           <strong>{csvCount}</strong>
-          CSV 文件
+          {copy.files}
         </span>
       </div>
       <div className="empty-steps">
         <article>
           <span>1</span>
-          <h3>展开工作区</h3>
-          <p>从 demo、energy 等线上工作区开始定位数据来源。</p>
+          <h3>{copy.step1Title}</h3>
+          <p>{copy.step1Body}</p>
         </article>
         <article>
           <span>2</span>
-          <h3>选择数据集</h3>
-          <p>进入 dataset 层级，查看它包含的 CSV 文件。</p>
+          <h3>{copy.step2Title}</h3>
+          <p>{copy.step2Body}</p>
         </article>
         <article>
           <span>3</span>
-          <h3>查看真实数据</h3>
-          <p>在 DataCard、profile 和 Raw Data 之间切换。</p>
+          <h3>{copy.step3Title}</h3>
+          <p>{copy.step3Body}</p>
         </article>
       </div>
     </section>
@@ -109,12 +115,14 @@ function ExploreEmptyState({ workspaces }: { workspaces: ExploreWorkspace[] }) {
 }
 
 function TreePanel({
+  copy,
   open,
   selection,
   setOpen,
   setSelection,
   workspaces,
 }: {
+  copy: ReturnType<typeof getExploreCopy>;
   open: Set<string>;
   selection: Selection | null;
   setOpen: (open: Set<string>) => void;
@@ -128,12 +136,12 @@ function TreePanel({
   }
 
   return (
-    <aside className="explore-tree" id="explore-tree" aria-label="Loom 数据树">
-      <p className="tree-label">工作区 / 数据集 / 文件</p>
+    <aside className="explore-tree" id="explore-tree" aria-label={copy.treeAria}>
+      <p className="tree-label">{copy.treeLabel}</p>
       {workspaces.map((workspace) => (
         <div className="tree-group" key={workspace.name}>
           <TreeButton
-            count={`${workspace.dataset_count} datasets`}
+            count={`${workspace.dataset_count} ${copy.datasetCount}`}
             label={workspace.name}
             open={open.has(workspace.name)}
             onClick={() => toggle(workspace.name)}
@@ -141,6 +149,7 @@ function TreePanel({
           {open.has(workspace.name)
             ? workspace.datasets.map((dataset) => (
                 <DatasetBranch
+                  copy={copy}
                   dataset={dataset}
                   key={dataset.path}
                   open={open}
@@ -158,6 +167,7 @@ function TreePanel({
 }
 
 function DatasetBranch({
+  copy,
   dataset,
   open,
   selection,
@@ -165,6 +175,7 @@ function DatasetBranch({
   toggle,
   workspace,
 }: {
+  copy: ReturnType<typeof getExploreCopy>;
   dataset: ExploreDataset;
   open: Set<string>;
   selection: Selection | null;
@@ -175,19 +186,11 @@ function DatasetBranch({
   const key = `${workspace}/${dataset.path}`;
   return (
     <div className="tree-branch">
-      <TreeButton
-        count={`${dataset.csv_count} csv`}
-        label={dataset.name}
-        open={open.has(key)}
-        onClick={() => toggle(key)}
-      />
+      <TreeButton count={`${dataset.csv_count} ${copy.csvCount}`} label={dataset.name} open={open.has(key)} onClick={() => toggle(key)} />
       {open.has(key)
         ? dataset.csv_files.map((file) => {
             const filePath = file.dataset_relative_path || file.file_name;
-            const active =
-              selection?.workspace === workspace &&
-              selection.dataset === dataset.path &&
-              selection.file === filePath;
+            const active = selection?.workspace === workspace && selection.dataset === dataset.path && selection.file === filePath;
             return (
               <button
                 className={`tree-file${active ? " active" : ""}`}
@@ -204,17 +207,7 @@ function DatasetBranch({
   );
 }
 
-function TreeButton({
-  count,
-  label,
-  onClick,
-  open,
-}: {
-  count: string;
-  label: string;
-  onClick: () => void;
-  open: boolean;
-}) {
+function TreeButton({ count, label, onClick, open }: { count: string; label: string; onClick: () => void; open: boolean }) {
   return (
     <button className="tree-button" onClick={onClick} type="button">
       <span>{open ? "−" : "+"}</span>
@@ -225,25 +218,27 @@ function TreeButton({
 }
 
 function DetailTabs({
+  copy,
   selected,
   setTab,
   tab,
 }: {
+  copy: ReturnType<typeof getExploreCopy>;
   selected: ResolvedSelection;
   setTab: (tab: Tab) => void;
   tab: Tab;
 }) {
   return (
     <>
-      <div className="detail-tabs" aria-label="文件详情标签">
+      <div className="detail-tabs" aria-label={copy.tabAria}>
         <button className={tab === "card" ? "active" : ""} onClick={() => setTab("card")} type="button">
-          DataCard
+          {copy.cardTab}
         </button>
         <button className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")} type="button">
-          profile
+          {copy.profileTab}
         </button>
         <button className={tab === "raw" ? "active" : ""} onClick={() => setTab("raw")} type="button">
-          rawData
+          {copy.rawTab}
         </button>
       </div>
       {tab === "card" ? <DataCardView selected={selected} /> : null}

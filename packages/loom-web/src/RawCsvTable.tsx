@@ -1,10 +1,15 @@
+import { getSiteCopy } from "./copy";
+import { useI18n } from "./i18n";
+
 export function RawCsvTable({ csvText }: { csvText: string }) {
+  const { locale } = useI18n();
+  const copy = getSiteCopy(locale).rawTable;
   const rows = parseCsv(csvText);
   const headers = rows[0] || [];
   const bodyRows = rows.slice(1);
 
   if (!headers.length) {
-    return <p className="empty-state">原始文件为空。</p>;
+    return <p className="empty-state">{copy.empty}</p>;
   }
 
   return (

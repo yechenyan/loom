@@ -1,8 +1,12 @@
 import { MarkdownView } from "./DocsMarkdown";
+import { getSiteCopy } from "./copy";
+import { useI18n } from "./i18n";
 import { userDocs } from "./docsContent";
 import { SiteHeader } from "./SiteHeader";
 
 export function DocsPage({ slug }: { slug?: string }) {
+  const { locale } = useI18n();
+  const copy = getSiteCopy(locale).docs;
   const currentIndex = findDocIndex(slug);
   const currentDoc = userDocs[currentIndex];
   const previousDoc = userDocs[currentIndex - 1];
@@ -13,15 +17,16 @@ export function DocsPage({ slug }: { slug?: string }) {
       <SiteHeader />
       <section className="docs-hero">
         <p className="eyebrow">USER DOCUMENTATION</p>
-        <h1>从仓库文档直接生成的 Loom 使用指南。</h1>
+        <h1>{copy.title}</h1>
         <p>
-          这里读取根目录 <code>docs/user</code> 下的 Markdown。更新这些源文件后，
-          文档页会在开发服务器或下一次构建中同步更新。
+          {copy.descriptionPrefix}
+          <code>docs/user</code>
+          {copy.descriptionSuffix}
         </p>
       </section>
       <section className="docs-layout">
-        <aside className="docs-sidebar" aria-label="文档目录">
-          <strong>目录</strong>
+        <aside className="docs-sidebar" aria-label={copy.toc}>
+          <strong>{copy.toc}</strong>
           {userDocs.map((doc) => (
             <a
               aria-current={doc.slug === currentDoc.slug ? "page" : undefined}
@@ -36,10 +41,10 @@ export function DocsPage({ slug }: { slug?: string }) {
         <article className="doc-article" id={currentDoc.slug}>
           <p className="doc-source">{currentDoc.sourcePath}</p>
           <MarkdownView source={currentDoc.content} />
-          <nav className="doc-pager" aria-label="文档翻页">
+          <nav className="doc-pager" aria-label={copy.pager}>
             {previousDoc ? (
               <a href={getDocHref(previousDoc.slug)}>
-                <span>上一篇</span>
+                <span>{copy.previous}</span>
                 {previousDoc.title}
               </a>
             ) : (
@@ -47,7 +52,7 @@ export function DocsPage({ slug }: { slug?: string }) {
             )}
             {nextDoc ? (
               <a href={getDocHref(nextDoc.slug)}>
-                <span>下一篇</span>
+                <span>{copy.next}</span>
                 {nextDoc.title}
               </a>
             ) : null}
