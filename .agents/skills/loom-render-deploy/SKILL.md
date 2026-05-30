@@ -43,6 +43,10 @@ Default behavior:
   - `https://loom-api-free.onrender.com/health`
   - `https://loom-web.onrender.com`
 
+Current frontend build command:
+
+- `cd packages/loom-web && pnpm install --frozen-lockfile && pnpm run build`
+
 ## Useful flags
 
 - Deploy only API:

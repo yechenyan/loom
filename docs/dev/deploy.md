@@ -33,7 +33,7 @@ Render must build and publish from `packages/loom-web`.
   - type: `web`
   - runtime: `static`
   - name: `loom-web`
-  - build command: `cd packages/loom-web && corepack enable && pnpm install --frozen-lockfile && pnpm run build`
+  - build command: `cd packages/loom-web && pnpm install --frozen-lockfile && pnpm run build`
   - publish path: `./packages/loom-web/dist`
   - env: `VITE_API_BASE_URL=https://loom-api-free.onrender.com`
 - Database
