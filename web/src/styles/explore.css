@@ -19,16 +19,16 @@
   text-align: left;
   padding: 0.85rem 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.05);
-  color: #eff3f9;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+  color: #1f2937;
 }
 
 .workspace-pill.active,
 .dataset-item.active,
 .file-item.active {
-  background: linear-gradient(135deg, rgba(241, 124, 56, 0.2), rgba(79, 121, 255, 0.18));
-  border-color: rgba(241, 185, 132, 0.48);
+  background: linear-gradient(135deg, rgba(255, 239, 210, 0.96), rgba(230, 239, 255, 0.96));
+  border-color: rgba(15, 23, 42, 0.08);
 }
 
 .search-label,
@@ -60,7 +60,7 @@
 .csv-card h3,
 .csv-card h4,
 .raw-path {
-  color: #fbf5ea;
+  color: #111827;
 }
 
 .markdown-spacer {
@@ -101,15 +101,15 @@
 }
 
 .csv-size {
-  background: rgba(255, 255, 255, 0.06);
-  color: #f4d4b4;
+  background: rgba(15, 23, 42, 0.06);
+  color: #8a4b14;
 }
 
 .stat-box,
 .top-values-card {
   padding: 0.9rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(248, 250, 252, 0.95);
 }
 
 .table-wrap,
@@ -122,13 +122,14 @@
   max-height: 22rem;
   padding: 0.9rem;
   border-radius: 1rem;
-  background: rgba(9, 12, 18, 0.55);
+  background: rgba(248, 250, 252, 0.95);
+  color: #0f172a;
 }
 
 .linkish {
   background: transparent;
   border: 0;
-  color: #f1b984;
+  color: #9a3412;
   padding-left: 0;
 }
 
@@ -140,7 +141,7 @@ table {
 th,
 td {
   padding: 0.55rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
   text-align: left;
   vertical-align: top;
 }

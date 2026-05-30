@@ -1,4 +1,6 @@
 @import "./base.css";
 @import "./layout.css";
 @import "./home.css";
+@import "./home-chat.css";
+@import "./home-workbench.css";
 @import "./explore.css";

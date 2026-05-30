@@ -14,15 +14,15 @@ export function FileWorkbench({ selectedFile, onSelectFile }) {
         <h2>安装教学数据后会生成这些文件</h2>
       </div>
       <div className="file-workbench-shell">
-        <aside className="file-sidebar">
-          <div className="file-sidebar-title">EXPLORER</div>
+        <aside className="workbench-sidebar">
+          <div className="workbench-sidebar-title">EXPLORER</div>
           {groups.map((group) => (
             <div key={group.name} className="file-group">
               <div className="file-group-name">▾ {group.name}</div>
               {group.files.map((file) => (
                 <button
                   key={file.id}
-                  className={file.id === activeFile.id ? "file-item active" : "file-item"}
+                  className={file.id === activeFile.id ? "workbench-file-item active" : "workbench-file-item"}
                   onClick={() => onSelectFile(file.id)}
                 >
                   <span>{file.language === "csv" ? "▦" : "◇"}</span>
@@ -32,13 +32,13 @@ export function FileWorkbench({ selectedFile, onSelectFile }) {
             </div>
           ))}
         </aside>
-        <div className="file-preview">
-          <div className="file-preview-tabs">
-            <span className="file-tab active">{activeFile.label}</span>
+        <div className="workbench-preview">
+          <div className="workbench-preview-tabs">
+            <span className="workbench-file-tab active">{activeFile.label}</span>
           </div>
-          <div className="file-preview-body">
-            <div className="file-preview-meta">{activeFile.group}</div>
-            <pre className="file-preview-code">
+          <div className="workbench-preview-body">
+            <div className="workbench-preview-meta">{activeFile.group}</div>
+            <pre className="workbench-preview-code">
               <code>{activeFile.content}</code>
             </pre>
           </div>

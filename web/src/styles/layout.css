@@ -28,7 +28,7 @@
   left: -4rem;
   width: 14rem;
   height: 14rem;
-  background: rgba(241, 124, 56, 0.28);
+  background: rgba(241, 124, 56, 0.16);
 }
 
 .ambient-right {
@@ -36,7 +36,7 @@
   right: 0;
   width: 18rem;
   height: 18rem;
-  background: rgba(79, 121, 255, 0.24);
+  background: rgba(79, 121, 255, 0.14);
 }
 
 .top-nav,
@@ -66,12 +66,12 @@
 .brand-mark {
   font-family: "Instrument Serif", Georgia, serif;
   font-size: 1.6rem;
-  color: #fbf5ea;
+  color: #111827;
 }
 
 .brand-sub {
   font-size: 0.9rem;
-  color: #b8c0cf;
+  color: #667085;
 }
 
 .nav-tabs {
@@ -79,19 +79,19 @@
   gap: 0.35rem;
   padding: 0.25rem;
   border-radius: 999px;
-  background: rgba(14, 20, 30, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .nav-tab {
   border-radius: 999px;
   padding: 0.65rem 0.95rem;
-  color: #dfe4ee;
+  color: #475467;
 }
 
 .nav-tab.active {
-  background: linear-gradient(135deg, rgba(241, 124, 56, 0.22), rgba(79, 121, 255, 0.2));
-  border: 1px solid rgba(241, 185, 132, 0.42);
+  background: linear-gradient(135deg, rgba(255, 239, 210, 0.94), rgba(230, 239, 255, 0.96));
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .hero,
