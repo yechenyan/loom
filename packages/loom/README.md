@@ -2,12 +2,6 @@
 
 `loom-data` publishes the `loom` Python package together with the `loomcli` console command.
 
-## Naming
-
-- `loom ...` is the chat form used with an AI agent.
-- `loomcli ...` is the executable command used by both humans and agents.
-- `import loom` remains the Python import path.
-
 ## Install
 
 ```bash
@@ -17,19 +11,28 @@ uv run loomcli --help
 
 ## Initialize a project
 
+Recommended fast path for AI-assisted onboarding:
+
+```bash
+uv run loomcli init --agent codex
+```
+
+Interactive setup:
+
 ```bash
 uv run loomcli init
 ```
 
-This prepares:
+Both forms create or reuse:
 
 ```text
 loom/
   <workspace>/
   .loom/
 raw_data/
-  <workspace>/
 ```
+
+Fast init also installs the tutorial dataset under `raw_data/cost`.
 
 ## Recommended workflow
 
@@ -75,6 +78,7 @@ print(local_path)
 
 ## Notes
 
+- `docs/reference/loom-reference.md` is the repository's canonical behavior reference.
 - `loom-data` is the package name.
 - `loomcli` is the public CLI command.
 - `import loom` is the Python API.

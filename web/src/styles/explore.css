@@ -1,0 +1,152 @@
+.workspace-list,
+.dataset-list,
+.file-items,
+.chip-row,
+.top-values-list,
+.top-values-card,
+.raw-related {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.search-input,
+.workspace-pill,
+.dataset-item,
+.file-item,
+.raw-close {
+  width: 100%;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #eff3f9;
+}
+
+.workspace-pill.active,
+.dataset-item.active,
+.file-item.active {
+  background: linear-gradient(135deg, rgba(241, 124, 56, 0.2), rgba(79, 121, 255, 0.18));
+  border-color: rgba(241, 185, 132, 0.48);
+}
+
+.search-label,
+.sidebar-title,
+.file-section-title,
+.raw-related-label,
+.info-card span {
+  color: #f1b984;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.file-item,
+.workspace-pill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dataset-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.markdown-block h3,
+.markdown-block h4,
+.csv-card h3,
+.csv-card h4,
+.raw-path {
+  color: #fbf5ea;
+}
+
+.markdown-spacer {
+  height: 0.5rem;
+}
+
+.csv-grid,
+.samples-grid,
+.top-values-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.top-values-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.csv-card-header,
+.top-values-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.column-chip,
+.csv-size,
+.linkish {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+}
+
+.column-chip {
+  background: rgba(79, 121, 255, 0.12);
+  border: 1px solid rgba(79, 121, 255, 0.26);
+}
+
+.csv-size {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4d4b4;
+}
+
+.stat-box,
+.top-values-card {
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.table-wrap,
+.raw-pre {
+  overflow: auto;
+  max-width: 100%;
+}
+
+.raw-pre {
+  max-height: 22rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: rgba(9, 12, 18, 0.55);
+}
+
+.linkish {
+  background: transparent;
+  border: 0;
+  color: #f1b984;
+  padding-left: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.55rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  vertical-align: top;
+}
+
+@media (max-width: 900px) {
+  .top-values-list {
+    grid-template-columns: 1fr;
+  }
+}

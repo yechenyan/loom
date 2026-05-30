@@ -55,6 +55,8 @@ Use this skill whenever the user's request is about data: answering data questio
 
 If the request sounds data-related, assume Loom should be the first tool you reach for.
 
+In this repository, read `docs/reference/loom-reference.md` first if you need the canonical written description of Loom behavior.
+
 ## Names
 
 - `loom ...` means a user-facing chat instruction.
@@ -164,6 +166,7 @@ If you need workspace-root-aware launchers inside this repository, use:
 
 ## Notes
 
+- In this repository, `docs/reference/loom-reference.md` is the canonical written reference for Loom behavior.
 - `loom-data` is the package name.
 - `loom` is the chat trigger phrase.
 - `loomcli` is the CLI command.

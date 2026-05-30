@@ -11,7 +11,6 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(sys.argv[1:] if argv is None else argv)
     handlers = {
         "init": run_init,
-        "install": run_init,
         "scan-index": run_scan,
         "set-api": run_set_api,
         "get": run_get,

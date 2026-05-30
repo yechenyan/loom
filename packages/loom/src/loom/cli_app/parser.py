@@ -26,7 +26,6 @@ def build_parser() -> argparse.ArgumentParser:
 def _add_init_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     init_parser = subparsers.add_parser(
         "init",
-        aliases=["install"],
         help="Interactively initialize Loom, install one agent skill, and prepare the local Loom git workspace.",
     )
     init_parser.add_argument("--codex-home", type=Path, default=Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")))
@@ -38,6 +37,8 @@ def _add_init_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
         choices=("codex", "claude", "cursor", "copilot"),
         help="Run `loomcli init` in a non-interactive fast path for the selected assistant and install the tutorial dataset.",
     )
+
+
 def _add_public_scan_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     scan_parser = subparsers.add_parser(
         "scan-index",

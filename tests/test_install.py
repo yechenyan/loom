@@ -13,9 +13,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.cli import main
+from loom.cli_app.parser import build_parser
 
 
 class InitCommandTest(unittest.TestCase):
+    def test_install_command_is_not_available(self) -> None:
+        with self.assertRaises(SystemExit) as context:
+            build_parser().parse_args(["install"])
+
+        self.assertEqual(context.exception.code, 2)
+
     def test_init_installs_tutorial_by_default_on_enter(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"

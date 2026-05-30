@@ -1,0 +1,134 @@
+:root {
+  font-family: "Space Grotesk", "Avenir Next", sans-serif;
+  color: #f7f2e8;
+  background:
+    radial-gradient(circle at top left, rgba(232, 118, 48, 0.2), transparent 28rem),
+    radial-gradient(circle at bottom right, rgba(68, 118, 223, 0.22), transparent 28rem),
+    linear-gradient(135deg, #101723 0%, #162030 45%, #0d1420 100%);
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: transparent;
+}
+
+button,
+input,
+table {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: #f1b984;
+}
+
+.panel,
+.sidebar-card,
+.status-panel,
+.csv-card,
+.subpanel,
+.info-card,
+.metric-card {
+  background: rgba(15, 21, 32, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+}
+
+.panel,
+.sidebar-card,
+.status-panel,
+.csv-card {
+  border-radius: 1.5rem;
+}
+
+.panel,
+.sidebar-card,
+.status-panel {
+  padding: 1rem;
+}
+
+.subpanel,
+.info-card,
+.metric-card {
+  border-radius: 1.2rem;
+  padding: 1rem;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.metric-card span {
+  color: #c8cfdd;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.metric-card strong {
+  font-size: 2rem;
+}
+
+.metric-card.compact strong {
+  font-size: 1.25rem;
+}
+
+.status-panel.error {
+  border-color: rgba(239, 68, 68, 0.24);
+}
+
+.empty-copy,
+.dataset-path,
+.info-card p,
+.markdown-block p,
+.markdown-bullet {
+  color: #bcc4d2;
+}
+
+.panel h2,
+.panel h3,
+.status-panel h2,
+.hero h1 {
+  margin: 0;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.hero h1 {
+  font-size: clamp(2.6rem, 4vw, 4.6rem);
+  line-height: 0.96;
+}

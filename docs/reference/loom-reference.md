@@ -1,0 +1,188 @@
+# Loom Reference
+
+This document is the written source of truth for Loom naming, behavior, and workflows in this repository.
+
+If any other document disagrees with the code, trust the code and update this file first.
+
+## Naming
+
+- `loom ...`: chat instruction sent to an agent
+- `loomcli ...`: executable CLI command used by humans and agents
+- `import loom`: Python package import path
+- `loom-data`: published package name
+
+Do not mix these layers.
+
+## Documentation Roles
+
+- `README.md`: repository landing page and navigation
+- `docs/reference/loom-reference.md`: canonical Loom behavior and terminology
+- `docs/user/`: end-user guides derived from this file
+- `docs/dev/`: developer and maintainer guides derived from this file and the code
+- `tasks/`: active task notes
+- `tasks/history/`: completed task notes and history
+
+## CLI Commands
+
+The public CLI entrypoint is `loomcli`.
+
+Commands currently defined in `packages/loom/src/loom/cli_app/parser.py`:
+
+- `init`
+- `scan-index`
+- `set-api`
+- `get`
+- `status`
+- `confirm`
+- `push`
+- `pull`
+- `pull-raw`
+- `server-init-db`
+- `server-run`
+
+## Chat Semantics
+
+`packages/loom/src/loom/chat.py` currently recognizes:
+
+- `loom scan <path> [to <workspace>]`
+- `scan <path> with loom`
+- `loom ask <question>`
+- `loom <question>`
+- `loom confirm [workspace]`
+- `loom push [workspace]`
+- `loom pull [workspace]`
+- `loom status [workspace]`
+
+Rules:
+
+- `loom scan ...` is a chat intent, not a shell command.
+- `loom ask ...` and bare `loom <question>` are lookup intents, not a separate CLI QA command.
+- `loom install ...` and `loomcli install ...` are not supported.
+- `loom get ...`, `loom init ...`, and `loom set-api ...` are not valid chat forms.
+
+## Workspace Layout
+
+`loomcli init` prepares these paths at the workspace root:
+
+```text
+loom/
+  <workspace>/
+  .loom/
+raw_data/
+```
+
+Common roles:
+
+- `raw_data/`: local source-data root by default
+- `raw_data/<workspace>`: conventional place to keep one workspace's source data
+- `loom/<workspace>`: generated Loom cards and summaries
+- `loom/.loom/raw/<workspace>`: local raw-file cache
+
+Loom can also scan any local source directory, not only `raw_data/<workspace>`.
+
+## Initialization
+
+Interactive setup:
+
+```bash
+uv run loomcli init
+```
+
+Fast path for AI onboarding:
+
+```bash
+uv run loomcli init --agent codex
+```
+
+Current `--agent` behavior from `packages/loom/src/loom/cli_app/init_flow.py`:
+
+- skips the interactive setup
+- installs the selected agent skill
+- creates or reuses `./loom` and `./raw_data`
+- creates `./loom/<default-workspace>`
+- saves a default workspace from the local username
+- installs tutorial data under `raw_data/cost`
+- prints chat examples and terminal examples separately
+
+Supported agent values:
+
+- `codex`
+- `claude`
+- `cursor`
+- `copilot`
+
+## Scan Workflow
+
+Chat form:
+
+```text
+loom scan raw_data/energy to energy
+```
+
+CLI form:
+
+```bash
+uv run loomcli scan-index raw_data/energy to energy
+```
+
+Rules from the current implementation:
+
+- the source path is required
+- `to <workspace>` is optional
+- if no workspace is provided, Loom reuses the recent workspace or falls back to `temporary`
+- one workspace can track multiple source paths
+- duplicate dataset paths stop the scan with an error
+
+Expected agent behavior:
+
+1. Run `loomcli scan-index ...` for the first pass.
+2. Review the generated cards and summaries.
+3. Read the source `loom.md` for each scanned dataset.
+4. Fix or supplement generic summaries before calling the scan ready.
+5. Suggest `loomcli confirm` only after the review is complete, unless the user explicitly accepts a draft.
+
+## Query Workflow
+
+Chat forms:
+
+```text
+loom ask OCGT 的成本是多少
+loom OCGT 的成本是多少
+```
+
+Expected agent behavior:
+
+1. Inspect `loom/` first.
+2. Use cards and summaries to locate the likely dataset.
+3. Fetch only the exact raw file needed with `loomcli get <workspace/path/to/file>`.
+4. Answer from the fetched local raw file.
+
+`loomcli ask` does not exist and should not be documented.
+
+## Sync Workflow
+
+Terminal commands:
+
+```bash
+uv run loomcli status energy
+uv run loomcli confirm energy
+uv run loomcli push energy
+uv run loomcli pull energy
+uv run loomcli pull-raw energy
+```
+
+Chat intents such as `loom confirm energy` and `loom push energy` may be interpreted by an agent as instructions to run the matching CLI commands.
+
+## Python API
+
+```python
+import loom
+
+local_path = loom.get("energy/technology-data/costs.csv")
+```
+
+Current exports in `packages/loom/src/loom/__init__.py` include `get`, `pull`, `scan_path_to_explore`, `scan_topic_from_chat`, chat parsing helpers, and base URL helpers.
+
+## Maintenance Rule
+
+When Loom behavior, naming, or workflow changes, update this file before any derivative documentation.

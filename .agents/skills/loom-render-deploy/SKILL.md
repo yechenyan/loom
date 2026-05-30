@@ -62,6 +62,6 @@ Default behavior:
 ## Repo hygiene
 
 - If the Render deployment workflow changes, update:
-  - `wiki/deploy/readme.md`
-  - `wiki/manule/readme.md`
+  - `docs/dev/deploy.md`
+  - `docs/reference/loom-reference.md` when Loom workflow semantics changed
   - `README.md` when maintainer guidance changes
