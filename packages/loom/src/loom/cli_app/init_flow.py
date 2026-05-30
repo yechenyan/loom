@@ -52,20 +52,21 @@ def _run_fresh_init(codex_home: Path, workspace_root: Path, agents: tuple[str, .
     if tutorial_enabled:
         tutorial_dir = _install_tutorial_files(workspace_root)
         print(f"Tutorial data installed at: {tutorial_dir}")
-        print("For anything data-related, ask your agent to use Loom first.")
+        print("Loom now uses three names: `loom` for chat, `loomcli` for terminal commands, and `loomrun` for internal agent execution.")
         print("Next, send one of these messages in your AI agent chat.")
-        print("Do not run them as shell commands unless you intentionally want to use the CLI yourself.")
+        print("Do not run the `loom ...` lines as shell commands.")
         print('  loom scan raw_data/cost to cost')
         print('  loom ask "What is the capex for OCGT?"')
         print('  What is the capex for OCGT?')
-        print("After you finish reviewing the generated cards, you can also say:")
-        print("  loom push")
+        print("After you finish reviewing the generated cards, use the CLI when you want an explicit terminal command:")
+        print("  loomcli confirm cost")
+        print("  loomcli push cost")
         print("Then visit https://loom-api-free.onrender.com to inspect the uploaded data.")
         input("Installation finished. Press Enter to exit.")
         return 0
 
     print("Agents can now use Loom with a focused skill and the default workspace you selected.")
-    print("When a request is data-related, the installed skill should prompt the agent to think of Loom first.")
+    print("Remember: `loom` is chat, `loomcli` is terminal, and `loomrun` is the internal helper entrypoint.")
     return 0
 
 
@@ -167,7 +168,8 @@ def _print_installed_skills(installed_skills: tuple[object, ...]) -> None:
 
 def _print_help() -> None:
     print("Loom quick help:")
-    print("  `loom init` sets up `./loom`, `./raw_data`, your preferred agent skill, and the default workspace.")
-    print("  `loom scan <path> [to <workspace>]` scans raw data into data cards.")
-    print("  `loom confirm [workspace]` saves explore changes into the local git history.")
-    print("  `loom push [workspace]` syncs workspaces to the default Loom API server.")
+    print("  `loom` is the chat prompt form, for example `loom scan raw_data/energy`.")
+    print("  `loomcli init` sets up `./loom`, `./raw_data`, your preferred agent skill, and the default workspace.")
+    print("  `loomcli confirm [workspace]` saves explore changes into the local git history.")
+    print("  `loomcli push [workspace]` syncs workspaces to the default Loom API server.")
+    print("  `loomrun scan <path> [to <workspace>]` is the internal scan script used by agents.")

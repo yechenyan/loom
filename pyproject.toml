@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "loom-data"
-version = "0.1.9"
+version = "0.1.10"
 description = "Python client and CLI for Loom workspace data and sync workflows."
 requires-python = ">=3.12"
 readme = "packages/loom/README.md"
@@ -27,7 +27,8 @@ Repository = "https://github.com/yechenyan/loom"
 Issues = "https://github.com/yechenyan/loom/issues"
 
 [project.scripts]
-loom = "loom.cli:main"
+loomcli = "loom.cli:main"
+loomrun = "loom.run:main"
 
 [tool.uv]
 package = true

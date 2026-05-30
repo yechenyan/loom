@@ -1,71 +1,46 @@
 # loom-data
 
-`loom-data` turns large raw datasets into lightweight data cards so agents can search summaries first and download raw files only when needed.
+`loom-data` helps agents work with large local datasets without reading every raw CSV up front.
 
-The basic idea is simple:
+The workflow is:
 
-1. Raw source data is often too large for an AI agent to inspect directly without wasting time and tokens.
-2. Loom scans that raw data into compact cards and summaries under `loom/`.
-3. Agents read those cards first, then fetch only the exact raw files they need.
+1. Keep raw source data under `raw_data/<workspace>` or any directory that contains `loom.md`.
+2. Scan that source into compact cards under `loom/<workspace>`.
+3. Let the agent read `loom/` first.
+4. Fetch only the exact raw files that are needed.
 
-## How to use
+## Naming
 
-Loom installs as the `loom-data` package, but the Python import is `loom` and the CLI command is `loom`.
+Loom now uses fixed names for each layer:
 
-## 1. Install `uv`
+- `loom ...` is a chat instruction for the agent.
+- `loomcli ...` is the public terminal CLI.
+- `loomrun ...` is the internal helper command used by the agent.
+- `import loom` is the Python package import.
 
-Recommended:
+## Install
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Other install options are available in the [uv docs](https://docs.astral.sh/uv/).
-
-## 2. Install `loom-data`
+Install `uv` first, then add the package:
 
 ```bash
 uv add loom-data
 ```
 
-If you want to use the CLI through the current project environment:
+Check the CLI:
 
 ```bash
-uv run loom --help
+uv run loomcli --help
 ```
 
-## 3. Initialize Loom in your project
+## Initialize a project
 
 Run this in the project root:
 
 ```bash
-uv run loom init
+uv run loomcli init
 ```
 
-This initializes Loom in `./loom/` and asks a few short questions in English:
-
-- which assistant you use
-- the default workspace name
-- whether to install the tutorial dataset. Press Enter to install it; only `n` skips it.
-
-`loom init` installs the helper skill only for the assistant you choose:
-
-- Codex(ChatGpt) (`$CODEX_HOME/skills/loom-data` and workspace `.agents/skills/loom-data`)
-- Claude (`.claude/skills/loom-data`)
-- Cursor (`.cursor/skills/loom-data`)
-- Copilot (`.copilot/skills/loom-data`)
-
-If `./loom/` already exists, `loom init` shows a small menu instead of reinitializing everything. From there you can install another skill, choose a new default workspace, or read the reset/help text.
-
-If you install the tutorial dataset, `loom init` now prints the next step as agent-chat prompts. Those examples are meant to be sent in ChatGPT / Codex / Claude / Cursor chat, not pasted into `bash`, unless you explicitly want to drive Loom from the CLI yourself.
-
-If you prefer to let an AI agent handle setup end-to-end, you can paste a prompt like this into ChatGPT / Claude / Cursor:
-
-```text
-Please set up Loom in this project for me: if `uv` is not installed, install it first and make sure the command is available; then run `uv add loom-data`; then run `uv run loom init` in the project root; during init choose the assistant I am using, keep the default workspace, type `n` to skip the tutorial dataset, and tell me whether both `loom/` and `raw_data/` were created successfully.
-```
-
-Installed workspace layout:
+This creates:
 
 ```text
 loom/
@@ -75,108 +50,59 @@ raw_data/
   <workspace>/
 ```
 
-## 4. Add raw data
+`loomcli init` asks which assistant you use, which default workspace name you want, and whether to install the tutorial dataset.
+It installs the Loom skill only for the assistant you choose.
 
-Put your source files into any directory that contains dataset folders with `loom.md` and CSV files.
+## Chat workflow
 
-Example:
-
-```text
-raw_data/energy/technology-data/loom.md
-raw_data/energy/technology-data/costs.csv
-```
-
-The default local convention is `raw_data/<workspace>/...`, but `loom scan` still accepts any relative or absolute directory path.
-
-## 5. Generate data cards
-
-
-You can scan from chat with commands like:
+These are chat messages for your agent, not shell commands:
 
 ```text
-loom scan raw_data/energy
 loom scan raw_data/energy to energy
-loom scan /absolute/path/to/energy-source to energy
-```
-
-Or bash:
-
-```bash
-uv run loom scan raw_data/energy
-uv run loom scan raw_data/energy to energy
-uv run loom scan /absolute/path/to/energy-source to energy
-```
-
-Rules:
-
-- `<path>` is required.
-- `to <workspace>` is optional.
-- If you omit `to <workspace>`, Loom reuses the most recently scanned or created workspace.
-- If there is no recent workspace yet, Loom creates and uses `temporary`.
-- If the target workspace does not exist yet, Loom creates it automatically.
-- One workspace can track multiple scan source paths at the same time.
-- If two source paths would generate the same dataset path inside one workspace, Loom stops and asks you to resolve the name conflict first.
-- Scan state is incremental per workspace and per source path.
-- Dataset cards and manifests store source-relative raw paths such as `technology-data` or `technology-data/costs.csv`, not machine-specific absolute paths.
-- If you copy the project or move the workspace root, Loom reuses the same relative scan sources and avoids rebuilding unchanged datasets just because the absolute filesystem path changed.
-- `loom get <workspace/path/to/file>` resolves local raw files from the scan source paths recorded for that workspace before it tries the remote raw manifest.
-
-For AI chat onboarding, the simplest path is:
-
-```text
-loom scan raw_data/cost to cost
 loom ask OCGT 的成本是多少
 loom OCGT 的成本是多少
 ```
 
-## 6. Confirm scan results
+Expected behavior:
 
-Optional, but recommended after you review the generated summaries.
+1. `loom scan ...`
+   The agent runs `loomrun scan ...` to generate the first pass of cards, then continues refining the cards in chat.
+2. `loom ask ...` or `loom <问题>`
+   The agent inspects `loom/` first, then uses `loomcli get` only if it needs a specific raw file.
 
-run in chat:
-```
-loom confirm
-loom confirm <workspace>
-```
+If the request is data-related but does not mention Loom explicitly, the installed skill should still make the agent think of Loom first.
 
-```bash
-uv run loom confirm
-```
+## Terminal workflow
 
-or run in bash:
-```bash
-uv run loom confirm
-uv run loom confirm <workspace>
-```
-
-
-## 7. Find data
-
-Recommended workflow for agents:
-
-1. Read `loom/` first.
-2. Search the generated cards and summaries.
-3. Decide which exact raw file is needed.
-4. Fetch that file on demand, for example `loom get energy/technology-data/costs.csv`.
-
-If the user writes `loom ask <question>` or `loom <question>`, treat that as a request to inspect `loom/` first.
-More broadly, if the request is data-related, the installed Loom skill should make the agent think of Loom first even when the user asks in plain language.
-
-`loom ask <question>` now runs a local lookup flow:
-
-1. Search `loom/` for the most relevant workspace, dataset, and CSV card.
-2. Fetch the matching raw file with `loom get` if it is not cached yet.
-3. Print the best match, local raw file path, and matching rows.
-4. Print `Likely answer` when one row is the obvious best hit.
-
-You can use the same flow directly in the CLI:
+Use explicit terminal commands when you want to operate Loom by hand:
 
 ```bash
-uv run loom ask OCGT cost
-uv run loom OCGT cost
+uv run loomcli confirm energy
+uv run loomcli push energy
+uv run loomcli pull energy
+uv run loomcli pull-raw energy
+uv run loomcli get energy/technology-data/costs.csv
+uv run loomcli set-api https://loom-api-free.onrender.com
 ```
 
-## 8. Use raw data in Python
+Notes:
+
+- `loomcli scan` does not exist anymore. Scanning belongs to chat plus `loomrun`.
+- `loomcli ask` does not exist anymore. Questions belong to the agent's Loom-first lookup workflow.
+- If you omit `to <workspace>` in a scan request, Loom reuses the most recent workspace or falls back to `temporary`.
+
+## Internal helper
+
+Agents and repository maintainers can use:
+
+```bash
+uv run loomrun scan raw_data/energy to energy
+uv run loomrun route "loom scan raw_data/energy to energy"
+```
+
+`loomrun` is an implementation detail. It is useful for automation, testing, and repository maintenance, but it is not the primary user-facing interface.
+
+## Python API
 
 ```python
 import loom
@@ -187,53 +113,17 @@ print(local_path)
 
 `loom.get(...)` reuses local cache when possible and only downloads the latest raw file when needed.
 
-## More commands
+## Workspace rules
 
-Push one workspace:
+- One workspace can track multiple source directories.
+- Dataset paths inside one workspace must stay unique.
+- Scan state is incremental per workspace and per source path.
+- Generated cards and manifests store source-relative raw paths, so moving the project does not force a rebuild of unchanged datasets.
 
-```bash
-uv run loom push energy
-```
+## Web app
 
-Push all workspaces:
+Explore data online at [https://loom-web.onrender.com](https://loom-web.onrender.com).
 
-```bash
-uv run loom push
-```
+## Maintainers
 
-Pull one workspace:
-
-```bash
-uv run loom pull energy
-```
-
-Pull all workspaces:
-
-```bash
-uv run loom pull
-```
-
-Pull raw files for one workspace:
-
-```bash
-uv run loom pull-raw energy
-```
-
-Set the default API endpoint for future CLI usage:
-
-```bash
-uv run loom set-api https://loom-api-free.onrender.com
-```
-
-Online explore UI:
-
-- [https://loom-web.onrender.com](https://loom-web.onrender.com)
-
-## Notes
-
-- `loom-data` is the package name.
-- `loom` is the CLI command.
-- `import loom` is the Python API.
-- `loom scan` now requires a source path: `loom scan <path> [to <workspace>]`.
-- `loom init` now creates `./loom/` and `./raw_data/` at the current project root.
-- `loom init` installs one agent skill at a time instead of generating every supported agent skill by default.
+This repo also includes the workspace skill `.agents/skills/loom-cli-release` for publishing new `loom-data` CLI releases with the repository release script.

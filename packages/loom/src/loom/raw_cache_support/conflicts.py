@@ -30,7 +30,17 @@ def write_raw_conflict_notice(workspace_root, workspace: str, conflicts):
     lines = ["# Loom Raw Conflict Notice", "", "Local raw files differ from the latest server manifest. Loom did not overwrite `raw_data`.", "", f"Generated at: {datetime.now(timezone.utc).isoformat()}", "", "Resolve these files manually if you want local raw sources to match the server:", ""]
     for item in conflicts:
         lines.extend([f"- path: {item['path']}", f"  - local sha256: {item['local_sha256']}", f"  - remote sha256: {item['remote_sha256']}", f"  - local file: {item['local_path']}"])
-    lines.extend(["", "Suggested next steps:", "", "1. Review the local raw file and the synced explore output.", "2. Decide whether to keep the local raw file or align it with the server version.", "3. Re-run `loom scan`, then `loom confirm` if you intentionally keep the local version.", ""])
+    lines.extend(
+        [
+            "",
+            "Suggested next steps:",
+            "",
+            "1. Review the local raw file and the synced explore output.",
+            "2. Decide whether to keep the local raw file or align it with the server version.",
+            "3. Re-run `loomrun scan`, then `loomcli confirm` if you intentionally keep the local version.",
+            "",
+        ]
+    )
     notice_path.parent.mkdir(parents=True, exist_ok=True)
     notice_path.write_text("\n".join(lines), encoding="utf-8")
     return notice_path

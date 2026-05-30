@@ -1,141 +1,117 @@
 # Loom Deploy
 
-本文记录当前这套 Loom 在 Render 上的实际部署方式，以及后续发布时的操作。
+本文只记录当前仓库里 `web` 和 `server` 的部署方式。
 
-## 当前线上地址
+先说明两个事实：
 
-- Web: `https://loom-web.onrender.com`
-- API: `https://loom-api-free.onrender.com`
-- API health: `https://loom-api-free.onrender.com/health`
-- Render Postgres: `loom-postgres`
+- 前端目录是 `web/`
+- 后端不是顶层 `server/`，而是 `packages/loom-server/`
 
-## 当前线上资源
+当前部署的代码真相以 [render.yaml](/Users/maxiao/Documents/code2/loom/render.yaml) 为准，文档只是解释它。
 
-- Static Site: `loom-web`
-- Web Service: `loom-api-free`
-- Postgres: `loom-postgres`
+## 当前部署对象
 
-说明：
+- `loom-api-free`
+  Render Web Service，运行 `packages/loom-server`
+- `loom-web`
+  Render Static Site，构建 `web`
+- `loom-postgres`
+  Render Postgres，给 `loom-server` 使用
 
-- 现在的 API 服务名是 `loom-api-free`，不是最初蓝图里的 `loom-api`
-- 原因是 Render free web service 不支持 persistent disk，所以最终线上用了一个新的 free API 服务，并把 `storage_root` 改到了 `/tmp/loom-server-storage`
-- 这意味着 API 可以正常提供 HTTP 接口，但服务端文件存储不是持久化的，实例重启或重建后会丢
+## 当前 Render 配置
 
-## 1. 从头部署
+`render.yaml` 里现在定义的是：
 
-### 前提
-
-需要先满足这些条件：
-
-- 本地已经安装并登录 `render-cli`
-- Render workspace 已经配置 billing
-- GitHub 仓库可被 Render 拉取
-- 当前代码已经推到要部署的分支，例如 `dev-1`
-
-当前仓库实际部署使用的是：
-
-- repo: `https://github.com/yechenyan/loom.git`
-- branch: `dev-1`
-
-### 第一步：创建 Postgres
-
-先创建一个 free Postgres：
-
-```bash
-python - <<'PY'
-from pathlib import Path
-import json, urllib.request
-import yaml
-
-cfg = yaml.safe_load((Path.home()/'.render'/'cli.yaml').read_text())
-key = cfg['api']['key']
-owner = cfg['workspace']
-
-payload = {
-    "name": "loom-postgres",
-    "ownerId": owner,
-    "plan": "free",
-    "region": "oregon",
-    "version": "16",
-    "enableDiskAutoscaling": False,
-}
-
-req = urllib.request.Request(
-    "https://api.render.com/v1/postgres",
-    data=json.dumps(payload).encode(),
-    headers={
-        "Authorization": f"Bearer {key}",
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    },
-    method="POST",
-)
-
-with urllib.request.urlopen(req) as resp:
-    print(resp.read().decode())
-PY
-```
-
-注意：
-
-- free Postgres 不能自定义 `diskSizeGB`
-- 需要等数据库状态变成 `available`
-- 然后取它的 `internalConnectionString`
-
-### 第二步：创建 API 服务
-
-当前实际可用的 free 方案是：
-
-```bash
-render services create \
-  --name loom-api-free \
-  --type web_service \
-  --repo https://github.com/yechenyan/loom.git \
-  --branch dev-1 \
-  --runtime python \
-  --build-command 'pip install ./packages/loom-server' \
-  --start-command 'loom-server run --storage-root /tmp/loom-server-storage --workspace-root /opt/render/project/src' \
-  --health-check-path /health \
-  --plan free \
-  --region oregon \
-  --env-var PYTHON_VERSION=3.12.8 \
-  --env-var LOOM_SERVER_DATABASE_URL='postgresql+psycopg2://<user>:<password>@<internal-host>/<db>' \
-  --env-var LOOM_SERVER_CORS_ORIGINS='*' \
-  --output json \
-  --confirm
-```
+- API service
+  - type: `web`
+  - runtime: `python`
+  - name: `loom-api-free`
+  - plan: `starter`
+  - build command: `pip install ./packages/loom-server`
+  - start command: `loom-server run --storage-root /var/data/loom-server-storage --workspace-root /opt/render/project/src`
+  - health check: `/health`
+  - disk mount: `/var/data`
+- Web service
+  - type: `web`
+  - runtime: `static`
+  - name: `loom-web`
+  - build command: `cd web && npm ci && npm run build`
+  - publish path: `./web/dist`
+  - env: `VITE_API_BASE_URL=https://loom-api-free.onrender.com`
+  - SPA rewrite: `/* -> /index.html`
+- Database
+  - name: `loom-postgres`
+  - plan: `free`
 
 说明：
 
-- `LOOM_SERVER_DATABASE_URL` 要用 Postgres 的 internal connection string，并改成 `postgresql+psycopg2://...`
-- `--workspace-root /opt/render/project/src` 是为了让服务端读取仓库里的 `test-project/loom/loom_explore`
-- free web service 不支持 disk，所以这里必须用 `/tmp/loom-server-storage`
+- 虽然服务名还是 `loom-api-free`，但当前蓝图里它跑的是 `starter` plan，不是 free web service
+- 当前 API 依赖 persistent disk，所以 `render.yaml` 使用了 `/var/data/loom-server-storage`
+- 如果你把 API 改回 free web service，就不能继续用 disk，必须改成 `/tmp/...`，并接受重启后数据丢失
 
-### 第三步：创建前端 Static Site
+## 推荐部署方式
+
+推荐直接用 Render Blueprint 部署整个仓库，不要分别在 Dashboard 里手工点三套资源。
+
+好处：
+
+- `web`、`server`、`postgres` 一次建好
+- 环境变量和磁盘挂载不会漏
+- 后续配置改动直接以 `render.yaml` 为准
+
+## 一次性从头部署
+
+### 1. 准备条件
+
+- 代码已经推到 GitHub
+- Render 可以访问这个仓库
+- Render workspace 已开通可用套餐
+- 本地如果要先校验蓝图，已经安装并登录 `render-cli`
+
+### 2. 校验 Blueprint
+
+如果本地装了 `render-cli`，先在仓库根目录执行：
 
 ```bash
-render services create \
-  --name loom-web \
-  --type static_site \
-  --repo https://github.com/yechenyan/loom.git \
-  --branch dev-1 \
-  --build-command 'cd web && npm ci && npm run build' \
-  --publish-directory web/dist \
-  --env-var VITE_API_BASE_URL=https://loom-api-free.onrender.com \
-  --output json \
-  --confirm
+render blueprint validate
 ```
 
-### 第四步：验证上线
+如果这里报错，先修 `render.yaml`，不要带着错误去 Dashboard 创建资源。
 
-确认下面几个点：
+### 3. 在 Render 创建 Blueprint
 
-- `https://loom-api-free.onrender.com/health` 返回 `{"ok":true}`
-- `https://loom-api-free.onrender.com/api/workspaces` 返回 JSON
-- `https://loom-api-free.onrender.com/api/explore/workspaces` 返回 JSON
-- `https://loom-web.onrender.com` 可以打开
+在 Render Dashboard 中：
 
-可直接用：
+1. New +
+2. Blueprint
+3. 选择这个 GitHub 仓库
+4. 选择包含当前 `render.yaml` 的分支
+5. Review 后点击 Apply
+
+Render 会按 `render.yaml` 创建：
+
+- `loom-postgres`
+- `loom-api-free`
+- `loom-web`
+
+### 4. 首次部署后检查环境变量
+
+重点确认 API 服务上这几个值：
+
+- `PYTHON_VERSION=3.12.8`
+- `LOOM_SERVER_DATABASE_URL`
+  来自 `loom-postgres.connectionString`
+- `LOOM_SERVER_CORS_ORIGINS=*`
+
+重点确认前端服务上这个值：
+
+- `VITE_API_BASE_URL=https://loom-api-free.onrender.com`
+
+如果你改了 API 域名，前端这里也必须一起改。
+
+### 5. 验证服务
+
+部署完成后至少检查这几个地址：
 
 ```bash
 curl -fsS https://loom-api-free.onrender.com/health
@@ -143,280 +119,124 @@ curl -fsS https://loom-api-free.onrender.com/api/workspaces
 curl -fsS https://loom-api-free.onrender.com/api/explore/workspaces
 ```
 
-## 2. 后续发布部署
+期望结果：
 
-后续发布主要分两类。
+- `/health` 返回 `{\"ok\":true}`
+- 另外两个接口返回合法 JSON
+- `https://loom-web.onrender.com` 能正常打开，并且能请求 API
 
-### 2.1 只是代码更新
+## 手工部署顺序
 
-如果服务名、URL、数据库都不变，那么正常流程就是：
+如果你暂时不用 Blueprint，手工部署顺序必须是：
 
-1. 本地改代码
-2. 本地测试
-3. 提交并 push 到 Render 绑定的分支，例如 `dev-1`
-4. Render 自动 deploy
+1. 先建 Postgres
+2. 再建 API service
+3. 最后建 web static site
 
-当前线上两个服务都开了 auto deploy，所以 push 到 `dev-1` 后会自动重建：
+原因是前两者互相依赖：
 
-- `loom-api-free`
-- `loom-web`
+- API 要先拿到数据库连接串
+- Web 要先拿到 API 地址
 
-也可以手动触发：
+## 手工部署 API
 
-```bash
-render deploys create srv-d89ea6v7f7vs73c3vhgg --output json --confirm
-render deploys create srv-d89e8j5ckfvc738hm5og --output json --confirm
-```
+后端实际启动入口来自 `packages/loom-server` 的 `loom-server` CLI。
 
-其中：
-
-- `srv-d89ea6v7f7vs73c3vhgg` 是 `loom-api-free`
-- `srv-d89e8j5ckfvc738hm5og` 是 `loom-web`
-
-### 2.2 前端只切 API 地址
-
-如果只是 API 域名变了，不想改代码重提，也可以直接改 Render 上的环境变量：
+对应命令可以概括成：
 
 ```bash
-python - <<'PY'
-from pathlib import Path
-import json, urllib.request
-import yaml
-
-cfg = yaml.safe_load((Path.home()/'.render'/'cli.yaml').read_text())
-key = cfg['api']['key']
-
-req = urllib.request.Request(
-    "https://api.render.com/v1/services/srv-d89e8j5ckfvc738hm5og/env-vars/VITE_API_BASE_URL",
-    data=json.dumps({"value": "https://loom-api-free.onrender.com"}).encode(),
-    headers={
-        "Authorization": f"Bearer {key}",
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    },
-    method="PUT",
-)
-
-with urllib.request.urlopen(req) as resp:
-    print(resp.read().decode())
-PY
+pip install ./packages/loom-server
+loom-server run --storage-root /var/data/loom-server-storage --workspace-root /opt/render/project/src
 ```
 
-然后重发静态站：
+Render 里需要补齐这些配置：
 
-```bash
-render deploys create srv-d89e8j5ckfvc738hm5og --output json --confirm
-```
+- service type: `Web Service`
+- runtime: `Python`
+- build command: `pip install ./packages/loom-server`
+- start command: `loom-server run --storage-root /var/data/loom-server-storage --workspace-root /opt/render/project/src`
+- health check path: `/health`
+- disk mount path: `/var/data`
+- env:
+  - `PYTHON_VERSION=3.12.8`
+  - `LOOM_SERVER_DATABASE_URL=<postgres connection string>`
+  - `LOOM_SERVER_CORS_ORIGINS=*`
 
-### 2.3 需要改数据库或服务类型
+关于 `workspace-root`：
 
-如果需要：
+- 这里应该指向 Render checkout 后的仓库根目录
+- 对当前 Render Python 服务，仓库根目录就是 `/opt/render/project/src`
+- 如果服务端需要读取仓库里的 `loom/` 内容，这个参数不能漏
 
-- 把 API 从 free 升到支持 persistent disk 的 plan
-- 改 Postgres plan
-- 改 region
-- 改服务名
+## 手工部署 Web
 
-这类变更建议按“重新建新资源 -> 验证 -> 切换前端地址 -> 删旧资源”的顺序做，不要直接在唯一线上服务上冒险。
+前端是标准 Vite 静态站点，部署要求比 API 简单。
 
-## 3. 访问 URL
+Render 里需要填写：
 
-当前外部访问地址：
+- service type: `Static Site`
+- build command: `cd web && npm ci && npm run build`
+- publish directory: `web/dist`
+- env:
+  - `VITE_API_BASE_URL=https://loom-api-free.onrender.com`
 
-- Web 首页：`https://loom-web.onrender.com`
-- API health：`https://loom-api-free.onrender.com/health`
-- API workspaces：`https://loom-api-free.onrender.com/api/workspaces`
-- API explore：`https://loom-api-free.onrender.com/api/explore/workspaces`
+如果 API 域名不是上面这个值，就把它替换成你的实际 server URL。
 
-## 4. 发布 packages/loom
+## 后续更新部署
 
-PyPI 项目名是 `loom-data`，源码版本号在仓库根目录的 `pyproject.toml`。
+如果只是代码更新，没有改服务名、数据库或域名，正常流程就是：
 
-### 推荐发布脚本
+1. 本地提交代码
+2. push 到 Render 绑定分支
+3. 等 Render 自动重新部署
 
-仓库里现在提供了一个本地发布 CLI：
+如果用的是 Blueprint，优先继续维护 [render.yaml](/Users/maxiao/Documents/code2/loom/render.yaml)，不要只在 Dashboard 里手改。
 
-```bash
-python scripts/release_pypi.py patch
-```
+## 变更 API 地址时要一起改的地方
 
-这个脚本会按顺序执行：
+如果你换了 API 域名，不要只改 Render 服务本身，还要一起检查这些位置：
 
-1. 自动修改根目录 `pyproject.toml` 里的 `[project].version`
-2. 对客户端发布相关代码跑 `ruff` lint
-3. 跑最小发布回归测试
-4. 清理旧的 `dist/` 和 `build/`
-5. 重新 `uv build`
-6. 调用 `uv publish`
+- `render.yaml` 里的 `VITE_API_BASE_URL`
+- `packages/loom/src/loom/server_config.py` 里的默认 CLI 地址
+- `README.md` 和 `wiki/manule/readme.md` 里示例用到的线上地址
 
-支持的版本参数：
+否则会出现：
 
-```bash
-python scripts/release_pypi.py patch
-python scripts/release_pypi.py minor
-python scripts/release_pypi.py major
-python scripts/release_pypi.py 0.1.5
-```
+- Web 还在请求旧 API
+- CLI 默认还指向旧地址
+- 文档继续教用户连旧服务
 
-常用附加参数：
+## 常见问题
 
-```bash
-python scripts/release_pypi.py patch --dry-run
-python scripts/release_pypi.py patch --test-pypi
-python scripts/release_pypi.py patch --skip-publish
-```
+### 1. Web 打得开，但数据加载失败
 
-如果 lint、测试、build 或 publish 任何一步失败，脚本默认会把 `pyproject.toml` 里的版本号自动改回去。只有显式传 `--keep-version-on-failure` 时，才会保留失败后的版本号变更。
+优先检查：
 
-如果想先只验证上传流程而不真正上传：
+- `VITE_API_BASE_URL` 是否指向正确 API
+- API 的 CORS 是否包含前端来源
+- API 的 `/health` 是否正常
 
-```bash
-python scripts/release_pypi.py patch --dry-run
-```
+当前代码里 `LOOM_SERVER_CORS_ORIGINS` 默认可设为 `*`，这是最省事的部署方式。
 
-如果想先发到 TestPyPI：
+### 2. API 启动成功，但数据会丢
 
-```bash
-python scripts/release_pypi.py patch --test-pypi
-```
+这通常是因为：
 
-### PyPI 认证
+- 你没有挂 persistent disk
+- 或者把 `storage-root` 配到了 `/tmp`
 
-`uv publish` 需要 PyPI 凭据。当前仓库没有内置发布凭据，所以发布机器上需要提前配置。
+当前 `render.yaml` 选择 `starter + disk`，就是为了避免这个问题。
 
-推荐把 gitignore 的私有发布配置单独放在：
+### 3. Web 本地开发能通，线上不通
 
-```toml
-config/local.toml
-```
-
-这个文件已经加入仓库根目录 `.gitignore`，不会被提交。
-
-`config/release.toml` 不作为 secret 文件使用，后面如果要放可共享的发布配置，可以单独放在那里并正常提交。
-
-建议内容：
-
-```toml
-[pypi]
-token = "pypi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-```
-
-发布脚本会按这个优先级找 token：
-
-1. `UV_PUBLISH_TOKEN`
-2. `PYPI_TOKEN`
-3. `config/local.toml` 里的 `[pypi].token`
-
-推荐直接用 PyPI API token：
-
-```bash
-export UV_PUBLISH_TOKEN=pypi-xxxx
-python scripts/release_pypi.py patch
-```
-
-也可以显式传参：
-
-```bash
-PYPI_TOKEN=pypi-xxxx python scripts/release_pypi.py patch
-```
-
-如果未来改成 CI 发布，也可以接 PyPI Trusted Publishing；但在本地终端里直接运行 `uv publish` 时，默认不会自动拿到 OIDC token。
-
-### 本次发布
-
-这次发布准备的是：
-
-- PyPI name: `loom-data`
-- version: `0.1.1`
-
-包含的关键变更：
-
-- 默认 API base URL 改为 Render 线上地址 `https://loom-api-free.onrender.com`
-- 新增 `loom set-api <url>`，可持久化切换 CLI 默认服务地址
-- 保留 `LOOM_SERVER_URL` 和 Python `loom.set_base_url(...)` 覆盖能力
-
-### 本次发布说明
-
-本次为了发布客户端变更，版本已从：
-
-- `0.1.0` -> `0.1.1`
-
-这次版本包含：
-
-- 默认 API base URL 改为 Render 线上地址
-- 新增 CLI 命令 `loom set-api https://...`
-- CLI / Python API 都支持持久化和覆盖 API 地址
-
-## CLI 使用线上地址
-
-### 推荐方式
-
-CLI 推荐直接设环境变量：
-
-```bash
-export LOOM_SERVER_URL=https://loom-api-free.onrender.com
-```
-
-之后就可以直接用：
-
-```bash
-uv run python scripts/loom.py pull
-uv run python scripts/loom.py pull-raw
-uv run python scripts/loom.py push energy
-```
-
-也可以每次显式传：
-
-```bash
-uv run python scripts/loom.py pull --server-url https://loom-api-free.onrender.com
-```
-
-### 已验证结果
-
-我已经实际验证过：
-
-```bash
-LOOM_SERVER_URL=https://loom-api-free.onrender.com uv run python scripts/loom.py pull
-```
-
-返回：
+本地开发时 `web/vite.config.js` 会把 `/api` 代理到：
 
 ```text
-No remote workspaces found to pull.
+http://127.0.0.1:8765
 ```
 
-这说明：
-
-- CLI 已经能走线上地址
-- 线上 API 调用是通的
-- 当前只是远端还没有 workspace 数据
-
-Python API 侧也已验证：
-
-```bash
-LOOM_SERVER_URL=https://loom-api-free.onrender.com uv run python - <<'PY'
-import loom
-print(loom.get_base_url())
-PY
-```
-
-输出：
+但线上静态站没有这个代理，所以线上必须显式配置：
 
 ```text
-https://loom-api-free.onrender.com
+VITE_API_BASE_URL=https://你的-api-域名
 ```
-
-## 当前限制
-
-当前线上方案是“能跑的最低成本版本”，限制如下：
-
-- `loom-api-free` 没有 persistent disk
-- `/tmp/loom-server-storage` 不是持久化目录
-- API 服务重建后，服务端文件存储会丢
-- `api/explore/workspaces` 现在虽然可访问，但当前返回空列表，原因是部署代码里没有实际可展示的 `loom_explore` 内容
-
-如果后续需要稳定可用，优先级最高的改进是：
-
-1. 把 API 服务升级到支持 disk 的 Render plan
-2. 把 `storage_root` 切到 persistent disk
-3. 再补线上真实数据同步流程

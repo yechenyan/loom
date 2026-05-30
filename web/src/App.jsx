@@ -48,12 +48,12 @@ const HOME_FLOW = [
   {
     step: "02",
     title: "生成轻量数据卡",
-    body: "`loom scan` 会生成 overview、CSV 摘要、字段画像和统计信息，让 AI 先看结构再决定下一步。",
+    body: "`loom scan` 是发给 agent 的聊天消息；agent 内部会调用 `loomrun scan` 生成 overview、CSV 摘要、字段画像和统计信息。",
   },
   {
     step: "03",
     title: "按需取回原始文件",
-    body: "`loom ask` 和 `loom get` 会先检索卡片，再精确定位真正需要打开的原始数据文件。",
+    body: "`loom ask` 或 `loom <问题>` 会先检索卡片；只有真的需要原始文件时，才继续用 `loomcli get` 精确读取。",
   },
 ];
 
@@ -620,16 +620,16 @@ function HomePage({ workspaceCount, datasetCount, csvProfileCount, onOpenExplore
             </div>
             <div className="home-command-strip">
               <div className="home-command-card">
-                <span>1. 扫描</span>
+                <span>1. 聊天扫描</span>
                 <code>loom scan raw_data/energy to energy</code>
               </div>
               <div className="home-command-card">
-                <span>2. 提问</span>
+                <span>2. 聊天提问</span>
                 <code>loom ask OCGT 的成本是多少</code>
               </div>
               <div className="home-command-card">
-                <span>3. 深挖</span>
-                <code>loom get energy/technology-data/costs.csv</code>
+                <span>3. 终端取数</span>
+                <code>loomcli get energy/technology-data/costs.csv</code>
               </div>
             </div>
           </div>
@@ -677,26 +677,26 @@ function HomePage({ workspaceCount, datasetCount, csvProfileCount, onOpenExplore
                 <ChatSnippet role="user" text={installPrompt} onCopy={() => handleCopy()} />
                 <ChatSnippet
                   role="assistant"
-                  text={`我会先检查并安装 uv，然后安装 loom-data，运行 loom init，并按 ${activePrompt.assistant} 的方式完成初始化${includeTutorial ? "，同时安装 tutorial dataset" : ""}。`}
+                  text={`我会先检查并安装 uv，然后安装 loom-data，运行 loomcli init，并按 ${activePrompt.assistant} 的方式完成初始化${includeTutorial ? "，同时安装 tutorial dataset" : ""}。`}
                 />
                 <ChatDivider />
                 <ChatStepLabel text="第 2 步：让 Agent 扫描 tutorial dataset 并创建数据卡片。" />
                 <ChatSnippet
                   role="user"
-                  text="loom scan loom/loom_raw/tutorial to tutorial"
-                  onCopy={() => copyText("loom scan loom/loom_raw/tutorial to tutorial")}
+                  text="loom scan raw_data/cost to cost"
+                  onCopy={() => copyText("loom scan raw_data/cost to cost")}
                 />
                 <ChatSnippet
                   role="assistant"
-                  text="我会扫描 tutorial dataset，生成 overview、CSV 字段画像和可供后续检索的数据卡片。"
+                  text="我会把这条聊天指令当成 Loom scan 请求，先运行内部的 `loomrun scan` 生成第一版数据卡，再继续补充和整理结果。"
                 />
                 <ChatDivider />
                 <ChatStepLabel text="第 3 步：直接基于 tutorial dataset 提问。" />
                 <ChatSnippet role="user" text="loom ask OCGT 的成本是多少" onCopy={() => copyText("loom ask OCGT 的成本是多少")} />
                 <ChatSnippet
                   role="assistant"
-                  text="我会先读取 tutorial workspace 的卡片和摘要，再定位 OCGT 对应的成本数据。拿到目标文件后，你也可以直接在代码里继续处理它。"
-                  code={`import loom\n\ndata = loom.get("tutorial/costs.csv")\nprint(data)`}
+                  text="我会先读取 cost workspace 的卡片和摘要，再定位 OCGT 对应的成本数据。只有需要原始文件时，我才会继续用 `loomcli get` 或 `import loom` 去拿具体文件。"
+                  code={`import loom\n\npath = loom.get("cost/costs_2040-modifications.csv")\nprint(path)`}
                 />
               </div>
             </div>
@@ -919,7 +919,7 @@ function FileWorkbench({ selectedFile, onSelectFile }) {
 }
 
 function buildInstallPrompt() {
-  return "请在当前项目里帮我安装 Loom：先确保 uv 可用，再运行 uv add loom-data 和 uv run loom init；选择合适的agent，启用教程，其余配置默认， 告诉用户下一步做什么";
+  return "请在当前项目里帮我安装 Loom：先确保 uv 可用，再运行 uv add loom-data 和 uv run loomcli init；选择合适的 agent，启用教程，其余配置默认，并告诉用户后续哪些要在聊天里用 `loom ...`，哪些要在终端里用 `loomcli ...`。";
 }
 
 function ExploreHero({ workspaceCount, datasetCount, csvProfileCount }) {

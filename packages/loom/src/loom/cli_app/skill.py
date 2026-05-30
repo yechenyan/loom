@@ -16,8 +16,9 @@ class InstalledSkill:
 def install_skills(codex_home: Path, workspace_root: Path, agents: tuple[str, ...] | None = None) -> tuple[InstalledSkill, ...]:
     selected_agents = agents or SUPPORTED_AGENTS
     installed: list[InstalledSkill] = []
-    launcher = workspace_root / "scripts" / "loom.py"
-    skill_markdown = render_skill_markdown(workspace_root, launcher)
+    cli_launcher = workspace_root / "scripts" / "loomcli.py"
+    run_launcher = workspace_root / "scripts" / "loomrun.py"
+    skill_markdown = render_skill_markdown(workspace_root, cli_launcher, run_launcher)
 
     for agent in selected_agents:
         for skill_dir in get_skill_dirs(agent, codex_home, workspace_root):
@@ -43,7 +44,7 @@ def get_skill_dirs(agent: str, codex_home: Path, workspace_root: Path) -> tuple[
     raise ValueError(f"Unsupported agent: {agent}")
 
 
-def render_skill_markdown(workspace_root: Path, launcher: Path) -> str:
+def render_skill_markdown(workspace_root: Path, cli_launcher: Path, run_launcher: Path) -> str:
     return f"""---
 name: loom-data
 description: Use the local Loom CLI and Python package whenever the user is asking data-related questions, needs to inspect local datasets, or wants to scan raw data into searchable cards.
@@ -55,9 +56,12 @@ Use this skill whenever the user's request is about data: answering data questio
 
 If the request sounds data-related, assume Loom should be the first tool you reach for.
 
-## How to use
+## Names
 
-Loom installs as the `loom-data` package, but the Python import is `loom` and the CLI command is `loom`.
+- `loom ...` means a user-facing chat instruction.
+- `loomcli ...` means an explicit terminal command a human or agent may run.
+- `loomrun ...` means an internal helper script for agent execution.
+- `import loom` is still the Python package import.
 
 Loom is designed for large local datasets:
 
@@ -76,18 +80,20 @@ Loom is designed for large local datasets:
 
 For data questions, default to Loom even if the user did not explicitly mention `loom ask`.
 
-If the user has just finished `loom init`, guide them with agent-chat prompts first, not shell snippets.
-Prefer suggestions like `loom scan raw_data/cost to cost`, `loom ask "What is the capex for OCGT?"`, or even a plain-language data question in chat.
-Only suggest `uv run loom ...` commands when the user explicitly wants to run the CLI by hand.
+When the user writes `loom scan ...` in chat, treat it as a chat request, not a shell command.
+Use `loomrun scan <path> [to <workspace>]` to generate the first pass of cards, then continue reading and improving the cards in chat before replying.
+
+If the user writes `loom ask <question>` or `loom <question>`, do not run a lookup script for them.
+Treat that as a request to inspect `./loom` first, then fetch exact raw files with `loomcli get` only when needed.
+
+Only suggest `loomcli ...` commands when the user explicitly wants terminal commands or when an operational step like `confirm` or `push` truly belongs in the terminal.
 
 When the user asks for a value inside a dataset, use this path by default:
 
 1. Read `loom/` first.
 2. Search the generated cards and summaries only long enough to identify the exact raw file path.
-3. Run `uv run loom get <workspace/path/to/file>` immediately, or use `loom.get("workspace/path/to/file")` in Python.
+3. Run `loomcli get <workspace/path/to/file>` immediately, or use `loom.get("workspace/path/to/file")` in Python.
 4. Search or parse the fetched local file to answer the question.
-
-If the user writes `loom ask <question>` or `loom <question>`, treat it as a request to inspect `./loom` first before touching raw files.
 
 If the user asks any plain-language data question in chat, you should still think in the same Loom-first workflow:
 
@@ -96,17 +102,17 @@ If the user asks any plain-language data question in chat, you should still thin
 3. Fetch only the exact raw file you need.
 4. Answer from the raw data you retrieved.
 
-Do not spend turns rediscovering how Loom fetch works by reading `README.md`, `pyproject.toml`, or `scripts/loom.py` unless `loom get` actually fails.
+Do not spend turns rediscovering how Loom fetch works by reading `README.md`, `pyproject.toml`, or launcher scripts unless `loomcli get` actually fails.
 
 Example lookup:
 
 - User asks: `查找 OCGT 成本`
-- First fetch: `uv run loom get energy2/technology-data/costs_2035.csv`
+- First fetch: `loomcli get energy2/technology-data/costs_2035.csv`
 - Then inspect the fetched CSV for `OCGT`
 
 Example:
 
-- `loom get energy/technology-data/costs.csv`
+- `loomcli get energy/technology-data/costs.csv`
 
 ```python
 import loom
@@ -116,44 +122,39 @@ local_path = loom.get("energy/technology-data/costs.csv")
 
 `loom.get(...)` prefers local cache and fetches only the file you ask for.
 
-## Common commands
+## Chat examples
 
-- Scan the default raw-data layout: `uv run loom scan raw_data/energy`
-- Scan a directory into a workspace: `uv run loom scan raw_data/energy to energy`
-- Scan a directory and reuse the most recent workspace: `uv run loom scan raw_data/energy`
-- Confirm one workspace: `uv run loom confirm energy`
-- Confirm all pending explore changes: `uv run loom confirm`
+- `loom scan raw_data/energy`
+- `loom scan raw_data/energy to energy`
+- `loom ask OCGT 的成本是多少`
+- `loom OCGT 的成本是多少`
 
-If you need the workspace-root-aware launcher, use:
+## Terminal commands
 
-- `uv run python {launcher} scan raw_data/energy to energy --workspace-root {workspace_root}`
-- `uv run python {launcher} scan raw_data/energy --workspace-root {workspace_root}`
-- `uv run python {launcher} confirm <workspace> --workspace-root {workspace_root}`
-- `uv run python {launcher} confirm --workspace-root {workspace_root}`
+- Confirm one workspace: `loomcli confirm energy`
+- Confirm all pending explore changes: `loomcli confirm`
+- Push one workspace: `loomcli push energy`
+- Pull one workspace: `loomcli pull energy`
+- Pull raw files for one workspace: `loomcli pull-raw energy`
+- Set the default API endpoint: `loomcli set-api https://loom-api-free.onrender.com`
 
-## More commands
+If you need workspace-root-aware launchers inside this repository, use:
 
-- Push one workspace: `uv run loom push energy`
-- Push all workspaces: `uv run loom push`
-- Pull one workspace: `uv run loom pull energy`
-- Pull all workspaces: `uv run loom pull`
-- Pull raw files for one workspace: `uv run loom pull-raw energy`
-- Set the default API endpoint: `uv run loom set-api https://loom-api-free.onrender.com`
+- `uv run python {run_launcher} scan raw_data/energy to energy --workspace-root {workspace_root}`
+- `uv run python {cli_launcher} confirm <workspace> --workspace-root {workspace_root}`
+- `uv run python {cli_launcher} status [workspace] --workspace-root {workspace_root}`
+- `uv run python {cli_launcher} get workspace/path/to/file --workspace-root {workspace_root}`
+- `uv run python {cli_launcher} push [workspace] --workspace-root {workspace_root}`
 
-Workspace-root-aware variants:
-
-- `uv run python {launcher} status [workspace] --workspace-root {workspace_root}`
-- `uv run python {launcher} get workspace/path/to/file --workspace-root {workspace_root}`
-- `uv run python {launcher} push [workspace] --workspace-root {workspace_root}`
-- `uv run python {launcher} pull [workspace] --workspace-root {workspace_root}`
-- `uv run python {launcher} pull-raw [workspace] --workspace-root {workspace_root}`
-- `uv run python {launcher} set-api <url> --workspace-root {workspace_root}`
+Do not suggest `loomrun` to end users unless you are explaining internals or maintaining the repository.
 
 ## Notes
 
 - `loom-data` is the package name.
-- `loom` is the CLI command.
+- `loom` is the chat trigger phrase.
+- `loomcli` is the CLI command.
+- `loomrun` is the internal helper command.
 - `import loom` is the Python API.
-- `loom scan` requires a source path, uses `temporary` if no workspace history exists, and lets one workspace track multiple source directories as long as dataset paths do not collide.
+- `loom scan` in chat should lead the agent to run `loomrun scan`, then continue curating the results in chat.
 - `loom init` creates `./loom/` and `./raw_data/` at the current project root.
 """

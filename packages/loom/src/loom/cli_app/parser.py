@@ -14,12 +14,18 @@ from .config import (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="loom")
+    parser = argparse.ArgumentParser(prog="loomcli")
     subparsers = parser.add_subparsers(dest="command")
     _add_init_parser(subparsers)
-    _add_scan_parsers(subparsers)
     _add_data_parsers(subparsers)
     _add_sync_parsers(subparsers)
+    return parser
+
+
+def build_run_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="loomrun")
+    subparsers = parser.add_subparsers(dest="command")
+    _add_scan_parsers(subparsers)
     return parser
 
 
@@ -41,11 +47,11 @@ def _add_init_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
 
 
 def _add_scan_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    scan_parser = subparsers.add_parser("scan", help="Scan a source directory into a Loom workspace.")
+    scan_parser = subparsers.add_parser("scan", help="Internal helper: scan a source directory into a Loom workspace.")
     scan_parser.add_argument("scan_args", nargs="*")
     scan_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
-    route_parser = subparsers.add_parser("route", help="Parse a chat message and run loom scan if it matches.")
+    route_parser = subparsers.add_parser("route", help="Internal helper: parse a chat message and execute supported Loom actions.")
     route_parser.add_argument("message")
     route_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
@@ -53,11 +59,6 @@ def _add_scan_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentPa
 def _add_data_parsers(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     set_api_parser = subparsers.add_parser("set-api", help="Persist the default Loom sync server base URL for future CLI commands.")
     set_api_parser.add_argument("base_url")
-
-    ask_parser = subparsers.add_parser("ask", help="Search Loom cards first, then inspect the most relevant raw file.")
-    ask_parser.add_argument("query_parts", nargs="+")
-    ask_parser.add_argument("--server-url", default=DEFAULT_SERVER_URL)
-    ask_parser.add_argument("--workspace-root", type=Path, default=Path.cwd())
 
     get_parser = subparsers.add_parser("get", help="Ensure one raw file exists under loom/.loom/raw and print its local path.")
     get_parser.add_argument("resource")

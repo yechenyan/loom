@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT / "packages" / "loom" / "src"))
 sys.path.insert(0, str(ROOT / "packages" / "loom-server" / "src"))
 
 from loom.cli import main
+from loom.run import main as run_main
 import loom.sync_client as sync_client
 
 
@@ -29,7 +30,8 @@ class LoomTestCase(unittest.TestCase):
     def call_main(self, argv: list[str]) -> tuple[int, str]:
         stdout = io.StringIO()
         with redirect_stdout(stdout):
-            exit_code = main(argv)
+            runner = run_main if argv and argv[0] in {"route", "scan"} else main
+            exit_code = runner(argv)
         return exit_code, stdout.getvalue()
 
     def patch_server(self, client: TestClient):

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from ..scan_state import load_scan_state
 from ..scan_support.state import normalize_scan_sources
-from .paths import resolve_workspace_root
+from .paths import resolve_local_raw_workspace_dir, resolve_workspace_root
 
 
 def iter_local_scan_source_roots(workspace_root, workspace: str) -> tuple[Path, ...]:
@@ -29,6 +29,9 @@ def find_local_scan_source_file(workspace_root, workspace: str, relative_path: s
         candidate = source_root / relative_path
         if candidate.is_file():
             return candidate
+    fallback = resolve_local_raw_workspace_dir(workspace_root, workspace) / relative_path
+    if fallback.is_file():
+        return fallback
     return None
 
 
@@ -38,7 +41,10 @@ def find_local_notice_dir(workspace_root, workspace: str) -> Path | None:
         if loom_md_path.is_file():
             return source_root
     source_roots = iter_local_scan_source_roots(workspace_root, workspace)
-    return source_roots[0] if source_roots else None
+    if source_roots:
+        return source_roots[0]
+    fallback = resolve_local_raw_workspace_dir(workspace_root, workspace)
+    return fallback if fallback.exists() else None
 
 
 def _resolve_source_path(workspace_root: Path, source_path: str) -> Path:

@@ -11,11 +11,10 @@ def print_status_summary(workspace_root: Path | str, workspace: str) -> None:
     if not status.entries:
         print("No pending changes detected after scan.")
         return
-    launcher = Path(workspace_root).resolve() / "scripts" / "loom.py"
     print("Pending changes:")
     for entry in status.entries:
         print(f"{entry.code} {entry.path}")
-    confirm_command = f"uv run python {launcher} confirm"
+    confirm_command = "loomcli confirm"
     if workspace:
         confirm_command = f"{confirm_command} {workspace}"
     print(f"Confirm with: {confirm_command}")

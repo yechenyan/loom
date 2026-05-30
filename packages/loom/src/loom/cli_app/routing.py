@@ -4,7 +4,6 @@ import argparse
 
 from ..chat import parse_loom_command
 from ..scanner import DuplicateDatasetPathError, scan_topic_from_chat
-from .ask_flow import run_ask_query
 from .config import DEFAULT_SERVER_URL
 from .handlers import run_confirm, run_pull, run_push, run_status
 from .output import print_status_summary
@@ -34,7 +33,10 @@ def run_route(args: argparse.Namespace) -> int:
         if not request.query:
             print("Missing ask query. Use `loom ask <question>` or `loom <question>`.")
             return 1
-        return run_ask_query(request.query, args.workspace_root, DEFAULT_SERVER_URL)
+        print("`loom ask` is a chat instruction, not a loomrun command.")
+        print("Inspect `./loom` first, then fetch exact raw files with `loomcli get` only when needed.")
+        print(f"Question: {request.query}")
+        return 1
     route_args = argparse.Namespace(
         workspace=request.workspace,
         workspace_root=args.workspace_root,

@@ -7,7 +7,6 @@ from ..explore_repo import confirm_changes
 from ..scanner import DuplicateDatasetPathError, scan_path_to_explore
 from ..server_config import persist_base_url
 from ..sync_client import pull_raw_workspaces, pull_workspaces, push_workspaces
-from .ask_flow import run_ask_query
 from .init_flow import run_init_flow
 from .output import print_status_summary, print_workspace_status
 
@@ -44,10 +43,6 @@ def run_get(args: argparse.Namespace) -> int:
     print(f"Cached resource: {args.resource}")
     print(f"Local path: {local_path}")
     return 0
-
-
-def run_ask(args: argparse.Namespace) -> int:
-    return run_ask_query(" ".join(args.query_parts).strip(), args.workspace_root, args.server_url)
 
 
 def run_status(args: argparse.Namespace) -> int:

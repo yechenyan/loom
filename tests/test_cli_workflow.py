@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.cli import DEFAULT_DATABASE_URL, main
+from loom.run import main as run_main
 
 
 class CliWorkflowTest(unittest.TestCase):
@@ -47,13 +48,13 @@ class CliWorkflowTest(unittest.TestCase):
 
             scan_stdout = io.StringIO()
             with redirect_stdout(scan_stdout):
-                exit_code = main([*self.scan_command(), "--workspace-root", str(workspace)])
+                exit_code = run_main([*self.scan_command(), "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 0)
             scan_output = scan_stdout.getvalue()
             self.assertIn("Pending changes:", scan_output)
             self.assertIn("energy/README.md", scan_output)
-            self.assertIn("confirm energy", scan_output)
+            self.assertIn("Confirm with: loomcli confirm energy", scan_output)
 
             status_stdout = io.StringIO()
             with redirect_stdout(status_stdout):
@@ -94,12 +95,12 @@ class CliWorkflowTest(unittest.TestCase):
             (dataset_dir / "costs.csv").write_text("tech,cost\nsolar,10\n", encoding="utf-8")
 
             with redirect_stdout(io.StringIO()):
-                self.assertEqual(main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
+                self.assertEqual(run_main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
                 self.assertEqual(main(["confirm", "energy", "--workspace-root", str(workspace)]), 0)
 
             second_scan_stdout = io.StringIO()
             with redirect_stdout(second_scan_stdout):
-                exit_code = main([*self.scan_command(), "--workspace-root", str(workspace)])
+                exit_code = run_main([*self.scan_command(), "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 0)
             second_scan_output = second_scan_stdout.getvalue()
@@ -113,7 +114,7 @@ class CliWorkflowTest(unittest.TestCase):
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                exit_code = main(["scan", "--workspace-root", str(workspace)])
+                exit_code = run_main(["scan", "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 1)
             output = stdout.getvalue()
@@ -133,11 +134,11 @@ class CliWorkflowTest(unittest.TestCase):
             (alt_dir / "costs.csv").write_text("tech,cost\nsolar,11\n", encoding="utf-8")
 
             with redirect_stdout(io.StringIO()):
-                self.assertEqual(main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
+                self.assertEqual(run_main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                exit_code = main(["scan", "datasets/alt-source", "--workspace-root", str(workspace)])
+                exit_code = run_main(["scan", "datasets/alt-source", "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 0)
             self.assertIn("Scanned workspace: energy", stdout.getvalue())
@@ -153,12 +154,12 @@ class CliWorkflowTest(unittest.TestCase):
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                exit_code = main(["scan", "datasets/alt-source", "--workspace-root", str(workspace)])
+                exit_code = run_main(["scan", "datasets/alt-source", "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 0)
             self.assertIn("Scanned workspace: temporary", stdout.getvalue())
 
-    def test_route_bare_loom_question_searches_cards_and_raw_file(self) -> None:
+    def test_route_bare_loom_question_reports_chat_only_lookup(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
             dataset_dir = workspace / "raw_data" / "energy" / "technology-data"
@@ -167,56 +168,23 @@ class CliWorkflowTest(unittest.TestCase):
             (dataset_dir / "costs.csv").write_text("tech,cost\nsolar,10\nwind,20\n", encoding="utf-8")
 
             with redirect_stdout(io.StringIO()):
-                self.assertEqual(main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
+                self.assertEqual(run_main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                exit_code = main(["route", "loom solar cost", "--workspace-root", str(workspace)])
+                exit_code = run_main(["route", "loom solar cost", "--workspace-root", str(workspace)])
 
-            self.assertEqual(exit_code, 0)
+            self.assertEqual(exit_code, 1)
             output = stdout.getvalue()
-            self.assertIn("Best match workspace: energy", output)
-            self.assertIn("Raw file: technology-data/costs.csv", output)
-            self.assertIn('"tech": "solar"', output)
+            self.assertIn("`loom ask` is a chat instruction", output)
+            self.assertIn("loomcli get", output)
 
-    def test_ask_command_runs_local_lookup(self) -> None:
+    def test_public_cli_rejects_scan_command(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace = Path(temp_dir)
-            dataset_dir = workspace / "raw_data" / "energy" / "technology-data"
-            dataset_dir.mkdir(parents=True)
-            (dataset_dir / "loom.md").write_text("Energy dataset", encoding="utf-8")
-            (dataset_dir / "costs.csv").write_text("tech,cost\nsolar,10\nwind,20\n", encoding="utf-8")
-
-            with redirect_stdout(io.StringIO()):
-                self.assertEqual(main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
-
             stdout = io.StringIO()
-            with redirect_stdout(stdout):
-                exit_code = main(["ask", "solar", "cost", "--workspace-root", str(workspace)])
-
-            self.assertEqual(exit_code, 0)
-            output = stdout.getvalue()
-            self.assertIn("Likely answer: solar = 10", output)
-
-    def test_bare_cli_question_is_routed_to_ask(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            workspace = Path(temp_dir)
-            dataset_dir = workspace / "raw_data" / "energy" / "technology-data"
-            dataset_dir.mkdir(parents=True)
-            (dataset_dir / "loom.md").write_text("Energy dataset", encoding="utf-8")
-            (dataset_dir / "costs.csv").write_text("tech,cost\nsolar,10\nwind,20\n", encoding="utf-8")
-
-            with redirect_stdout(io.StringIO()):
-                self.assertEqual(main([*self.scan_command(), "--workspace-root", str(workspace)]), 0)
-
-            stdout = io.StringIO()
-            with redirect_stdout(stdout):
-                exit_code = main(["solar", "cost", "--workspace-root", str(workspace)])
-
-            self.assertEqual(exit_code, 0)
-            output = stdout.getvalue()
-            self.assertIn("Best match workspace: energy", output)
-            self.assertIn("Likely answer: solar = 10", output)
+            with redirect_stdout(stdout), self.assertRaises(SystemExit):
+                main(["scan", "raw_data/energy", "--workspace-root", str(workspace)])
 
     def test_scan_reports_conflicting_dataset_paths_across_sources(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -231,11 +199,11 @@ class CliWorkflowTest(unittest.TestCase):
             (second_dir / "b.csv").write_text("y\n2\n", encoding="utf-8")
 
             with redirect_stdout(io.StringIO()):
-                self.assertEqual(main(["scan", "datasets/first", "to", "energy", "--workspace-root", str(workspace)]), 0)
+                self.assertEqual(run_main(["scan", "datasets/first", "to", "energy", "--workspace-root", str(workspace)]), 0)
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                exit_code = main(["scan", "datasets/second", "to", "energy", "--workspace-root", str(workspace)])
+                exit_code = run_main(["scan", "datasets/second", "to", "energy", "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 1)
             self.assertIn("conflicting dataset paths", stdout.getvalue())
@@ -254,11 +222,11 @@ class CliWorkflowTest(unittest.TestCase):
             (second_dir / "b.csv").write_text("y\n2\n", encoding="utf-8")
 
             with redirect_stdout(io.StringIO()):
-                self.assertEqual(main(["route", "loom scan ./datasets/first to energy", "--workspace-root", str(workspace)]), 0)
+                self.assertEqual(run_main(["route", "loom scan ./datasets/first to energy", "--workspace-root", str(workspace)]), 0)
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                exit_code = main(["route", "loom scan ./datasets/second to energy", "--workspace-root", str(workspace)])
+                exit_code = run_main(["route", "loom scan ./datasets/second to energy", "--workspace-root", str(workspace)])
 
             self.assertEqual(exit_code, 1)
             self.assertIn("conflicting dataset paths", stdout.getvalue())
