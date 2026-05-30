@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getSiteCopy } from "./copy";
 import { fetchExploreWorkspaces } from "./exploreApi";
 import { useI18n } from "./i18n";
+import { getAppHref } from "./routes";
 import type { ExploreWorkspace } from "./exploreTypes";
 
 type HeroStatsState = {
@@ -36,7 +37,7 @@ export function HeroStats() {
       <StatItem label={copy.workspaces} loading={status === "loading"} value={stats.workspaceCount} />
       <StatItem label={copy.datasets} loading={status === "loading"} value={stats.datasetCount} />
       <StatItem label={copy.rawFiles} loading={status === "loading"} value={stats.rawFileCount} />
-      <button className="explore-button" onClick={() => window.location.assign("/explore")} type="button">
+      <button className="explore-button" onClick={() => window.location.assign(getAppHref("/explore"))} type="button">
         {copy.button}
       </button>
       {status === "error" ? <p className="stats-note">{copy.error}</p> : null}

@@ -1,4 +1,5 @@
 import { useI18n } from "./i18n";
+import { getAppHref } from "./routes";
 
 export function SiteHeader() {
   const { locale, localeNames, setLocale } = useI18n();
@@ -32,14 +33,14 @@ export function SiteHeader() {
 
   return (
     <header className="topbar" aria-label="Loom navigation">
-      <a className="brand" href="/" aria-label={copy.brand}>
+      <a className="brand" href={getAppHref("/")} aria-label={copy.brand}>
         <span className="brand-mark">L</span>
         <span>Loom</span>
       </a>
       <nav className="nav-links" aria-label={copy.nav}>
-        <a href="/">{copy.home}</a>
-        <a href="/docs">{copy.docs}</a>
-        <a href="/explore">{copy.explore}</a>
+        <a href={getAppHref("/")}>{copy.home}</a>
+        <a href={getAppHref("/docs")}>{copy.docs}</a>
+        <a href={getAppHref("/explore")}>{copy.explore}</a>
       </nav>
       <label className="locale-picker">
         <span>{copy.language}</span>

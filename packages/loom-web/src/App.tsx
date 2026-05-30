@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getHighlights, getUseCases } from "./content";
 import { getSiteCopy } from "./copy";
 import { DocsPage } from "./DocsPage";
@@ -6,12 +6,14 @@ import { ExplorePage } from "./ExplorePage";
 import { HeroStats } from "./HeroStats";
 import { useI18n } from "./i18n";
 import { MinuteGuide } from "./MinuteGuide";
+import { getAppHref, getSectionHref, parseAppRoute } from "./routes";
 import { SiteHeader } from "./SiteHeader";
 
 export function App() {
-  useHashScroll();
+  const route = useHashRoute();
+  useHashScroll(route.anchor);
   const { locale } = useI18n();
-  const path = window.location.pathname.replace(/\/$/, "") || "/";
+  const path = route.path;
 
   if (path === "/explore") {
     return <ExplorePage />;
@@ -35,19 +37,33 @@ export function App() {
   );
 }
 
-function useHashScroll() {
+function useHashRoute() {
+  const [route, setRoute] = useState(() => parseAppRoute(window.location.hash));
+
   useEffect(() => {
-    if (!window.location.hash) {
+    const syncRoute = () => setRoute(parseAppRoute(window.location.hash));
+
+    window.addEventListener("hashchange", syncRoute);
+    return () => window.removeEventListener("hashchange", syncRoute);
+  }, []);
+
+  return route;
+}
+
+function useHashScroll(anchor: string | null) {
+  useEffect(() => {
+    if (!anchor) {
+      window.scrollTo({ top: 0, behavior: "auto" });
       return;
     }
 
     requestAnimationFrame(() => {
-      const target = document.querySelector<HTMLElement>(window.location.hash);
+      const target = document.getElementById(anchor);
       if (target) {
         window.scrollTo({ top: target.offsetTop - 110, behavior: "auto" });
       }
     });
-  }, []);
+  }, [anchor]);
 }
 
 function Hero({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
@@ -62,16 +78,16 @@ function Hero({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
         </h1>
         <p className="hero-lede">{copy.heroLede}</p>
         <div className="hero-actions">
-          <a className="primary-button" href="#minute">
+          <a className="primary-button" href={getSectionHref("minute")}>
             {copy.minute}
           </a>
-          <a className="text-link" href="#what">
+          <a className="text-link" href={getSectionHref("what")}>
             {copy.what}
           </a>
-          <a className="text-link" href="/explore">
+          <a className="text-link" href={getAppHref("/explore")}>
             {copy.explore}
           </a>
-          <a className="text-link" href="/docs">
+          <a className="text-link" href={getAppHref("/docs")}>
             {copy.docs}
           </a>
         </div>
@@ -123,7 +139,7 @@ function FinalCta({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
   return (
     <section className="final-cta">
       <p>{copy.cta}</p>
-      <a className="primary-button" href="#minute">
+      <a className="primary-button" href={getSectionHref("minute")}>
         {copy.ctaButton}
       </a>
     </section>

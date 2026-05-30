@@ -1,6 +1,7 @@
 import { MarkdownView } from "./DocsMarkdown";
 import { getSiteCopy } from "./copy";
 import { useI18n } from "./i18n";
+import { getAppHref } from "./routes";
 import { userDocs } from "./docsContent";
 import { SiteHeader } from "./SiteHeader";
 
@@ -73,5 +74,5 @@ function findDocIndex(slug?: string) {
 }
 
 function getDocHref(slug: string) {
-  return `/docs/${slug}`;
+  return getAppHref(`/docs/${slug}`);
 }
