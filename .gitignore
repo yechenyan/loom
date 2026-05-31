@@ -16,3 +16,4 @@ node_modules/
 /web/node_modules/*
 .omc/
 *.tsbuildinfo
+/lab1/
