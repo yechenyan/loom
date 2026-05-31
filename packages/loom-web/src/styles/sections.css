@@ -26,7 +26,7 @@ p {
 
 h1 {
   max-width: 780px;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
   color: var(--ink);
   font-family: "PingFang SC", "Hiragino Sans GB", "Avenir Next", sans-serif;
   font-size: clamp(3rem, 5.7vw, 5.15rem);
@@ -51,7 +51,7 @@ h1 span {
 :lang(en) h1,
 :lang(de) h1 {
   max-width: 980px;
-  font-size: clamp(2.7rem, 4vw, 4rem);
+  font-size: clamp(2.5rem, 3.7vw, 3.7rem);
   line-height: 1.05;
   letter-spacing: -0.045em;
 }
@@ -126,7 +126,8 @@ h1 span {
 
   .hero {
     min-height: auto;
-    padding-top: 58px;
+    padding-top: 66px;
+    padding-bottom: 54px;
   }
 }
 
