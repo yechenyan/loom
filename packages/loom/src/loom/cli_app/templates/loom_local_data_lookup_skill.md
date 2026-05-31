@@ -47,7 +47,7 @@ When this skill applies:
 
 1. Inspect `./loom` first.
 2. Use `README.md`, `overview.md`, `*.card.md`, and `profile.json` only to locate the likely workspace and exact raw file.
-3. Fetch only the exact raw file needed with `uv run loomcli get <workspace/path/to/file>` or `loom.get("workspace/path/to/file")`.
+3. Fetch only the exact raw file needed with `loomcli get <workspace/path/to/file>` or `loom.get("workspace/path/to/file")`.
 4. Read or parse the fetched local raw file.
 5. Answer from the raw data, not from card summaries alone.
 6. If no relevant Loom workspace or card exists, say that Loom does not currently contain the needed local data and continue with the best available approach.
@@ -57,7 +57,7 @@ When this skill applies:
 Terminal form:
 
 ```bash
-uv run loomcli get energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv
+loomcli get energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv
 ```
 
 Python form:

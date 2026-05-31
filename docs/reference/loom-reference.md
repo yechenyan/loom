@@ -82,16 +82,50 @@ Loom can also scan any local source directory, not only `raw_data/<workspace>`.
 
 ## Initialization
 
+Loom should be installed so `loomcli` is directly available in the terminal.
+Do not require users or agents to run CLI commands through `uv run`.
+
+Recommended tool install:
+
+```bash
+pipx install loom-data
+loomcli --help
+```
+
+Alternative installs:
+
+```bash
+uv tool install loom-data
+loomcli --help
+```
+
+```bash
+python -m pip install loom-data
+loomcli --help
+```
+
+```bash
+conda create -n loom python=3.12
+conda activate loom
+python -m pip install loom-data
+loomcli --help
+```
+
+If `loomcli --help` fails after installation, fix the environment `PATH`,
+activate the intended environment, or reinstall with a tool installer such as
+`pipx` or `uv tool install`. `python -m loom ...` is a fallback for diagnosing
+the active Python environment, not the primary documented workflow.
+
 Interactive setup:
 
 ```bash
-uv run loomcli init
+loomcli init
 ```
 
 Fast path for AI onboarding:
 
 ```bash
-uv run loomcli init --agent codex
+loomcli init --agent codex
 ```
 
 Current `--agent` behavior from `packages/loom/src/loom/cli_app/init_flow.py`:
@@ -128,7 +162,7 @@ loom scan raw_data/energy to energy
 CLI form:
 
 ```bash
-uv run loomcli scan-index raw_data/energy to energy
+loomcli scan-index raw_data/energy to energy
 ```
 
 Rules from the current implementation:
@@ -181,11 +215,11 @@ Agents should also choose this workflow without an explicit `loom` prefix when d
 Terminal commands:
 
 ```bash
-uv run loomcli status energy
-uv run loomcli confirm energy
-uv run loomcli push energy
-uv run loomcli pull energy
-uv run loomcli pull-raw energy
+loomcli status energy
+loomcli confirm energy
+loomcli push energy
+loomcli pull energy
+loomcli pull-raw energy
 ```
 
 Chat intents such as `loom confirm energy` and `loom push energy` may be interpreted by an agent as instructions to run the matching CLI commands.

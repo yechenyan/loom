@@ -22,7 +22,7 @@ class SkillMarkdownTest(unittest.TestCase):
         markdown = render_skill_markdown(SKILL_TEMPLATES["loom-dataset-scan-review"])
 
         self.assertIn("preserving the source path and workspace exactly", markdown)
-        self.assertIn("uv run loomcli scan-index <path> [to <workspace>]", markdown)
+        self.assertIn("loomcli scan-index <path> [to <workspace>]", markdown)
         self.assertIn("Do not substitute the tutorial path", markdown)
         self.assertIn("After `loomcli scan-index` finishes, do a real review", markdown)
         self.assertIn("Read each scanned dataset's source `loom.md`.", markdown)
@@ -50,7 +50,8 @@ class SkillMarkdownTest(unittest.TestCase):
 
         self.assertIn("`loom ...` is a user-facing chat instruction.", markdown)
         self.assertIn("`loomcli ...` is the executable CLI command.", markdown)
-        self.assertIn("uv run loomcli init --agent <agent>", markdown)
+        self.assertIn("loomcli --help", markdown)
+        self.assertIn("loomcli init --agent <agent>", markdown)
         self.assertIn("Use the agent value that matches the current assistant.", markdown)
         self.assertIn("Unsupported chat forms", markdown)
         self.assertIn("Unsupported CLI forms", markdown)

@@ -37,11 +37,37 @@ Do not mix these layers.
 
 ## Setup
 
-Recommended fast path:
+Install Loom so `loomcli` runs directly in the terminal. The setup is complete
+only after `loomcli --help` works without `uv run`.
+
+Recommended:
 
 ```bash
-uv add loom-data
-uv run loomcli init --agent <agent>
+pipx install loom-data
+loomcli --help
+loomcli init --agent <agent>
+```
+
+Alternative installs:
+
+```bash
+uv tool install loom-data
+loomcli --help
+loomcli init --agent <agent>
+```
+
+```bash
+python -m pip install loom-data
+loomcli --help
+loomcli init --agent <agent>
+```
+
+```bash
+conda create -n loom python=3.12
+conda activate loom
+python -m pip install loom-data
+loomcli --help
+loomcli init --agent <agent>
 ```
 
 Supported agent values:
@@ -60,12 +86,12 @@ Use the agent value that matches the current assistant. For example, Codex shoul
 Use these terminal commands for explicit operations:
 
 ```bash
-uv run loomcli status energy
-uv run loomcli confirm energy
-uv run loomcli push energy
-uv run loomcli pull energy
-uv run loomcli pull-raw energy
-uv run loomcli set-api https://loom-api-free.onrender.com
+loomcli status energy
+loomcli confirm energy
+loomcli push energy
+loomcli pull energy
+loomcli pull-raw energy
+loomcli set-api https://loom-api-free.onrender.com
 ```
 
 Chat intents such as `loom status energy`, `loom confirm energy`, `loom push energy`, and `loom pull energy` may be interpreted as instructions to run the matching `loomcli` command.

@@ -47,6 +47,19 @@ h1 span {
   white-space: nowrap;
 }
 
+:lang(en) h1,
+:lang(de) h1 {
+  max-width: 900px;
+  font-size: clamp(3rem, 4.8vw, 4.7rem);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+:lang(en) h1 span,
+:lang(de) h1 span {
+  white-space: normal;
+}
+
 .hero-lede,
 .section-heading p,
 .intro-list p,

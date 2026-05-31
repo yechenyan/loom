@@ -7,15 +7,20 @@
   padding: 62px 0 46px;
 }
 
+.hero-copy {
+  min-width: 0;
+}
+
 .hero-visual {
   display: grid;
+  min-width: 0;
   min-height: 500px;
   align-items: center;
 }
 
 .stats-panel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(88px, 1fr)) 150px;
+  grid-template-columns: repeat(3, minmax(88px, 1fr)) minmax(150px, 0.85fr);
   gap: clamp(18px, 2.5vw, 28px);
   align-items: center;
   justify-items: center;
@@ -66,7 +71,7 @@
 
 .explore-button {
   display: inline-flex;
-  width: 150px;
+  min-width: 150px;
   min-height: 58px;
   align-items: center;
   justify-content: center;
@@ -81,6 +86,13 @@
   transition:
     transform 160ms ease,
     box-shadow 160ms ease;
+}
+
+:lang(en) .explore-button,
+:lang(de) .explore-button {
+  min-width: 184px;
+  padding-right: 22px;
+  padding-left: 22px;
 }
 
 .explore-button:hover {

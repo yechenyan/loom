@@ -40,7 +40,7 @@ loom scan <path> [to <workspace>]
 Terminal command:
 
 ```bash
-uv run loomcli scan-index <path> [to <workspace>]
+loomcli scan-index <path> [to <workspace>]
 ```
 
 Rules:

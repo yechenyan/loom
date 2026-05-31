@@ -4,9 +4,37 @@
 
 ## Install
 
+Install Loom so `loomcli` runs directly in your terminal. The setup is complete
+only after `loomcli --help` works without `uv run`.
+
+Recommended:
+
 ```bash
-uv add loom-data
-uv run loomcli --help
+pipx install loom-data
+loomcli --help
+```
+
+With uv:
+
+```bash
+uv tool install loom-data
+loomcli --help
+```
+
+With pip:
+
+```bash
+python -m pip install loom-data
+loomcli --help
+```
+
+With conda:
+
+```bash
+conda create -n loom python=3.12
+conda activate loom
+python -m pip install loom-data
+loomcli --help
 ```
 
 ## Initialize a project
@@ -14,13 +42,13 @@ uv run loomcli --help
 Recommended fast path for AI-assisted onboarding:
 
 ```bash
-uv run loomcli init --agent codex
+loomcli init --agent codex
 ```
 
 Interactive setup:
 
 ```bash
-uv run loomcli init
+loomcli init
 ```
 
 Both forms create or reuse:
@@ -60,13 +88,13 @@ Agents may also inspect Loom without an explicit `loom` prefix when another task
 ## CLI examples
 
 ```bash
-uv run loomcli scan-index raw_data/energy to energy
-uv run loomcli confirm energy
-uv run loomcli push energy
-uv run loomcli pull energy
-uv run loomcli pull-raw energy
-uv run loomcli get energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv
-uv run loomcli set-api https://loom-api-free.onrender.com
+loomcli scan-index raw_data/energy to energy
+loomcli confirm energy
+loomcli push energy
+loomcli pull energy
+loomcli pull-raw energy
+loomcli get energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv
+loomcli set-api https://loom-api-free.onrender.com
 ```
 
 ## Python API

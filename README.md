@@ -7,10 +7,15 @@
 - Canonical behavior and terminology:
   - `docs/reference/loom-reference.md`
 - End-user guides:
-  - `docs/user/quickstart.md`
-  - `docs/user/chat-vs-cli.md`
-  - `docs/user/workflows.md`
-  - `docs/user/faq.md`
+  - `docs/user/00-overview.md`
+  - `docs/user/01-quickstart.md`
+  - `docs/user/02-workspaces.md`
+  - `docs/user/03-scan-and-review.md`
+  - `docs/user/04-ask-and-fetch.md`
+  - `docs/user/05-sync-and-raw-cache.md`
+  - `docs/user/06-python-api.md`
+  - `docs/user/07-command-reference.md`
+  - `docs/user/08-faq.md`
 - Developer and maintainer guides:
   - `docs/dev/setup.md`
   - `docs/dev/architecture.md`

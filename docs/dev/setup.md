@@ -13,7 +13,7 @@ This guide is for contributors working in this repository.
 
 ```bash
 uv run python scripts/loomcli.py --help
-uv run loomcli --help
+loomcli --help
 ```
 
 ## Repository Areas
