@@ -90,16 +90,17 @@ export function buildInstallConversation(locale: Locale, agent: AgentTab, packag
 }
 
 function installPrompt(locale: Locale, agent: AgentTab, agentValue: string, packageManager: PackageTab) {
+  const initCommand = `loomcli init --agent ${agentValue}`;
   const initStep = {
-    en: `Run \`loomcli init --agent ${agentValue}\`. Do not enter interactive setup; this installs the Loom skill and tutorial for ${agent} directly.`,
-    de: `Fuehre \`loomcli init --agent ${agentValue}\` aus. Starte keine interaktive Initialisierung; der Befehl installiert das Loom-Skill und Tutorial fuer ${agent} direkt.`,
-    zh: `运行 \`loomcli init --agent ${agentValue}\`。不要进入交互式初始化；这条命令会直接安装 ${agent} 的 Loom skill 和 tutorial。`,
+    en: `Run \`${initCommand}\`. Do not enter interactive setup; this installs the Loom skills and tutorial for ${agent} directly.`,
+    de: `Fuehre \`${initCommand}\` aus. Starte keine interaktive Initialisierung; der Befehl installiert die Loom-Skills und das Tutorial fuer ${agent} direkt.`,
+    zh: `运行 \`${initCommand}\`。不要进入交互式初始化；这条命令会直接安装 ${agent} 的 Loom skills 和 tutorial。`,
   }[locale];
 
   const sharedEnd = {
-    en: `After install, run \`loomcli --help\` to confirm the command works directly. If it fails, fix PATH, activate the right environment, or switch to an install method that exposes CLI tools. After ${initStep} tell me only the short result.`,
-    de: `Fuehre nach der Installation \`loomcli --help\` aus, um zu bestaetigen, dass der Befehl direkt verfuegbar ist. Wenn das fehlschlaegt, korrigiere PATH, aktiviere die richtige Umgebung oder wechsle zu einer Installationsart mit direktem CLI-Zugriff. Nach ${initStep} antworte mir nur mit dem kurzen Ergebnis.`,
-    zh: `安装后必须运行 \`loomcli --help\` 验证命令可直接执行；如果失败，请修正 PATH、激活正确环境，或换用能安装命令行工具的方式。${initStep} 完成后只用简短结果告诉我。`,
+    en: `After installation, run \`loomcli --help\` to confirm the command works directly. If it fails, fix PATH, activate the right environment, or switch to an install method that exposes CLI tools. ${initStep} Reply only with the short result.`,
+    de: `Fuehre nach der Installation \`loomcli --help\` aus, um zu bestaetigen, dass der Befehl direkt verfuegbar ist. Wenn das fehlschlaegt, korrigiere PATH, aktiviere die richtige Umgebung oder wechsle zu einer Installationsart mit direktem CLI-Zugriff. ${initStep} Antworte nur mit dem kurzen Ergebnis.`,
+    zh: `安装后必须运行 \`loomcli --help\` 验证命令可直接执行；如果失败，请修正 PATH、激活正确环境，或换用能安装命令行工具的方式。${initStep}完成后只用简短结果告诉我。`,
   }[locale];
 
   if (packageManager === "uv") {
