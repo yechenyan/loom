@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { fetchExploreWorkspaces } from "./exploreApi";
 import { getExploreCopy } from "./exploreCopy";
+import { DetailCommand, WorkspaceDetail } from "./ExploreDetailChrome";
 import { DataCardView, ProfileView, RawDataView } from "./ExploreViews";
 import { useI18n } from "./i18n";
 import type { ExploreCsvFile, ExploreCsvProfile, ExploreDataset, ExploreWorkspace } from "./exploreTypes";
 import { SiteHeader } from "./SiteHeader";
 
-type Selection = { workspace: string; dataset: string; file: string };
+type WorkspaceSelection = { kind: "workspace"; workspace: string };
+type FileSelection = { kind: "file"; workspace: string; dataset: string; file: string };
+type Selection = WorkspaceSelection | FileSelection;
 type Tab = "card" | "profile" | "raw";
 
 export function ExplorePage() {
@@ -29,6 +32,7 @@ export function ExplorePage() {
   }, [copy.empty, copy.loading]);
 
   const selected = resolveSelection(workspaces, selection);
+  const selectedWorkspace = resolveWorkspace(workspaces, selection);
 
   return (
     <main className="explore-shell">
@@ -52,7 +56,8 @@ export function ExplorePage() {
         <article className="explore-detail">
           {status ? <p className="empty-state">{status}</p> : null}
           {!status && selected ? <DetailTabs copy={copy} selected={selected} setTab={setTab} tab={tab} /> : null}
-          {!status && !selected ? <ExploreEmptyState copy={copy} workspaces={workspaces} /> : null}
+          {!status && !selected && selectedWorkspace ? <WorkspaceDetail copy={copy} workspace={selectedWorkspace} /> : null}
+          {!status && !selected && !selectedWorkspace ? <ExploreEmptyState copy={copy} workspaces={workspaces} /> : null}
         </article>
       </section>
     </main>
@@ -141,10 +146,14 @@ function TreePanel({
       {workspaces.map((workspace) => (
         <div className="tree-group" key={workspace.name}>
           <TreeButton
+            active={selection?.kind === "workspace" && selection.workspace === workspace.name}
             count={`${workspace.dataset_count} ${copy.datasetCount}`}
             label={workspace.name}
             open={open.has(workspace.name)}
-            onClick={() => toggle(workspace.name)}
+            onClick={() => {
+              setSelection({ kind: "workspace", workspace: workspace.name });
+              toggle(workspace.name);
+            }}
           />
           {open.has(workspace.name)
             ? workspace.datasets.map((dataset) => (
@@ -190,12 +199,16 @@ function DatasetBranch({
       {open.has(key)
         ? dataset.csv_files.map((file) => {
             const filePath = file.dataset_relative_path || file.file_name;
-            const active = selection?.workspace === workspace && selection.dataset === dataset.path && selection.file === filePath;
+            const active =
+              selection?.kind === "file" &&
+              selection.workspace === workspace &&
+              selection.dataset === dataset.path &&
+              selection.file === filePath;
             return (
               <button
                 className={`tree-file${active ? " active" : ""}`}
                 key={filePath}
-                onClick={() => setSelection({ workspace, dataset: dataset.path, file: filePath })}
+                onClick={() => setSelection({ kind: "file", workspace, dataset: dataset.path, file: filePath })}
                 type="button"
               >
                 {file.file_name}
@@ -207,9 +220,21 @@ function DatasetBranch({
   );
 }
 
-function TreeButton({ count, label, onClick, open }: { count: string; label: string; onClick: () => void; open: boolean }) {
+function TreeButton({
+  active,
+  count,
+  label,
+  onClick,
+  open,
+}: {
+  active?: boolean;
+  count: string;
+  label: string;
+  onClick: () => void;
+  open: boolean;
+}) {
   return (
-    <button className="tree-button" onClick={onClick} type="button">
+    <button className={`tree-button${active ? " active" : ""}`} onClick={onClick} type="button">
       <span>{open ? "−" : "+"}</span>
       <strong>{label}</strong>
       <em>{count}</em>
@@ -228,8 +253,10 @@ function DetailTabs({
   setTab: (tab: Tab) => void;
   tab: Tab;
 }) {
+  const fileCommand = `loomcli get ${selected.resourcePath}`;
   return (
     <>
+      <DetailCommand label={copy.fileCommandLabel} value={fileCommand} />
       <div className="detail-tabs" aria-label={copy.tabAria}>
         <button className={tab === "card" ? "active" : ""} onClick={() => setTab("card")} type="button">
           {copy.cardTab}
@@ -254,15 +281,22 @@ export type ResolvedSelection = {
   file: ExploreCsvFile;
   profile?: ExploreCsvProfile;
   rawPath: string;
+  resourcePath: string;
 };
 
 function resolveSelection(workspaces: ExploreWorkspace[], selection: Selection | null): ResolvedSelection | null {
-  if (!selection) return null;
+  if (!selection || selection.kind !== "file") return null;
   const workspace = workspaces.find((item) => item.name === selection.workspace);
   const dataset = workspace?.datasets.find((item) => item.path === selection.dataset);
   const file = dataset?.csv_files.find((item) => (item.dataset_relative_path || item.file_name) === selection.file);
   if (!workspace || !dataset || !file) return null;
   const profile = dataset.csv_profiles.find((item) => (item.dataset_relative_path || item.file_name) === selection.file);
   const rawPath = dataset.path === "." ? selection.file : `${dataset.path}/${selection.file}`;
-  return { workspace: workspace.name, dataset, file, profile, rawPath };
+  const resourcePath = `${workspace.name}/${rawPath}`;
+  return { workspace: workspace.name, dataset, file, profile, rawPath, resourcePath };
+}
+
+function resolveWorkspace(workspaces: ExploreWorkspace[], selection: Selection | null): ExploreWorkspace | null {
+  if (!selection) return null;
+  return workspaces.find((item) => item.name === selection.workspace) || null;
 }

@@ -55,11 +55,36 @@ def _write_notice_if_needed(workspace_root, workspace: str, manifest, detect_con
 
 def _select_paths(workspace_root, workspace: str, manifest, relative_paths, only_cached_paths: bool):
     if relative_paths is not None:
-        missing = [path for path in relative_paths if path not in manifest]
+        resolved_paths = []
+        missing = []
+        ambiguous: dict[str, tuple[str, ...]] = {}
+        for path in relative_paths:
+            matched_paths = _match_manifest_paths(manifest, path)
+            if not matched_paths:
+                missing.append(path)
+                continue
+            if len(matched_paths) > 1:
+                ambiguous[path] = matched_paths
+                continue
+            resolved_paths.append(matched_paths[0])
+        if ambiguous:
+            requested_path, matches = next(iter(sorted(ambiguous.items())))
+            raise FileNotFoundError(
+                f"Raw path `{requested_path}` is ambiguous in remote workspace `{workspace}`: {', '.join(matches)}"
+            )
         if missing:
             raise FileNotFoundError(f"Raw paths not found in remote workspace `{workspace}`: {', '.join(missing)}")
-        return tuple(relative_paths)
+        return tuple(resolved_paths)
     return list_cached_raw_paths(workspace_root, workspace) if only_cached_paths else tuple(sorted(manifest))
+
+
+def _match_manifest_paths(manifest, requested_path: str) -> tuple[str, ...]:
+    if requested_path in manifest:
+        return (requested_path,)
+    suffix_matches = sorted(
+        path for path in manifest if requested_path.endswith(f"/{path}")
+    )
+    return tuple(suffix_matches)
 
 
 def _materialize_selected_paths(workspace_root, server_url: str, workspace: str, manifest, selected_paths, request_json):

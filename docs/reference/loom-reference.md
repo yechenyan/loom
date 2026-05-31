@@ -250,6 +250,11 @@ import loom
 local_path = loom.get("energy/demo_germany_energy_data/open_power_system_data/generation_capacity/germany_2015_net_capacity.csv")
 ```
 
+`loomcli get` and `loom.get(...)` treat the first path segment as the workspace.
+The remaining path should normally match the raw workspace path exactly. As a
+compatibility fallback, Loom also accepts a requested path with extra leading
+dataset segments when that still resolves to one unique raw-manifest path.
+
 Current exports in `packages/loom/src/loom/__init__.py` include `get`, `pull`, `scan_path_to_explore`, `scan_topic_from_chat`, chat parsing helpers, and base URL helpers.
 
 ## Maintenance Rule

@@ -103,6 +103,20 @@
   background: var(--ink);
 }
 
+.tree-button.active {
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.tree-button.active em {
+  color: rgba(255, 250, 240, 0.72);
+}
+
+.tree-button.active span {
+  color: var(--ink);
+  background: #fffaf0;
+}
+
 .tree-button strong,
 .tree-file {
   overflow: hidden;
@@ -145,8 +159,33 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+  margin-top: 24px;
   padding-bottom: 22px;
   border-bottom: 1px solid var(--line);
+}
+
+.detail-command {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid rgba(0, 46, 79, 0.14);
+  border-radius: 22px;
+  background: rgba(232, 242, 244, 0.64);
+}
+
+.detail-command p {
+  margin: 0;
+  color: #0f6f75;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.detail-command code {
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .detail-tabs button {

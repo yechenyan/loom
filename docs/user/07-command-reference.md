@@ -75,7 +75,9 @@ results = loom.pull("workspace")
 ```
 
 `loom.get(...)` is the normal Python entry point for analysis because it
-materializes only the exact raw file requested.
+materializes only the exact raw file requested. If a copied dataset-qualified
+path adds redundant leading segments, Loom will still accept it when that
+resolves to one unique raw file.
 
 ## Unsupported Forms
 

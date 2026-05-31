@@ -52,7 +52,9 @@ path = loom.get(
 ```
 
 Resources use the form `workspace/path/to/file`. The workspace name is the first
-path segment.
+path segment. The file path should usually match the raw workspace path exactly.
+Loom also accepts a path with extra leading dataset segments when it still maps
+to one unique raw file.
 
 ## When Not to Use Loom
 
