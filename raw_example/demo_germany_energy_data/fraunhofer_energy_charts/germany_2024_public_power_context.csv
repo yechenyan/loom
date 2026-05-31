@@ -1,0 +1,12 @@
+metric,year,value,unit,source_note
+renewable_share_net_public_generation,2024,62.7,percent,Fraunhofer ISE Energy-Charts analysis
+wind_generation_net_public,2024,136.4,TWh,Fraunhofer ISE Energy-Charts analysis
+onshore_wind_generation_net_public,2024,110.7,TWh,Fraunhofer ISE Energy-Charts analysis
+offshore_wind_generation_net_public,2024,25.7,TWh,Fraunhofer ISE Energy-Charts analysis
+solar_generation_total,2024,72.2,TWh,Fraunhofer ISE Energy-Charts analysis
+hydropower_generation_net_public,2024,21.7,TWh,Fraunhofer ISE Energy-Charts analysis
+biomass_generation_net_public,2024,36.0,TWh,Fraunhofer ISE Energy-Charts analysis
+grid_load,2024,462.0,TWh,Fraunhofer ISE Energy-Charts analysis
+battery_power_capacity,2024,12.1,GW,Fraunhofer ISE Energy-Charts analysis
+battery_energy_capacity,2024,17.7,GWh,Fraunhofer ISE Energy-Charts analysis
+pumped_storage_power_capacity,2024,10.0,GW,Fraunhofer ISE Energy-Charts analysis

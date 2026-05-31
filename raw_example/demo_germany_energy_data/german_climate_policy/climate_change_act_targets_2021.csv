@@ -1,0 +1,5 @@
+source,policy_name,target_year,metric,value_percent,value_bool
+https://www.bundesregierung.de/breg-de/schwerpunkte/klimaschutz/climate-change-act-2021-1913970,German Climate Change Act 2021 amendment,2030,greenhouse_gas_reduction_vs_1990,65,
+https://www.bundesregierung.de/breg-de/schwerpunkte/klimaschutz/climate-change-act-2021-1913970,German Climate Change Act 2021 amendment,2040,greenhouse_gas_reduction_vs_1990,88,
+https://www.bundesregierung.de/breg-de/schwerpunkte/klimaschutz/climate-change-act-2021-1913970,German Climate Change Act 2021 amendment,2045,greenhouse_gas_neutrality,,true
+https://www.bundesregierung.de/breg-de/schwerpunkte/klimaschutz/climate-change-act-2021-1913970,German Climate Change Act 2021 amendment,2050,negative_emissions_balance_goal,,true

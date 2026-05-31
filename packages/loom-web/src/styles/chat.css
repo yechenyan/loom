@@ -1,0 +1,332 @@
+.tab-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.minute-workflow {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.38fr) minmax(0, 0.62fr);
+  column-gap: clamp(28px, 4vw, 54px);
+  align-items: start;
+}
+
+.workflow-tabs {
+  grid-column: 2;
+  margin-bottom: 16px;
+}
+
+.workflow-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: stretch;
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 18px;
+  align-content: start;
+  min-height: 100%;
+  padding: 28px 0;
+  border-bottom: 1px solid rgba(0, 46, 79, 0.12);
+}
+
+.step-card span {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fffaf0;
+  background: var(--ink);
+  font-weight: 900;
+}
+
+.step-card h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: clamp(1.28rem, 2vw, 1.62rem);
+  letter-spacing: -0.04em;
+}
+
+.step-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+
+.step-copy-button {
+  margin-top: 16px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  color: #fffaf0;
+  background: var(--ink);
+  box-shadow: 0 12px 28px rgba(0, 46, 79, 0.16);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.step-copy-button:active,
+.copy-button:active {
+  transform: scale(0.96);
+}
+
+.agent-tabs {
+  display: inline-flex;
+  width: fit-content;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid rgba(0, 46, 79, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.72);
+}
+
+.agent-tabs button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  color: var(--ink-soft);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.agent-tabs button.active {
+  color: #fffaf0;
+  background: var(--ink);
+  box-shadow: 0 10px 24px rgba(0, 46, 79, 0.16);
+}
+
+.chat-stage {
+  min-width: 0;
+  background: #082f4b;
+  border-bottom: 1px solid rgba(255, 250, 240, 0.14);
+}
+
+.chat-stage.first {
+  overflow: hidden;
+  border-radius: 34px 34px 0 0;
+  box-shadow: 0 28px 70px rgba(0, 46, 79, 0.26);
+}
+
+.chat-stage.last {
+  overflow: hidden;
+  border-bottom: 0;
+  border-radius: 0 0 34px 34px;
+  box-shadow: 0 28px 70px rgba(0, 46, 79, 0.26);
+}
+
+.chat-stage.first.last {
+  border-radius: 34px;
+}
+
+.chat-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 20px;
+  color: rgba(255, 250, 240, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-top span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #f3c77a;
+}
+
+.chat-top span:nth-child(2) {
+  background: #8bc9c0;
+}
+
+.chat-top span:nth-child(3) {
+  background: #fffaf0;
+}
+
+.chat-top strong {
+  margin-left: auto;
+  font-size: 0.86rem;
+}
+
+.chat-stream {
+  display: grid;
+  gap: 22px;
+  padding: clamp(28px, 4vw, 42px);
+}
+
+.chat-block {
+  display: grid;
+  gap: 20px;
+}
+
+.chat-turn {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  max-width: 88%;
+}
+
+.chat-turn.user {
+  justify-self: end;
+  grid-template-columns: minmax(0, 1fr) 38px;
+}
+
+.chat-turn.user .avatar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.chat-turn.user .bubble {
+  grid-column: 1;
+}
+
+.avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ink);
+  background: #fffaf0;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.bubble {
+  position: relative;
+  padding: 22px 24px;
+  border-radius: 22px;
+  color: #fffaf0;
+  background: rgba(139, 201, 192, 0.18);
+}
+
+.chat-turn.user .bubble {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bubble p {
+  margin: 0;
+  padding-right: 4px;
+  color: rgba(255, 250, 240, 0.78);
+  line-height: 1.6;
+}
+
+.copy-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #f8d38d;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.copy-button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.copy-button span {
+  font-weight: 900;
+}
+
+.copy-button.copied {
+  color: var(--ink);
+  background: #f8d38d;
+}
+
+.copy-button.error {
+  color: #fffaf0;
+  background: #a6423a;
+}
+
+.chat-turn.user .bubble p {
+  padding-right: 38px;
+}
+
+@media (max-width: 640px) {
+  .minute-workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-tabs,
+  .workflow-row {
+    grid-column: 1;
+  }
+
+  .workflow-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .step-card {
+    grid-template-columns: 42px 1fr;
+    padding: 22px 0;
+  }
+
+  .step-card span {
+    width: 38px;
+    height: 38px;
+  }
+
+  .tab-stack,
+  .agent-tabs {
+    width: 100%;
+  }
+
+  .agent-tabs {
+    justify-content: space-between;
+  }
+
+  .agent-tabs button {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .chat-stream {
+    padding: 18px;
+  }
+
+  .chat-stage,
+  .chat-stage.first,
+  .chat-stage.last {
+    border-radius: 24px;
+    box-shadow: 0 18px 40px rgba(0, 46, 79, 0.18);
+  }
+
+  .chat-turn,
+  .chat-turn.user {
+    max-width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .chat-turn.user .avatar {
+    display: none;
+  }
+
+  .avatar {
+    display: none;
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "model_timestamp_utc": "2026-05-30T18:30:00+00:00",
+  "load_mw": 45941.6,
+  "generation_mw": 31102.4,
+  "line_count": 2512,
+  "bus_count": 1867,
+  "overloaded_lines": 40,
+  "watch_lines": 60,
+  "top_bottleneck_line": 34552,
+  "top_bottleneck_utilization_pct": 116.4,
+  "method": "Open-data spatial dispatch plus DC load-flow on Germany high-voltage topology."
+}

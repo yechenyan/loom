@@ -1,0 +1,14 @@
+technology,capacity_mw,capacity_definition,source,source_type,year,country
+Biomass and biogas,6532.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Fossil fuels,78400.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Hard coal,27000.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Hydro,10230.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Lignite,20800.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Natural gas,26700.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Nuclear,10800.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Offshore,4159.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Oil,3900.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Onshore,40299.58333333333,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Pumped storage,5666.0,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Solar,39321.83333333333,Net capacity,ENTSO-E SOAF,Other association,2015,DE
+Wind,44458.58333333333,Net capacity,ENTSO-E SOAF,Other association,2015,DE

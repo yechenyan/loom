@@ -1,0 +1,115 @@
+import type { Locale } from "./i18n";
+
+export const siteCopy = {
+  en: {
+    home: {
+      eyebrow: "AI agents deserve a real data memory",
+      heroTitle: ["Stop wasting time working out", "which data to trust,", "where it came from,", "and how to use it."],
+      heroLede:
+        "Loom turns project data into searchable data cards so people and AI can find trustworthy facts fast and reuse them through the cloud.",
+      minute: "See the 1-minute flow",
+      what: "How it works",
+      explore: "Explore data",
+      docs: "Read docs",
+      introKicker: "What problem it solves",
+      introTitle: "Give AI a lightweight, traceable data map.",
+      fitKicker: "When to use it",
+      fitTitle: "When a task depends on local data facts, let Loom mark the path first.",
+      cta: "Start with one data folder and turn “reading data” into a verifiable agent workflow.",
+      ctaButton: "Start using Loom",
+    },
+    docs: {
+      title: "Loom guides generated directly from repository docs.",
+      descriptionPrefix: "This page reads Markdown from ",
+      descriptionSuffix: " in the repository root. Update those source files and the docs page updates on the next dev refresh or build.",
+      toc: "Contents",
+      pager: "Document pagination",
+      previous: "Previous",
+      next: "Next",
+    },
+    heroStats: {
+      label: "Loom live dataset stats",
+      workspaces: "Workspaces",
+      datasets: "Datasets",
+      rawFiles: "Raw files",
+      button: "Explore datasets",
+      error: "Live data is temporarily unavailable",
+    },
+    rawTable: { empty: "This raw file is empty." },
+  },
+  de: {
+    home: {
+      eyebrow: "KI-Agenten brauchen ein echtes Datengedächtnis",
+      heroTitle: ["Keine Zeit mehr verlieren damit,", "zu klären, welchen Daten du trauen kannst,", "woher sie kommen,", "und wie du sie nutzt."],
+      heroLede:
+        "Loom organisiert Projektdaten als durchsuchbare Datenkarten, damit Menschen und KI belastbare Fakten schnell finden und über die Cloud wiederverwenden können.",
+      minute: "1-Minuten-Ablauf ansehen",
+      what: "So funktioniert es",
+      explore: "Daten erkunden",
+      docs: "Docs lesen",
+      introKicker: "Welches Problem es löst",
+      introTitle: "Gib KI eine leichte, nachvollziehbare Datenkarte.",
+      fitKicker: "Wann du es nutzen solltest",
+      fitTitle: "Wenn eine Aufgabe von lokalen Datenfakten abhängt, sollte Loom zuerst die Wegweiser setzen.",
+      cta: "Starte mit einem Datenordner und mache aus „Daten lesen“ einen überprüfbaren Agent-Workflow.",
+      ctaButton: "Loom starten",
+    },
+    docs: {
+      title: "Loom-Anleitungen direkt aus den Repository-Dokumenten.",
+      descriptionPrefix: "Diese Seite liest Markdown aus ",
+      descriptionSuffix: " im Repository-Stamm. Wenn du diese Quelldateien änderst, wird die Dokumentationsseite beim nächsten Dev-Refresh oder Build aktualisiert.",
+      toc: "Inhalt",
+      pager: "Dokumentnavigation",
+      previous: "Zurück",
+      next: "Weiter",
+    },
+    heroStats: {
+      label: "Loom Live-Datensatzstatistiken",
+      workspaces: "Workspaces",
+      datasets: "Datensätze",
+      rawFiles: "Rohdateien",
+      button: "Datensätze erkunden",
+      error: "Live-Daten sind momentan nicht verfügbar",
+    },
+    rawTable: { empty: "Diese Rohdatei ist leer." },
+  },
+  zh: {
+    home: {
+      eyebrow: "AI agents deserve a real data memory",
+      heroTitle: ["别再浪费时间弄清楚", "该信哪份数据、", "它从哪里来、", "以及该怎么用。"],
+      heroLede: "Loom 把项目数据整理成可搜索的数据卡，让人和 AI 快速找到可信数据，并同步到云端共享复用。",
+      minute: "看 1 分钟用法",
+      what: "如何工作",
+      explore: "数据探索",
+      docs: "阅读文档",
+      introKicker: "它解决什么问题",
+      introTitle: "给 AI 一个轻量、可追溯的数据地图。",
+      fitKicker: "什么时候该用",
+      fitTitle: "当任务依赖本地数据事实时，让 Loom 先把路标立好。",
+      cta: "从一个数据目录开始，把“读数据”变成可验证的 agent 工作流。",
+      ctaButton: "开始使用 Loom",
+    },
+    docs: {
+      title: "从仓库文档直接生成的 Loom 使用指南。",
+      descriptionPrefix: "这里读取根目录 ",
+      descriptionSuffix: " 下的 Markdown。更新这些源文件后，文档页会在开发服务器或下一次构建中同步更新。",
+      toc: "目录",
+      pager: "文档翻页",
+      previous: "上一篇",
+      next: "下一篇",
+    },
+    heroStats: {
+      label: "Loom live dataset stats",
+      workspaces: "工作区",
+      datasets: "数据集",
+      rawFiles: "原始数据",
+      button: "探索数据集",
+      error: "线上数据暂时不可用",
+    },
+    rawTable: { empty: "原始文件为空。" },
+  },
+} satisfies Record<Locale, unknown>;
+
+export function getSiteCopy(locale: Locale) {
+  return siteCopy[locale];
+}
