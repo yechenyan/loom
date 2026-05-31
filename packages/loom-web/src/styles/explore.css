@@ -41,114 +41,6 @@
   backdrop-filter: blur(22px);
 }
 
-.explore-tree {
-  overflow: auto;
-  padding: 20px 16px;
-}
-
-.tree-label {
-  margin-bottom: 24px;
-  color: #0f6f75;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.tree-group,
-.tree-branch {
-  display: grid;
-  gap: 8px;
-}
-
-.tree-group + .tree-group {
-  margin-top: 18px;
-}
-
-.tree-branch {
-  margin-top: 8px;
-  margin-left: 12px;
-  padding-left: 10px;
-  border-left: 1px solid rgba(0, 46, 79, 0.14);
-}
-
-.tree-button,
-.tree-file,
-.detail-tabs button {
-  border: 0;
-  color: var(--ink);
-  font: inherit;
-  cursor: pointer;
-}
-
-.tree-button {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  gap: 4px 8px;
-  align-items: center;
-  width: 100%;
-  padding: 8px 9px;
-  border-radius: 14px;
-  text-align: left;
-  background: rgba(232, 242, 244, 0.64);
-}
-
-.tree-button span {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 50%;
-  color: #fffaf0;
-  background: var(--ink);
-}
-
-.tree-button.active {
-  color: #fffaf0;
-  background: var(--ink);
-}
-
-.tree-button.active em {
-  color: rgba(255, 250, 240, 0.72);
-}
-
-.tree-button.active span {
-  color: var(--ink);
-  background: #fffaf0;
-}
-
-.tree-button strong,
-.tree-file {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tree-button strong,
-.tree-file {
-  font-size: 0.9rem;
-}
-
-.tree-button em {
-  grid-column: 2;
-  color: var(--ink-soft);
-  font-size: 0.72rem;
-  font-style: normal;
-}
-
-.tree-file {
-  width: 100%;
-  padding: 7px 8px 7px 34px;
-  border-radius: 12px;
-  text-align: left;
-  background: transparent;
-}
-
-.tree-file.active {
-  color: #fffaf0;
-  background: var(--ink);
-}
-
 .explore-detail {
   overflow: visible;
   max-width: 100%;
@@ -173,22 +65,83 @@
   background: rgba(232, 242, 244, 0.64);
 }
 
+.detail-command-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-command-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
+}
+
 .detail-command p {
   margin: 0;
   color: #0f6f75;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .detail-command code {
   overflow-wrap: anywhere;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 500;
+}
+
+.detail-command-modes {
+  display: flex;
+  gap: 10px;
+}
+
+.detail-command-modes button {
+  border: 1px solid rgba(0, 46, 79, 0.14);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: #0f6f75;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(255, 250, 240, 0.76);
+  cursor: pointer;
+}
+
+.detail-command-modes button.active {
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.detail-copy-button {
+  border: 1px solid rgba(0, 46, 79, 0.16);
+  border-radius: 999px;
+  padding: 8px 14px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: rgba(255, 250, 240, 0.88);
+  cursor: pointer;
+}
+
+.detail-copy-button.copied {
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.detail-copy-button.error {
+  color: #fffaf0;
+  background: #a6423a;
 }
 
 .detail-tabs button {
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
   min-width: 150px;
   min-height: 54px;
   border: 1px solid rgba(0, 46, 79, 0.22);

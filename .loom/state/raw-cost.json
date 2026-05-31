@@ -1,0 +1,37 @@
+{
+  "manifest": {
+    "technology-data/costs_2020.csv": {
+      "sha256": "44275688aa97dbc5f9f675ed07dfa3708f84651b74cc036c2eb28fe5aaf19532",
+      "size_bytes": 220276
+    },
+    "technology-data/costs_2025.csv": {
+      "sha256": "bc2992770527fdba5913940648e74840caffb0b041b8d4159bf31eb343e3e461",
+      "size_bytes": 220543
+    },
+    "technology-data/costs_2030.csv": {
+      "sha256": "29243bb60b31180b43d765e630b6d8a9a75bfd409c63676e74180e6a265d88e5",
+      "size_bytes": 220527
+    },
+    "technology-data/costs_2035.csv": {
+      "sha256": "b199768a7f25a43eccd02759c651b1c477703b75852bb987cbfd3200e17079c6",
+      "size_bytes": 220383
+    },
+    "technology-data/costs_2040.csv": {
+      "sha256": "1c4664d8ec3bebce121929648963c2f082395ee1d6b0dc882e403759258bd108",
+      "size_bytes": 220542
+    },
+    "technology-data/costs_2045.csv": {
+      "sha256": "b430cf9943d122261353e59819828373e3f3defa21378223d2bb93ebf3ae5680",
+      "size_bytes": 220558
+    },
+    "technology-data/costs_2050.csv": {
+      "sha256": "54e7d2eadf8a43a9809b3d2df1539eb1df39b973b2287eaef974e9f8783a300d",
+      "size_bytes": 220226
+    },
+    "technology-data/loom.md": {
+      "sha256": "4f20cbf4b873383b607199fe41977a2c784dd8b51865bacada90bba4731f1bb5",
+      "size_bytes": 49
+    }
+  },
+  "workspace": "cost"
+}

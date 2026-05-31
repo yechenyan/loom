@@ -4,7 +4,7 @@ import base64
 from dataclasses import dataclass
 from pathlib import Path
 
-from .raw_cache_support.local_sources import iter_local_scan_source_roots
+from .raw_cache_support.local_sources import canonicalize_source_relative_path, iter_local_scan_source_roots
 from .scan_state import hash_file
 
 
@@ -38,7 +38,8 @@ def build_raw_workspace_snapshot(workspace_root: Path | str, workspace: str) -> 
         for path in sorted(source_root.rglob("*")):
             if not path.is_file():
                 continue
-            relative_path = path.relative_to(source_root).as_posix()
+            source_relative_path = path.relative_to(source_root).as_posix()
+            relative_path = canonicalize_source_relative_path(source_root, source_relative_path)
             if relative_path in seen_paths:
                 continue
             seen_paths.add(relative_path)

@@ -26,9 +26,10 @@ def iter_local_scan_source_roots(workspace_root, workspace: str) -> tuple[Path, 
 
 def find_local_scan_source_file(workspace_root, workspace: str, relative_path: str) -> Path | None:
     for source_root in iter_local_scan_source_roots(workspace_root, workspace):
-        candidate = source_root / relative_path
-        if candidate.is_file():
-            return candidate
+        for candidate_relative_path in _local_source_candidates(source_root, relative_path):
+            candidate = source_root / candidate_relative_path
+            if candidate.is_file():
+                return candidate
     fallback = resolve_local_raw_workspace_dir(workspace_root, workspace) / relative_path
     if fallback.is_file():
         return fallback
@@ -50,3 +51,24 @@ def find_local_notice_dir(workspace_root, workspace: str) -> Path | None:
 def _resolve_source_path(workspace_root: Path, source_path: str) -> Path:
     source = Path(source_path).expanduser()
     return source if source.is_absolute() else workspace_root / source
+
+
+def canonicalize_source_relative_path(source_root: Path, relative_path: str) -> str:
+    if _source_root_is_dataset(source_root):
+        return f"{source_root.name}/{relative_path}" if relative_path else source_root.name
+    return relative_path
+
+
+def _local_source_candidates(source_root: Path, relative_path: str) -> tuple[str, ...]:
+    candidates = [relative_path]
+    if _source_root_is_dataset(source_root):
+        prefix = f"{source_root.name}/"
+        if relative_path == source_root.name:
+            candidates.append("")
+        elif relative_path.startswith(prefix):
+            candidates.append(relative_path[len(prefix) :])
+    return tuple(dict.fromkeys(candidates))
+
+
+def _source_root_is_dataset(source_root: Path) -> bool:
+    return (source_root / "loom.md").is_file()

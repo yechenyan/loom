@@ -14,6 +14,7 @@ import "./styles/how-it-works-ask.css";
 import "./styles/how-it-works-responsive.css";
 import "./styles/extension-capabilities.css";
 import "./styles/explore.css";
+import "./styles/explore-tree.css";
 import "./styles/explore-card.css";
 import "./styles/explore-empty.css";
 import "./styles/docs.css";

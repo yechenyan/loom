@@ -251,9 +251,22 @@ local_path = loom.get("energy/demo_germany_energy_data/open_power_system_data/ge
 ```
 
 `loomcli get` and `loom.get(...)` treat the first path segment as the workspace.
-The remaining path should normally match the raw workspace path exactly. As a
-compatibility fallback, Loom also accepts a requested path with extra leading
-dataset segments when that still resolves to one unique raw-manifest path.
+The remaining path should normally match the remote raw path exactly.
+
+Raw path rules:
+
+- Raw paths preserve dataset directory structure under the workspace.
+- If the scanned source path is itself a dataset root, the raw path starts with
+  that dataset directory name.
+- If the source contains deeper nested datasets, the raw path preserves those
+  deeper directory segments.
+
+Examples:
+
+- scanning `technology-data` to workspace `cost` produces raw files such as
+  `cost/technology-data/costs_2020.csv`
+- scanning `raw_data/energy` to workspace `energy` produces raw files such as
+  `energy/technology-data/costs.csv`
 
 Current exports in `packages/loom/src/loom/__init__.py` include `get`, `pull`, `scan_path_to_explore`, `scan_topic_from_chat`, chat parsing helpers, and base URL helpers.
 

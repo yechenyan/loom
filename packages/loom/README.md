@@ -72,8 +72,8 @@ download. Use `--no-tutorial` to skip it or `--tutorial-url <url>` with
 2. Ask the agent to scan it in chat with `/loom-scan <path> [to <workspace>]`.
 3. Let the agent read `loom/` before touching raw files.
 4. Use `loomcli get <workspace/path/to/file>` only for exact raw files that are needed.
-   Loom also accepts copied dataset-qualified paths when they resolve to one
-   unique raw file.
+   Raw paths preserve dataset directory structure, including the source-root
+   dataset name when the scan source is itself a dataset root.
 5. Use `loomcli confirm`, `loomcli push`, and `loomcli pull` for explicit terminal operations.
 
 ## Chat examples

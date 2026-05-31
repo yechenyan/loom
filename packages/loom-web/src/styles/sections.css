@@ -32,6 +32,7 @@ h1 {
   font-size: clamp(3rem, 5.7vw, 5.15rem);
   line-height: 1.02;
   letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 h2 {
@@ -49,8 +50,8 @@ h1 span {
 
 :lang(en) h1,
 :lang(de) h1 {
-  max-width: 900px;
-  font-size: clamp(3rem, 4.8vw, 4.7rem);
+  max-width: 980px;
+  font-size: clamp(2.7rem, 4vw, 4rem);
   line-height: 1.05;
   letter-spacing: -0.045em;
 }

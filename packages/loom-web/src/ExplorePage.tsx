@@ -2,14 +2,12 @@ import { useEffect, useState } from "react";
 import { fetchExploreWorkspaces } from "./exploreApi";
 import { getExploreCopy } from "./exploreCopy";
 import { DetailCommand, WorkspaceDetail } from "./ExploreDetailChrome";
+import { TreePanel, type Selection } from "./ExploreTree";
 import { DataCardView, ProfileView, RawDataView } from "./ExploreViews";
 import { useI18n } from "./i18n";
 import type { ExploreCsvFile, ExploreCsvProfile, ExploreDataset, ExploreWorkspace } from "./exploreTypes";
 import { SiteHeader } from "./SiteHeader";
 
-type WorkspaceSelection = { kind: "workspace"; workspace: string };
-type FileSelection = { kind: "file"; workspace: string; dataset: string; file: string };
-type Selection = WorkspaceSelection | FileSelection;
 type Tab = "card" | "profile" | "raw";
 
 export function ExplorePage() {
@@ -119,129 +117,6 @@ function ExploreEmptyState({
   );
 }
 
-function TreePanel({
-  copy,
-  open,
-  selection,
-  setOpen,
-  setSelection,
-  workspaces,
-}: {
-  copy: ReturnType<typeof getExploreCopy>;
-  open: Set<string>;
-  selection: Selection | null;
-  setOpen: (open: Set<string>) => void;
-  setSelection: (selection: Selection) => void;
-  workspaces: ExploreWorkspace[];
-}) {
-  function toggle(key: string) {
-    const next = new Set(open);
-    next.has(key) ? next.delete(key) : next.add(key);
-    setOpen(next);
-  }
-
-  return (
-    <aside className="explore-tree" id="explore-tree" aria-label={copy.treeAria}>
-      <p className="tree-label">{copy.treeLabel}</p>
-      {workspaces.map((workspace) => (
-        <div className="tree-group" key={workspace.name}>
-          <TreeButton
-            active={selection?.kind === "workspace" && selection.workspace === workspace.name}
-            count={`${workspace.dataset_count} ${copy.datasetCount}`}
-            label={workspace.name}
-            open={open.has(workspace.name)}
-            onClick={() => {
-              setSelection({ kind: "workspace", workspace: workspace.name });
-              toggle(workspace.name);
-            }}
-          />
-          {open.has(workspace.name)
-            ? workspace.datasets.map((dataset) => (
-                <DatasetBranch
-                  copy={copy}
-                  dataset={dataset}
-                  key={dataset.path}
-                  open={open}
-                  selection={selection}
-                  setSelection={setSelection}
-                  toggle={toggle}
-                  workspace={workspace.name}
-                />
-              ))
-            : null}
-        </div>
-      ))}
-    </aside>
-  );
-}
-
-function DatasetBranch({
-  copy,
-  dataset,
-  open,
-  selection,
-  setSelection,
-  toggle,
-  workspace,
-}: {
-  copy: ReturnType<typeof getExploreCopy>;
-  dataset: ExploreDataset;
-  open: Set<string>;
-  selection: Selection | null;
-  setSelection: (selection: Selection) => void;
-  toggle: (key: string) => void;
-  workspace: string;
-}) {
-  const key = `${workspace}/${dataset.path}`;
-  return (
-    <div className="tree-branch">
-      <TreeButton count={`${dataset.csv_count} ${copy.csvCount}`} label={dataset.name} open={open.has(key)} onClick={() => toggle(key)} />
-      {open.has(key)
-        ? dataset.csv_files.map((file) => {
-            const filePath = file.dataset_relative_path || file.file_name;
-            const active =
-              selection?.kind === "file" &&
-              selection.workspace === workspace &&
-              selection.dataset === dataset.path &&
-              selection.file === filePath;
-            return (
-              <button
-                className={`tree-file${active ? " active" : ""}`}
-                key={filePath}
-                onClick={() => setSelection({ kind: "file", workspace, dataset: dataset.path, file: filePath })}
-                type="button"
-              >
-                {file.file_name}
-              </button>
-            );
-          })
-        : null}
-    </div>
-  );
-}
-
-function TreeButton({
-  active,
-  count,
-  label,
-  onClick,
-  open,
-}: {
-  active?: boolean;
-  count: string;
-  label: string;
-  onClick: () => void;
-  open: boolean;
-}) {
-  return (
-    <button className={`tree-button${active ? " active" : ""}`} onClick={onClick} type="button">
-      <span>{open ? "−" : "+"}</span>
-      <strong>{label}</strong>
-      <em>{count}</em>
-    </button>
-  );
-}
-
 function DetailTabs({
   copy,
   selected,
@@ -253,10 +128,15 @@ function DetailTabs({
   setTab: (tab: Tab) => void;
   tab: Tab;
 }) {
-  const fileCommand = `loomcli get ${selected.resourcePath}`;
   return (
     <>
-      <DetailCommand label={copy.fileCommandLabel} value={fileCommand} />
+      <DetailCommand
+        label={copy.fileCommandLabel}
+        modes={[
+          { key: "agent", label: copy.agentModeLabel, value: `loom get ${selected.resourcePath}` },
+          { key: "cli", label: copy.cliModeLabel, value: `loomcli get ${selected.resourcePath}` },
+        ]}
+      />
       <div className="detail-tabs" aria-label={copy.tabAria}>
         <button className={tab === "card" ? "active" : ""} onClick={() => setTab("card")} type="button">
           {copy.cardTab}

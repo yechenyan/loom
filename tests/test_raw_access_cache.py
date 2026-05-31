@@ -38,7 +38,7 @@ class RawAccessCacheTest(LoomTestCase):
                 0,
             )
 
-            local_path = loom.get("user/costs_2040-modifications.csv", workspace_root=workspace_root)
+            local_path = loom.get("user/cost/costs_2040-modifications.csv", workspace_root=workspace_root)
 
             self.assertEqual(local_path.read_text(encoding="utf-8"), raw_file.read_text(encoding="utf-8"))
             self.assertTrue(local_path.exists())
@@ -58,11 +58,37 @@ class RawAccessCacheTest(LoomTestCase):
 
             snapshot = build_raw_workspace_snapshot(workspace_root, "user")
 
-            self.assertEqual({file.path for file in snapshot.files}, {"loom.md", "costs_2040-modifications.csv"})
+            self.assertEqual({file.path for file in snapshot.files}, {"cost/loom.md", "cost/costs_2040-modifications.csv"})
             self.assertEqual(
-                next(file.content for file in snapshot.files if file.path == "costs_2040-modifications.csv"),
+                next(file.content for file in snapshot.files if file.path == "cost/costs_2040-modifications.csv"),
                 raw_file.read_bytes(),
             )
+
+    def test_push_records_dataset_prefixed_raw_paths_for_source_root_dataset(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source_workspace = root / "source"
+            app = create_app(f"sqlite:///{root / 'loom.db'}", root / "server-storage")
+            dataset_dir = source_workspace / "technology-data"
+            dataset_dir.mkdir(parents=True, exist_ok=True)
+            (dataset_dir / "loom.md").write_text("source: https://example.com/cost\n\nCost dataset", encoding="utf-8")
+            raw_file = dataset_dir / "costs_2040-modifications.csv"
+            raw_file.write_text("technology,parameter,value\nOCGT,investment,696\n", encoding="utf-8")
+            self.assertEqual(
+                self.call_main(["scan-index", "technology-data", "to", "cost", "--workspace-root", str(source_workspace)])[0],
+                0,
+            )
+            self.assertEqual(self.call_main(["confirm", "cost", "--workspace-root", str(source_workspace)])[0], 0)
+
+            with TestClient(app) as client, self.patch_server(client):
+                self.assertEqual(
+                    self.call_main(["push", "cost", "--workspace-root", str(source_workspace), "--server-url", "http://loom.test"])[0],
+                    0,
+                )
+                manifest = self.call_app(client, "GET", "http://loom.test/api/workspaces/cost/raw-manifest")
+
+            self.assertIn("technology-data/loom.md", manifest["raw_manifest"])
+            self.assertIn("technology-data/costs_2040-modifications.csv", manifest["raw_manifest"])
 
     def test_get_downloads_missing_remote_raw_file_and_reuses_cache(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

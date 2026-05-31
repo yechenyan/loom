@@ -1,0 +1,128 @@
+.explore-tree {
+  overflow: auto;
+  padding: 20px 16px;
+}
+
+.tree-label {
+  margin-bottom: 18px;
+  color: #0f6f75;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.tree-group,
+.tree-branch {
+  display: grid;
+  gap: 8px;
+}
+
+.tree-group + .tree-group {
+  margin-top: 18px;
+}
+
+.tree-branch {
+  margin-top: 10px;
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(15, 111, 117, 0.16);
+}
+
+.tree-button,
+.tree-file {
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tree-button {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  text-align: left;
+  background: rgba(232, 242, 244, 0.64);
+}
+
+.tree-button.workspace {
+  background: rgba(0, 46, 79, 0.08);
+}
+
+.tree-button.dataset {
+  background: rgba(15, 111, 117, 0.08);
+}
+
+.tree-button span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.tree-button-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.tree-button.active {
+  color: #fffaf0;
+  background: var(--ink);
+}
+
+.tree-button.active em {
+  color: rgba(255, 250, 240, 0.72);
+}
+
+.tree-button.active span {
+  color: var(--ink);
+  background: #fffaf0;
+}
+
+.tree-button strong,
+.tree-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-button strong,
+.tree-file {
+  font-size: 0.9rem;
+}
+
+.tree-button em {
+  grid-column: 2;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.tree-file {
+  width: 100%;
+  padding: 8px 10px 8px 16px;
+  border-radius: 12px;
+  text-align: left;
+  background: rgba(255, 250, 240, 0.48);
+}
+
+.tree-file strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+}
+
+.tree-file.active {
+  color: #fffaf0;
+  background: var(--ink);
+}
