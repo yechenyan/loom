@@ -3,9 +3,33 @@
   grid-row: 1;
 }
 
+.scan-command::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -48px;
+  z-index: 3;
+  width: 44px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(8, 47, 75, 0.46), #082f4b);
+}
+
+.scan-command::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 7px);
+  right: -50px;
+  z-index: 4;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 11px solid #082f4b;
+}
+
 .scan-arrow-start {
   grid-column: 2;
   grid-row: 1;
+  display: none;
 }
 
 .raw-scan {

@@ -47,7 +47,11 @@ def is_fast_scan_command(message: str) -> bool:
         return False
 
     lowered = normalized.lower()
-    return lowered.startswith("loom scan ") and len(normalized) > len("loom scan ")
+    return (
+        lowered.startswith("loom scan ") and len(normalized) > len("loom scan ")
+    ) or (
+        lowered.startswith("/loom-scan ") and len(normalized) > len("/loom-scan ")
+    )
 
 
 def parse_chat_request(message: str) -> ScanRequest | None:
@@ -93,6 +97,18 @@ def parse_loom_command(message: str) -> LoomCommandRequest | None:
 
 
 def _parse_fast_scan_command(normalized: str, original_message: str) -> LoomCommandRequest | None:
+    if normalized.lower().startswith("/loom-scan "):
+        source_path, workspace = _split_scan_target(normalized[len("/loom-scan ") :].strip())
+        if source_path is None:
+            return None
+        return LoomCommandRequest(
+            command="scan",
+            workspace=workspace,
+            source_path=source_path,
+            query=None,
+            original_message=original_message,
+        )
+
     parts = normalized.split(None, 2)
     if len(parts) < 2:
         return None
@@ -121,6 +137,15 @@ def _parse_loose_scan_command(normalized: str, original_message: str) -> LoomCom
 
 
 def _parse_ask_command(normalized: str, original_message: str) -> LoomCommandRequest | None:
+    if normalized.lower().startswith("/loom-ask "):
+        query = normalized[len("/loom-ask ") :].strip()
+        return LoomCommandRequest(
+            command="ask",
+            workspace=None,
+            source_path=None,
+            query=query or None,
+            original_message=original_message,
+        )
     if normalized.lower().startswith("loom ask "):
         query = normalized[len("loom ask ") :].strip()
         return LoomCommandRequest(command="ask", workspace=None, source_path=None, query=query or None, original_message=original_message)

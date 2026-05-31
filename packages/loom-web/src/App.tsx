@@ -85,7 +85,7 @@ function Hero({ copy }: { copy: ReturnType<typeof getSiteCopy>["home"] }) {
           <a className="primary-button" href={getSectionHref("minute")}>
             {copy.minute}
           </a>
-          <a className="text-link" href={getSectionHref("what")}>
+          <a className="text-link" href={getSectionHref("how")}>
             {copy.what}
           </a>
           <a className="text-link" href={getAppHref("/explore")}>

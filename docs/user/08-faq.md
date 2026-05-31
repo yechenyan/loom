@@ -2,8 +2,8 @@
 
 ## Is `loom scan` a shell command?
 
-No. `loom scan ...` is the chat form. The terminal command is `loomcli
-scan-index ...`.
+No. `loom scan ...` and `/loom-scan ...` are chat forms. The terminal command is
+`loomcli scan-index ...`.
 
 ## Does `loomcli ask` exist?
 

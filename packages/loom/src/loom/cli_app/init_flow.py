@@ -215,11 +215,11 @@ def _print_help() -> None:
 
 
 def _print_chat_and_terminal_guide() -> None:
-    print("Loom now uses two names: `loom` for chat and `loomcli` for execution.")
-    print("Do not run the `loom ...` lines in your shell.")
+    print("Loom now uses chat forms for agent instructions and `loomcli` for execution.")
+    print("Do not run the chat lines in your shell.")
     print("Tell the user to keep these in AI chat:")
-    print("  loom scan raw_data/demo_germany_energy_data to germany_energy")
-    print('  loom ask "What German wind and solar data is available?"')
+    print("  /loom-scan raw_data/demo_germany_energy_data to germany_energy")
+    print('  /loom-ask "What German wind and solar data is available?"')
     print("  loom 德国 2015 年有哪些发电装机容量数据？")
     print("Tell the user to keep these in the terminal:")
     print("  loomcli scan-index raw_data/demo_germany_energy_data to germany_energy")

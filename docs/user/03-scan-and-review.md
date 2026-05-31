@@ -9,12 +9,14 @@ Use this form in agent chat:
 
 ```text
 loom scan raw_data/energy to energy
+/loom-scan raw_data/energy to energy
 ```
 
 The `to <workspace>` part is optional:
 
 ```text
 loom scan raw_data/energy
+/loom-scan raw_data/energy
 scan raw_data/energy with loom
 ```
 

@@ -67,23 +67,24 @@ verified mirror.
 Ask the agent in chat:
 
 ```text
-loom scan raw_data/demo_germany_energy_data to germany_energy
+/loom-scan raw_data
 ```
 
 Or run the terminal command directly:
 
 ```bash
-loomcli scan-index raw_data/demo_germany_energy_data to germany_energy
+loomcli scan-index raw_data
 ```
 
-Both forms build cards and profiles under `loom/germany_energy/`.
+Both forms build cards and profiles under `loom/demo/` unless you choose a
+different workspace.
 
 ## First Question
 
 Ask the agent:
 
 ```text
-loom ask "What German wind and solar data is available?"
+/loom-ask build a 24-hour German electricity data html demo
 ```
 
 The agent should inspect `loom/` first, identify the relevant card, then fetch an

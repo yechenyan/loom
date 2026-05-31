@@ -63,13 +63,13 @@ raw_data/
 Fast init downloads the tutorial dataset into `raw_data/demo_germany_energy_data`.
 The tutorial data is versioned outside the PyPI package and verified during
 download. Use `--no-tutorial` to skip it or `--tutorial-url <url>` with
-`--tutorial-sha256 <sha256>` to use a mirror. Fast init installs three focused agent skills: `loom-local-data-lookup`,
-`loom-dataset-scan-review`, and `loom-workspace-ops`.
+`--tutorial-sha256 <sha256>` to use a mirror. Fast init installs three focused agent skills: `loom-ask`,
+`loom-scan`, and `loom-workspace-ops`.
 
 ## Recommended workflow
 
 1. Put source data into any directory with `loom.md` and CSV files.
-2. Ask the agent to scan it in chat with `loom scan <path> [to <workspace>]`.
+2. Ask the agent to scan it in chat with `/loom-scan <path> [to <workspace>]`.
 3. Let the agent read `loom/` before touching raw files.
 4. Use `loomcli get <workspace/path/to/file>` only for exact raw files that are needed.
 5. Use `loomcli confirm`, `loomcli push`, and `loomcli pull` for explicit terminal operations.
@@ -77,14 +77,14 @@ download. Use `--no-tutorial` to skip it or `--tutorial-url <url>` with
 ## Chat examples
 
 ```text
-loom scan raw_data/energy to energy
-loom ask "What German wind and solar data is available?"
+/loom-scan raw_data
+/loom-ask build a 24-hour German electricity data html demo
 loom 德国 2015 年有哪些发电装机容量数据？
 ```
 
-`loom scan` should lead the agent to run `loomcli scan-index` and then continue curating cards in chat.
+`/loom-scan` or `loom scan` should lead the agent to run `loomcli scan-index` and then continue curating cards in chat.
 During a scan, any directory containing `loom.md` is treated as a dataset root. Each dataset gets an `overview.md` and `profile.json`, and each CSV gets its own `.card.md` and `.profile.json`. Parent datasets preserve nested child dataset directories, exclude child CSV files from their own cards, and list direct child overview links. Rescans reuse unchanged CSV hashes and profiles so only changed datasets are rebuilt.
-`loom ask` and bare `loom <问题>` should lead the agent to inspect `loom/` first rather than run a question-answering script.
+`/loom-ask`, `loom ask`, and bare `loom <问题>` should lead the agent to inspect `loom/` first rather than run a question-answering script.
 Agents may also inspect Loom without an explicit `loom` prefix when another task needs project-local, source-backed dataset facts.
 
 ## CLI examples

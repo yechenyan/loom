@@ -10,8 +10,10 @@ Use these in an agent conversation:
 
 ```text
 loom scan <path> [to <workspace>]
+/loom-scan <path> [to <workspace>]
 scan <path> with loom
 loom ask <question>
+/loom-ask <question>
 loom <question>
 loom status [workspace]
 loom confirm [workspace]

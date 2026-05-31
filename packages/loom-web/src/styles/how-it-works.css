@@ -37,7 +37,7 @@
 
 .aligned-flow {
   display: grid;
-  grid-template-columns: 98px 28px minmax(166px, 0.92fr) 28px minmax(214px, 1fr) 28px minmax(186px, 0.96fr) 28px 100px;
+  grid-template-columns: 92px 42px minmax(150px, 0.88fr) 42px minmax(190px, 0.96fr) 42px minmax(166px, 0.9fr) 42px 92px;
   grid-template-rows: minmax(440px, auto) minmax(280px, auto);
   gap: 18px 10px;
   align-items: stretch;
@@ -74,10 +74,12 @@
 
 .layer-command {
   display: grid;
+  position: relative;
   align-content: center;
   gap: 8px;
   z-index: 1;
   min-width: 0;
+  overflow: visible;
 }
 
 .layer-command span {
@@ -135,11 +137,11 @@
   position: relative;
   align-self: center;
   justify-self: center;
-  z-index: 1;
-  width: 30px;
+  z-index: 2;
+  width: 42px;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(8, 47, 75, 0.22), #082f4b);
+  background: linear-gradient(90deg, rgba(8, 47, 75, 0.46), #082f4b);
 }
 
 .flow-arrow-line::after {
@@ -153,7 +155,7 @@
 }
 
 .flow-arrow-line.reverse {
-  background: linear-gradient(90deg, #082f4b, rgba(8, 47, 75, 0.22));
+  background: linear-gradient(90deg, #082f4b, rgba(8, 47, 75, 0.46));
 }
 
 .flow-arrow-line.reverse::after {

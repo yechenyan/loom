@@ -13,7 +13,9 @@ from loom.chat import is_fast_scan_command, parse_chat_request, parse_loom_comma
 class ParseChatRequestTest(unittest.TestCase):
     def test_detects_fast_scan_command(self) -> None:
         self.assertTrue(is_fast_scan_command("loom scan ./datasets/energy to energy"))
+        self.assertTrue(is_fast_scan_command("/loom-scan ./datasets/energy to energy"))
         self.assertFalse(is_fast_scan_command("loom scan"))
+        self.assertFalse(is_fast_scan_command("/loom-scan"))
         self.assertFalse(is_fast_scan_command("Please scan ./datasets/energy with loom"))
 
     def test_matches_basic_scan_command(self) -> None:
@@ -22,6 +24,20 @@ class ParseChatRequestTest(unittest.TestCase):
         assert request is not None
         self.assertEqual(request.source_path, "./datasets/energy")
         self.assertEqual(request.workspace, "energy")
+
+    def test_matches_slash_scan_command(self) -> None:
+        request = parse_chat_request("/loom-scan ./datasets/energy to energy")
+        self.assertIsNotNone(request)
+        assert request is not None
+        self.assertEqual(request.source_path, "./datasets/energy")
+        self.assertEqual(request.workspace, "energy")
+
+    def test_matches_quickstart_scan_command(self) -> None:
+        request = parse_chat_request("/loom-scan raw_data")
+        self.assertIsNotNone(request)
+        assert request is not None
+        self.assertEqual(request.source_path, "raw_data")
+        self.assertIsNone(request.workspace)
 
     def test_fast_path_uses_recent_workspace_when_to_is_omitted(self) -> None:
         request = parse_chat_request("loom scan ./datasets/energy")
@@ -67,6 +83,20 @@ class ParseChatRequestTest(unittest.TestCase):
         assert request is not None
         self.assertEqual(request.command, "ask")
         self.assertEqual(request.query, "OCGT 的成本是多少")
+
+    def test_parses_slash_ask_command(self) -> None:
+        request = parse_loom_command("/loom-ask OCGT 的成本是多少")
+        self.assertIsNotNone(request)
+        assert request is not None
+        self.assertEqual(request.command, "ask")
+        self.assertEqual(request.query, "OCGT 的成本是多少")
+
+    def test_parses_quickstart_ask_command(self) -> None:
+        request = parse_loom_command("/loom-ask build a 24-hour German electricity data html demo")
+        self.assertIsNotNone(request)
+        assert request is not None
+        self.assertEqual(request.command, "ask")
+        self.assertEqual(request.query, "build a 24-hour German electricity data html demo")
 
     def test_parses_bare_loom_question_as_ask(self) -> None:
         request = parse_loom_command("loom OCGT 的成本是多少")

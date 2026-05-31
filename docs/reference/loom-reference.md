@@ -45,8 +45,10 @@ Commands currently defined in `packages/loom/src/loom/cli_app/parser.py`:
 `packages/loom/src/loom/chat.py` currently recognizes:
 
 - `loom scan <path> [to <workspace>]`
+- `/loom-scan <path> [to <workspace>]`
 - `scan <path> with loom`
 - `loom ask <question>`
+- `/loom-ask <question>`
 - `loom <question>`
 - `loom confirm [workspace]`
 - `loom push [workspace]`
@@ -56,7 +58,9 @@ Commands currently defined in `packages/loom/src/loom/cli_app/parser.py`:
 Rules:
 
 - `loom scan ...` is a chat intent, not a shell command.
+- `/loom-scan ...` is a slash-style alias for `loom scan ...`.
 - `loom ask ...` and bare `loom <question>` are lookup intents, not a separate CLI QA command.
+- `/loom-ask ...` is a slash-style alias for `loom ask ...`.
 - `loom install ...` and `loomcli install ...` are not supported.
 - `loom get ...`, `loom init ...`, and `loom set-api ...` are not valid chat forms.
 
@@ -159,8 +163,8 @@ Supported agent values:
 
 Installed agent skills:
 
-- `loom-local-data-lookup`: local dataset fact lookup from cards and exact raw files
-- `loom-dataset-scan-review`: scan local datasets, then review and curate generated cards
+- `loom-ask`: local dataset fact lookup from cards and exact raw files
+- `loom-scan`: scan local datasets, then review and curate generated cards
 - `loom-workspace-ops`: init, status, confirm, push, pull, pull-raw, set-api, and chat-vs-CLI help
 
 ## Scan Workflow
@@ -169,6 +173,7 @@ Chat form:
 
 ```text
 loom scan raw_data/energy to energy
+/loom-scan raw_data/energy to energy
 ```
 
 CLI form:
@@ -208,6 +213,7 @@ Chat forms:
 
 ```text
 loom ask "What German wind and solar data is available?"
+/loom-ask "What German wind and solar data is available?"
 loom 德国 2015 年有哪些发电装机容量数据？
 ```
 

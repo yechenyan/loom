@@ -10,6 +10,7 @@ Ask explicitly:
 
 ```text
 loom ask "What German wind and solar data is available?"
+/loom-ask "What German wind and solar data is available?"
 ```
 
 Or use bare `loom <question>`:

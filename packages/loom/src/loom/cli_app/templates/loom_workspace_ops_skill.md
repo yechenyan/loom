@@ -22,8 +22,8 @@ Use this skill for Loom operations:
 
 Do not use this skill to:
 
-- Answer data questions. Use `loom-local-data-lookup`.
-- Scan and review datasets. Use `loom-dataset-scan-review`.
+- Answer data questions. Use `loom-ask`.
+- Scan and review datasets. Use `loom-scan`.
 - Treat unsupported chat forms as valid commands.
 
 ## Names

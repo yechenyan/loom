@@ -1,7 +1,7 @@
 @media (max-width: 1120px) {
   .aligned-flow {
     overflow-x: auto;
-    grid-template-columns: 98px 28px 166px 28px 214px 28px 186px 28px 100px;
+    grid-template-columns: 92px 42px 150px 42px 190px 42px 166px 42px 92px;
   }
 }
 

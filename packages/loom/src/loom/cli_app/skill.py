@@ -7,8 +7,8 @@ from pathlib import Path
 
 SUPPORTED_AGENTS = ("codex", "claude", "cursor", "copilot")
 SKILL_TEMPLATES = {
-    "loom-local-data-lookup": "loom_local_data_lookup_skill.md",
-    "loom-dataset-scan-review": "loom_dataset_scan_review_skill.md",
+    "loom-ask": "loom_ask_skill.md",
+    "loom-scan": "loom_scan_skill.md",
     "loom-workspace-ops": "loom_workspace_ops_skill.md",
 }
 

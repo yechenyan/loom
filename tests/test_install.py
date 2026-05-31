@@ -18,8 +18,8 @@ from loom.cli_app.parser import build_parser
 
 
 SKILL_NAMES = (
-    "loom-local-data-lookup",
-    "loom-dataset-scan-review",
+    "loom-ask",
+    "loom-scan",
     "loom-workspace-ops",
 )
 
@@ -89,10 +89,10 @@ class InitCommandTest(unittest.TestCase):
             output = stdout.getvalue()
             self.assertIn("Initialized Loom workspace at:", output)
             self.assertIn("Tell the user to keep these in AI chat:", output)
-            self.assertIn("Loom now uses two names: `loom` for chat and `loomcli` for execution.", output)
-            self.assertIn("Do not run the `loom ...` lines in your shell.", output)
-            self.assertIn("loom scan raw_data/demo_germany_energy_data to germany_energy", output)
-            self.assertIn('loom ask "What German wind and solar data is available?"', output)
+            self.assertIn("Loom now uses chat forms for agent instructions and `loomcli` for execution.", output)
+            self.assertIn("Do not run the chat lines in your shell.", output)
+            self.assertIn("/loom-scan raw_data/demo_germany_energy_data to germany_energy", output)
+            self.assertIn('/loom-ask "What German wind and solar data is available?"', output)
             self.assertIn("loom 德国 2015 年有哪些发电装机容量数据？", output)
             self.assertIn("loomcli scan-index raw_data/demo_germany_energy_data to germany_energy", output)
             self.assertIn("loomcli confirm germany_energy", output)
@@ -107,13 +107,15 @@ class InitCommandTest(unittest.TestCase):
                 self.assertFalse((workspace_root / ".copilot" / "skills" / skill_name / "SKILL.md").exists())
 
             self.assertFalse((codex_home / "skills" / "loom-data" / "SKILL.md").exists())
-            lookup_text = (codex_home / "skills" / "loom-local-data-lookup" / "SKILL.md").read_text(encoding="utf-8")
-            scan_text = (codex_home / "skills" / "loom-dataset-scan-review" / "SKILL.md").read_text(encoding="utf-8")
+            lookup_text = (codex_home / "skills" / "loom-ask" / "SKILL.md").read_text(encoding="utf-8")
+            scan_text = (codex_home / "skills" / "loom-scan" / "SKILL.md").read_text(encoding="utf-8")
             ops_text = (codex_home / "skills" / "loom-workspace-ops" / "SKILL.md").read_text(encoding="utf-8")
             self.assertIn("The user writes `loom ask <question>`.", lookup_text)
+            self.assertIn("The user writes `/loom-ask <question>`.", lookup_text)
             self.assertIn("`loomcli ask` does not exist", lookup_text)
             self.assertIn("Automatic local-data rule", lookup_text)
             self.assertIn("even if the user does not explicitly say `loom`", lookup_text)
+            self.assertIn("The user writes `/loom-scan <path> [to <workspace>]`.", scan_text)
             self.assertIn("After `loomcli scan-index` finishes, do a real review", scan_text)
             self.assertIn("Do not suggest `loomcli confirm`", scan_text)
             self.assertIn("`loom ...` is a user-facing chat instruction.", ops_text)
@@ -213,13 +215,13 @@ class InitCommandTest(unittest.TestCase):
                 )
 
             self.assertEqual(exit_code, 0)
-            skill_path = workspace_root / ".claude" / "skills" / "loom-local-data-lookup" / "SKILL.md"
+            skill_path = workspace_root / ".claude" / "skills" / "loom-ask" / "SKILL.md"
             self.assertTrue(skill_path.exists())
             self.assertIn(
                 "project-local, source-backed dataset facts",
                 skill_path.read_text(encoding="utf-8"),
             )
-            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-dataset-scan-review" / "SKILL.md").exists())
+            self.assertTrue((workspace_root / ".claude" / "skills" / "loom-scan" / "SKILL.md").exists())
             self.assertTrue((workspace_root / ".claude" / "skills" / "loom-workspace-ops" / "SKILL.md").exists())
             self.assertFalse((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
 

@@ -4,11 +4,11 @@ export const siteCopy = {
   en: {
     home: {
       eyebrow: "AI agents deserve a real data memory",
-      heroTitle: ["Spend less time deciding", "which data to trust,", "where it came from,", "and how to use it."],
+      heroTitle: ["Stop wasting time working out", "which data to trust,", "where it came from,", "and how to use it."],
       heroLede:
         "Loom turns project data into searchable data cards so people and AI can find trustworthy facts fast and reuse them through the cloud.",
       minute: "See the 1-minute flow",
-      what: "What is Loom",
+      what: "How it works",
       explore: "Explore data",
       docs: "Read docs",
       introKicker: "What problem it solves",
@@ -40,11 +40,11 @@ export const siteCopy = {
   de: {
     home: {
       eyebrow: "KI-Agenten brauchen ein echtes Datengedächtnis",
-      heroTitle: ["Weniger Zeit für Datensuche,", "Parameter erklären,", "Quellen prüfen."],
+      heroTitle: ["Keine Zeit mehr verlieren damit,", "zu klären, welchen Daten du trauen kannst,", "woher sie kommen,", "und wie du sie nutzt."],
       heroLede:
         "Loom organisiert Projektdaten als durchsuchbare Datenkarten, damit Menschen und KI belastbare Fakten schnell finden und über die Cloud wiederverwenden können.",
       minute: "1-Minuten-Ablauf ansehen",
-      what: "Was ist Loom",
+      what: "So funktioniert es",
       explore: "Daten erkunden",
       docs: "Docs lesen",
       introKicker: "Welches Problem es löst",
@@ -76,10 +76,10 @@ export const siteCopy = {
   zh: {
     home: {
       eyebrow: "AI agents deserve a real data memory",
-      heroTitle: ["少花时间找数据、", "解释参数、", "确认来源。"],
+      heroTitle: ["别再浪费时间弄清楚", "该信哪份数据、", "它从哪里来、", "以及该怎么用。"],
       heroLede: "Loom 把项目数据整理成可搜索的数据卡，让人和 AI 快速找到可信数据，并同步到云端共享复用。",
       minute: "看 1 分钟用法",
-      what: "Loom 是什么",
+      what: "如何工作",
       explore: "数据探索",
       docs: "阅读文档",
       introKicker: "它解决什么问题",

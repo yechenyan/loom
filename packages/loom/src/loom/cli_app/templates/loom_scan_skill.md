@@ -1,9 +1,9 @@
 ---
-name: loom-dataset-scan-review
-description: Use when the user asks to scan local data into Loom, including `loom scan <path> [to <workspace>]`, `scan <path> with loom`, or requests to create searchable cards from local raw datasets. Always scan, then review and curate generated cards before calling the scan ready.
+name: loom-scan
+description: Use when the user asks to scan local data into Loom, including `loom scan <path> [to <workspace>]`, `/loom-scan <path> [to <workspace>]`, `scan <path> with loom`, or requests to create searchable cards from local raw datasets. Always scan, then review and curate generated cards before calling the scan ready.
 ---
 
-# loom-dataset-scan-review
+# loom-scan
 
 Loom helps agents use project-local datasets: inspect lightweight cards in `./loom` first, fetch exact raw files only when needed, and answer source-backed data questions from raw data.
 
@@ -12,19 +12,21 @@ Loom helps agents use project-local datasets: inspect lightweight cards in `./lo
 Use this skill when:
 
 - The user writes `loom scan <path> [to <workspace>]`.
+- The user writes `/loom-scan <path> [to <workspace>]`.
 - The user writes `scan <path> with loom`.
 - The user asks to scan local raw data into Loom.
 - The user asks to create searchable cards, summaries, or an index for local datasets.
 
 Do not use this skill when:
 
-- The user only asks for a value or source-backed fact. Use `loom-local-data-lookup` instead.
+- The user only asks for a value or source-backed fact. Use `loom-ask` instead.
 - The user only asks for `status`, `confirm`, `push`, `pull`, or setup. Use `loom-workspace-ops` instead.
 - The task is ordinary data-processing code and does not request a Loom scan.
 
 ## Names
 
 - `loom scan ...` is a chat instruction. Do not run it in the shell.
+- `/loom-scan ...` is a chat alias for the same scan instruction.
 - `loomcli scan-index ...` is the executable CLI scan command.
 
 ## Scan Workflow
@@ -35,6 +37,7 @@ Pattern:
 
 ```text
 loom scan <path> [to <workspace>]
+/loom-scan <path> [to <workspace>]
 ```
 
 Terminal command:

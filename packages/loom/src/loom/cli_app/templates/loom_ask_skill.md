@@ -1,9 +1,9 @@
 ---
-name: loom-local-data-lookup
-description: Use when the user explicitly asks `loom ask ...` or `loom <question>`, or when analysis, modeling, visualization, reporting, coding, docs, or paper writing depends on project-local, source-backed dataset facts such as values, units, assumptions, parameters, CSV contents, or provenance.
+name: loom-ask
+description: Use when the user explicitly asks `loom ask ...`, `/loom-ask ...`, or `loom <question>`, or when analysis, modeling, visualization, reporting, coding, docs, or paper writing depends on project-local, source-backed dataset facts such as values, units, assumptions, parameters, CSV contents, or provenance.
 ---
 
-# loom-local-data-lookup
+# loom-ask
 
 Loom helps agents use project-local datasets: inspect lightweight cards in `./loom` first, fetch exact raw files only when needed, and answer source-backed data questions from raw data.
 
@@ -12,6 +12,7 @@ Loom helps agents use project-local datasets: inspect lightweight cards in `./lo
 Use this skill when:
 
 - The user writes `loom ask <question>`.
+- The user writes `/loom-ask <question>`.
 - The user writes bare `loom <question>`.
 - The user asks you to use Loom to look up data.
 - The user is doing data analysis, modeling, visualization, reporting, coding, writing docs, or writing a paper and needs project-local data facts: values, units, assumptions, parameters, costs, provenance, CSV contents, or dataset fields.
@@ -27,7 +28,7 @@ does not explicitly say `loom`.
 
 Do not use this skill when:
 
-- The user writes `loom scan`, `loom status`, `loom confirm`, `loom push`, or `loom pull`.
+- The user writes `loom scan`, `/loom-scan`, `loom status`, `loom confirm`, `loom push`, or `loom pull`.
 - The user writes unsupported chat forms such as `loom init`, `loom get`, `loom set-api`, or `loom install`.
 - The task is ordinary Pandas, SQL, plotting, or data-processing code without a need to look up local source data.
 - The user asks for a general concept explanation.
