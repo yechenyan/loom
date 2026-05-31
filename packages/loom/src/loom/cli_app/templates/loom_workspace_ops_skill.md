@@ -79,7 +79,7 @@ Supported agent values:
 
 Use the agent value that matches the current assistant. For example, Codex should use `codex`, Claude should use `claude`, Cursor should use `cursor`, and Copilot should use `copilot`.
 
-`loomcli init --agent ...` skips interactive setup, installs Loom agent skills, creates `./loom` and `./raw_data`, creates a default workspace, and installs tutorial data.
+`loomcli init --agent ...` skips interactive setup, installs Loom agent skills, creates `./loom` and `./raw_data`, creates a default workspace, and downloads tutorial data unless `--no-tutorial` is provided.
 
 ## Operations
 

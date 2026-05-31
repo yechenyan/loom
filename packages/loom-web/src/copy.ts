@@ -4,7 +4,7 @@ export const siteCopy = {
   en: {
     home: {
       eyebrow: "AI agents deserve a real data memory",
-      heroTitle: ["Spend less time finding data,", "explaining parameters,", "and checking sources."],
+      heroTitle: ["Spend less time deciding", "which data to trust,", "where it came from,", "and how to use it."],
       heroLede:
         "Loom turns project data into searchable data cards so people and AI can find trustworthy facts fast and reuse them through the cloud.",
       minute: "See the 1-minute flow",

@@ -13,7 +13,15 @@ from .output import print_status_summary, print_workspace_status
 
 def run_init(args: argparse.Namespace) -> int:
     selected_agents = tuple(args.agents) if args.agents else None
-    return run_init_flow(args.codex_home.resolve(), args.workspace_root.resolve(), selected_agents)
+    return run_init_flow(
+        args.codex_home.resolve(),
+        args.workspace_root.resolve(),
+        selected_agents,
+        tutorial_enabled=not args.no_tutorial,
+        tutorial_url=args.tutorial_url,
+        tutorial_sha256=args.tutorial_sha256,
+        force_tutorial=args.force_tutorial,
+    )
 
 
 def run_scan(args: argparse.Namespace) -> int:

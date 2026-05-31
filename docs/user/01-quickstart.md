@@ -47,14 +47,20 @@ loomcli init --agent codex
 
 Supported agent values are `codex`, `claude`, `cursor`, and `copilot`. Fast init
 creates or reuses `./loom` and `./raw_data`, sets the default workspace to
-`demo`, installs the tutorial data under `raw_data/demo_germany_energy_data`,
-and installs Loom agent skills.
+`demo`, downloads the tutorial data into `raw_data/demo_germany_energy_data`,
+and installs Loom agent skills. The tutorial data is not bundled in the PyPI
+package. If the download fails, initialization still succeeds and you can retry
+or provide a mirror URL later.
 
 For an interactive setup:
 
 ```bash
 loomcli init
 ```
+
+Use `--no-tutorial` to skip the tutorial download. Use `--tutorial-url <url>`
+with `--tutorial-sha256 <sha256>` to download the tutorial archive from a
+verified mirror.
 
 ## First Scan
 

@@ -197,7 +197,7 @@ wheels = [
 
 [[package]]
 name = "loom-data"
-version = "0.1.15"
+version = "0.1.16"
 source = { editable = "." }
 
 [package.dev-dependencies]

@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { getHighlights, getUseCases } from "./content";
 import { getSiteCopy } from "./copy";
 import { DocsPage } from "./DocsPage";
+import { ExtensionCapabilities } from "./ExtensionCapabilities";
 import { ExplorePage } from "./ExplorePage";
 import { HeroStats } from "./HeroStats";
+import { HowItWorks } from "./HowItWorks";
 import { useI18n } from "./i18n";
 import { MinuteGuide } from "./MinuteGuide";
 import { getAppHref, getSectionHref, parseAppRoute } from "./routes";
@@ -31,6 +33,8 @@ export function App() {
       <Hero copy={copy} />
       <Intro copy={copy} />
       <MinuteGuide />
+      <HowItWorks />
+      <ExtensionCapabilities />
       <UseCases copy={copy} />
       <FinalCta copy={copy} />
     </main>

@@ -1,5 +1,5 @@
 .site-shell {
-  --page-content-width: 1232px;
+  --page-content-width: 1320px;
   position: relative;
   overflow: hidden;
   padding: 22px clamp(18px, 4vw, 64px) 48px;

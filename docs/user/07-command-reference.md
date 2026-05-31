@@ -28,6 +28,7 @@ Use these in a terminal:
 ```bash
 loomcli init
 loomcli init --agent codex
+loomcli init --agent codex --no-tutorial
 loomcli scan-index <path> [to <workspace>]
 loomcli status [workspace]
 loomcli confirm [workspace]
@@ -42,6 +43,9 @@ Useful options:
 
 - `--workspace-root <path>`: run against a project root other than the current
   directory.
+- `--no-tutorial`, `--tutorial-url`, `--tutorial-sha256`, `--force-tutorial`:
+  control tutorial dataset download during `init`; custom tutorial URLs require
+  a matching `--tutorial-sha256`.
 - `--message <text>`: add a message to `confirm` or `push`.
 - `--server-url <url>`: override the server for `get`, `push`, `pull`, or
   `pull-raw` when supported.

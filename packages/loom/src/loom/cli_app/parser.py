@@ -35,8 +35,12 @@ def _add_init_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
         dest="agents",
         action="append",
         choices=("codex", "claude", "cursor", "copilot"),
-        help="Run `loomcli init` in a non-interactive fast path for the selected assistant and install the tutorial dataset.",
+        help="Run `loomcli init` in a non-interactive fast path for the selected assistant and download the tutorial dataset.",
     )
+    init_parser.add_argument("--no-tutorial", action="store_true", help="Skip tutorial dataset download during init.")
+    init_parser.add_argument("--tutorial-url", help="Override the tutorial dataset archive URL.")
+    init_parser.add_argument("--tutorial-sha256", help="Override the expected tutorial dataset archive SHA256.")
+    init_parser.add_argument("--force-tutorial", action="store_true", help="Replace an existing tutorial dataset directory.")
 
 
 def _add_public_scan_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:

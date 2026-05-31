@@ -135,8 +135,20 @@ Current `--agent` behavior from `packages/loom/src/loom/cli_app/init_flow.py`:
 - creates or reuses `./loom` and `./raw_data`
 - creates `./loom/<default-workspace>`
 - saves the default workspace as `demo`
-- installs tutorial data under `raw_data/demo_germany_energy_data`
+- downloads tutorial data into `raw_data/demo_germany_energy_data`
 - prints chat examples and terminal examples separately
+
+Tutorial data is not packaged inside the `loom-data` PyPI distribution. The
+CLI downloads a versioned tarball, verifies its SHA256 when configured, and
+unpacks it into `raw_data/demo_germany_energy_data`. Tutorial download failure
+does not fail workspace initialization.
+
+Tutorial options:
+
+- `--no-tutorial`: skip tutorial data download
+- `--tutorial-url <url>`: override the tutorial archive URL; requires `--tutorial-sha256`
+- `--tutorial-sha256 <sha256>`: override the expected archive SHA256
+- `--force-tutorial`: replace an existing tutorial directory
 
 Supported agent values:
 

@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "packages" / "loom" / "src"))
 
 from loom.cli import main
+from loom.cli_app.tutorial_download import TutorialInstallError, TutorialInstallResult
 from loom.cli_app.parser import build_parser
 
 
@@ -21,6 +22,29 @@ SKILL_NAMES = (
     "loom-dataset-scan-review",
     "loom-workspace-ops",
 )
+
+
+def install_fake_tutorial(workspace_root: Path, **_: object) -> TutorialInstallResult:
+    tutorial_dir = workspace_root / "raw_data" / "demo_germany_energy_data"
+    (tutorial_dir / "open_power_system_data" / "time_series").mkdir(parents=True, exist_ok=True)
+    (tutorial_dir / "open_power_system_data" / "generation_capacity").mkdir(parents=True, exist_ok=True)
+    (tutorial_dir / "german_climate_policy").mkdir(parents=True, exist_ok=True)
+    (tutorial_dir / "loom.md").write_text("# Demo\n", encoding="utf-8")
+    (tutorial_dir / "open_power_system_data" / "time_series" / "germany_2015_new_year_day_power.csv").write_text(
+        "hour,load\n0,1\n",
+        encoding="utf-8",
+    )
+    (
+        tutorial_dir
+        / "open_power_system_data"
+        / "generation_capacity"
+        / "germany_2015_net_capacity.csv"
+    ).write_text("technology,capacity_mw\nSolar,1\n", encoding="utf-8")
+    (tutorial_dir / "german_climate_policy" / "climate_change_act_targets_2021.csv").write_text(
+        "target_year,metric\n2045,neutrality\n",
+        encoding="utf-8",
+    )
+    return TutorialInstallResult(tutorial_dir)
 
 
 class InitCommandTest(unittest.TestCase):
@@ -36,7 +60,11 @@ class InitCommandTest(unittest.TestCase):
             workspace_root = Path(temp_dir) / "workspace"
             stdout = io.StringIO()
 
-            with patch("builtins.input", side_effect=["1", "", "", ""]), redirect_stdout(stdout):
+            with (
+                patch("builtins.input", side_effect=["1", "", ""]),
+                patch("loom.cli_app.tutorial_download.install_tutorial_dataset", side_effect=install_fake_tutorial),
+                redirect_stdout(stdout),
+            ):
                 exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
 
             self.assertEqual(exit_code, 0)
@@ -50,7 +78,11 @@ class InitCommandTest(unittest.TestCase):
             workspace_root = Path(temp_dir) / "workspace"
             stdout = io.StringIO()
 
-            with patch("builtins.input", side_effect=["1", "", "y", ""]), redirect_stdout(stdout):
+            with (
+                patch("builtins.input", side_effect=["1", "", "y"]),
+                patch("loom.cli_app.tutorial_download.install_tutorial_dataset", side_effect=install_fake_tutorial),
+                redirect_stdout(stdout),
+            ):
                 exit_code = main(["init", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)])
 
             self.assertEqual(exit_code, 0)
@@ -166,9 +198,18 @@ class InitCommandTest(unittest.TestCase):
             codex_home = Path(temp_dir) / ".codex"
             workspace_root = Path(temp_dir) / "workspace"
 
-            with patch("builtins.input", side_effect=["delta", "n"]):
+            with patch("builtins.input", side_effect=AssertionError("fast init should not prompt")):
                 exit_code = main(
-                    ["init", "--agent", "claude", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)]
+                    [
+                        "init",
+                        "--agent",
+                        "claude",
+                        "--no-tutorial",
+                        "--codex-home",
+                        str(codex_home),
+                        "--workspace-root",
+                        str(workspace_root),
+                    ]
                 )
 
             self.assertEqual(exit_code, 0)
@@ -181,6 +222,24 @@ class InitCommandTest(unittest.TestCase):
             self.assertTrue((workspace_root / ".claude" / "skills" / "loom-dataset-scan-review" / "SKILL.md").exists())
             self.assertTrue((workspace_root / ".claude" / "skills" / "loom-workspace-ops" / "SKILL.md").exists())
             self.assertFalse((workspace_root / ".claude" / "skills" / "loom-data" / "SKILL.md").exists())
+
+    def test_fast_init_tutorial_failure_does_not_fail_workspace_init(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            workspace_root = Path(temp_dir) / "workspace"
+            stdout = io.StringIO()
+
+            with (
+                patch("loom.cli_app.tutorial_download.install_tutorial_dataset", side_effect=TutorialInstallError("offline")),
+                redirect_stdout(stdout),
+            ):
+                exit_code = main(
+                    ["init", "--agent", "codex", "--codex-home", str(codex_home), "--workspace-root", str(workspace_root)]
+                )
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Tutorial data was not installed: offline", stdout.getvalue())
+            self.assertTrue((workspace_root / "loom" / "demo").exists())
 
 
 if __name__ == "__main__":

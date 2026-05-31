@@ -1,0 +1,77 @@
+@media (max-width: 1120px) {
+  .aligned-flow {
+    overflow-x: auto;
+    grid-template-columns: 98px 28px 166px 28px 214px 28px 186px 28px 100px;
+  }
+}
+
+@media (max-width: 760px) {
+  .how-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .aligned-flow {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    overflow: visible;
+    border-radius: 28px;
+  }
+
+  .aligned-flow::before,
+  .aligned-flow::after {
+    display: none;
+  }
+
+  .scan-command,
+  .scan-arrow,
+  .raw-scan,
+  .loader-panel,
+  .card-scan,
+  .ask-command,
+  .ask-arrow,
+  .card-ask,
+  .raw-access-panel,
+  .raw-ask {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .flow-panel {
+    min-height: auto;
+  }
+
+  .flow-arrow-line,
+  .flow-arrow-line.reverse {
+    width: 3px;
+    height: 34px;
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+
+  .flow-arrow-line.reverse {
+    transform: rotate(90deg);
+  }
+
+  .flow-arrow-line::after,
+  .flow-arrow-line.reverse::after {
+    top: -6px;
+    right: -5px;
+    left: auto;
+    border-right: 0;
+    border-left: 11px solid #082f4b;
+  }
+
+  .source-files {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .support-note {
+    text-align: left;
+  }
+}
+
+@media (max-width: 430px) {
+  .source-files {
+    grid-template-columns: 1fr;
+  }
+}

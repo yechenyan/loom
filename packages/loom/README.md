@@ -60,8 +60,10 @@ loom/
 raw_data/
 ```
 
-Fast init also installs the tutorial dataset under `raw_data/demo_germany_energy_data`.
-It installs three focused agent skills: `loom-local-data-lookup`,
+Fast init downloads the tutorial dataset into `raw_data/demo_germany_energy_data`.
+The tutorial data is versioned outside the PyPI package and verified during
+download. Use `--no-tutorial` to skip it or `--tutorial-url <url>` with
+`--tutorial-sha256 <sha256>` to use a mirror. Fast init installs three focused agent skills: `loom-local-data-lookup`,
 `loom-dataset-scan-review`, and `loom-workspace-ops`.
 
 ## Recommended workflow

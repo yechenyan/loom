@@ -1,0 +1,120 @@
+.extension-section {
+  width: min(var(--page-content-width), 100%);
+  margin: 56px auto 0;
+}
+
+.extension-heading {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.52fr) minmax(0, 0.76fr);
+  gap: clamp(24px, 5vw, 72px);
+  align-items: end;
+  margin-bottom: 26px;
+}
+
+.extension-heading h2 {
+  grid-column: 1;
+  grid-row: 1;
+  margin-bottom: 0;
+}
+
+.extension-heading .section-kicker,
+.extension-heading p:last-child {
+  grid-column: 1;
+}
+
+.extension-heading p:last-child,
+.capability-panel p {
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.extension-heading p:last-child {
+  margin-bottom: 0;
+  font-size: clamp(1.02rem, 1.5vw, 1.18rem);
+}
+
+.extension-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.capability-panel {
+  padding: clamp(22px, 3vw, 34px);
+  border: 1px solid rgba(0, 46, 79, 0.1);
+  border-radius: 28px;
+  background: rgba(255, 250, 240, 0.72);
+  box-shadow: 0 18px 46px rgba(0, 46, 79, 0.08);
+}
+
+.capability-panel h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.25rem, 2vw, 1.78rem);
+  line-height: 1.12;
+}
+
+.capability-panel p {
+  margin: 14px 0 0;
+}
+
+.capability-examples {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding-left: 18px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.capability-examples li::marker {
+  color: #0f6f75;
+}
+
+.capability-spotlight {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(15, 111, 117, 0.18);
+  border-radius: 16px;
+  background: rgba(232, 242, 244, 0.58);
+}
+
+.capability-spotlight h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.capability-spotlight p {
+  margin-top: 8px;
+}
+
+.capability-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.capability-tags span,
+.capability-tags a {
+  padding: 10px 13px;
+  border: 1px solid rgba(0, 46, 79, 0.1);
+  border-radius: 999px;
+  color: var(--ink);
+  background: rgba(255, 250, 240, 0.86);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.capability-tags a {
+  border-color: rgba(15, 111, 117, 0.24);
+  color: #0f6f75;
+}
+
+@media (max-width: 760px) {
+  .extension-heading,
+  .extension-grid {
+    grid-template-columns: 1fr;
+  }
+}

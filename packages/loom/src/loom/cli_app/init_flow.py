@@ -6,7 +6,7 @@ from ..raw_cache_support import resolve_raw_data_root
 from ..explore_repo import ensure_explore_repo
 from ..scan_state import save_recent_workspace
 from .skill import install_skills
-from .tutorial_data import TUTORIAL_DATASET_NAME, TUTORIAL_FILES
+from .tutorial_download import install_tutorial_or_warn
 
 
 AGENT_LABELS = {
@@ -24,24 +24,56 @@ MENU_ACTIONS = {
 }
 
 
-def run_init_flow(codex_home: Path, workspace_root: Path, agents: tuple[str, ...] | None = None) -> int:
+def run_init_flow(
+    codex_home: Path,
+    workspace_root: Path,
+    agents: tuple[str, ...] | None = None,
+    *,
+    tutorial_enabled: bool = True,
+    tutorial_url: str | None = None,
+    tutorial_sha256: str | None = None,
+    force_tutorial: bool = False,
+) -> int:
     if agents:
-        return _run_fast_init(codex_home, workspace_root, agents)
+        return _run_fast_init(
+            codex_home,
+            workspace_root,
+            agents,
+            tutorial_enabled,
+            tutorial_url,
+            tutorial_sha256,
+            force_tutorial,
+        )
     loom_root = workspace_root / "loom"
     if loom_root.exists():
         return _run_existing_workspace_menu(codex_home, workspace_root, agents)
-    return _run_fresh_init(codex_home, workspace_root, agents)
+    return _run_fresh_init(
+        codex_home,
+        workspace_root,
+        agents,
+        tutorial_enabled,
+        tutorial_url,
+        tutorial_sha256,
+        force_tutorial,
+    )
 
 
-def _run_fresh_init(codex_home: Path, workspace_root: Path, agents: tuple[str, ...] | None) -> int:
+def _run_fresh_init(
+    codex_home: Path,
+    workspace_root: Path,
+    agents: tuple[str, ...] | None,
+    tutorial_enabled: bool,
+    tutorial_url: str | None,
+    tutorial_sha256: str | None,
+    force_tutorial: bool,
+) -> int:
     selected_agents = agents or (_prompt_agent(),)
     workspace_name = _prompt_workspace_name()
-    tutorial_enabled = _prompt_install_tutorial()
+    tutorial_enabled = tutorial_enabled and _prompt_install_tutorial()
     repo_dir, installed_skills = _initialize_workspace(codex_home, workspace_root, selected_agents, workspace_name)
     _print_init_summary(workspace_root, repo_dir, workspace_name, installed_skills, reused=False)
     if tutorial_enabled:
-        tutorial_dir = _install_tutorial_files(workspace_root)
-        print(f"Tutorial data installed at: {tutorial_dir}")
+        install_tutorial_or_warn(workspace_root, url=tutorial_url, sha256=tutorial_sha256, force=force_tutorial)
         _print_chat_and_terminal_guide()
         return 0
     print("Agents can now use Loom with focused skills and the default workspace you selected.")
@@ -49,13 +81,23 @@ def _run_fresh_init(codex_home: Path, workspace_root: Path, agents: tuple[str, .
     return 0
 
 
-def _run_fast_init(codex_home: Path, workspace_root: Path, agents: tuple[str, ...]) -> int:
+def _run_fast_init(
+    codex_home: Path,
+    workspace_root: Path,
+    agents: tuple[str, ...],
+    tutorial_enabled: bool,
+    tutorial_url: str | None,
+    tutorial_sha256: str | None,
+    force_tutorial: bool,
+) -> int:
     workspace_name = _default_workspace_name()
     reused = (workspace_root / "loom").exists()
     repo_dir, installed_skills = _initialize_workspace(codex_home, workspace_root, agents, workspace_name)
-    tutorial_dir = _install_tutorial_files(workspace_root)
     _print_init_summary(workspace_root, repo_dir, workspace_name, installed_skills, reused=reused)
-    print(f"Tutorial data installed at: {tutorial_dir}")
+    if tutorial_enabled:
+        install_tutorial_or_warn(workspace_root, url=tutorial_url, sha256=tutorial_sha256, force=force_tutorial)
+    else:
+        print("Tutorial data download skipped because `--no-tutorial` was provided.")
     print("Fast init mode is active because `--agent` was provided, so Loom skipped the interactive setup.")
     _print_chat_and_terminal_guide()
     return 0
@@ -157,16 +199,6 @@ def _normalize_workspace_name(value: str) -> str:
     return normalized or "demo"
 
 
-def _install_tutorial_files(workspace_root: Path) -> Path:
-    target_dir = resolve_raw_data_root(workspace_root) / TUTORIAL_DATASET_NAME
-    target_dir.mkdir(parents=True, exist_ok=True)
-    for name, content in TUTORIAL_FILES.items():
-        target_path = target_dir / name
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        target_path.write_text(content, encoding="utf-8")
-    return target_dir
-
-
 def _print_installed_skills(installed_skills: tuple[object, ...]) -> None:
     for skill in installed_skills:
         print(f"Installed Loom skill for {skill.agent}: {skill.path}")
@@ -175,7 +207,7 @@ def _print_installed_skills(installed_skills: tuple[object, ...]) -> None:
 def _print_help() -> None:
     print("Loom quick help:")
     print("  `loom` is the chat prompt form, for example `loom scan raw_data/energy`.")
-    print("  `loomcli init --agent codex` is the non-interactive fast path and installs the tutorial automatically.")
+    print("  `loomcli init --agent codex` is the non-interactive fast path and downloads the tutorial automatically.")
     print("  `loomcli init` sets up `./loom`, `./raw_data`, your preferred agent skills, and the default workspace.")
     print("  `loomcli scan-index <path> [to <workspace>]` builds Loom cards from the terminal when you want an explicit CLI scan.")
     print("  `loomcli confirm [workspace]` saves explore changes into the local git history.")
